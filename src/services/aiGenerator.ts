@@ -338,10 +338,14 @@ export const aiGenerator = {
 
     const daysNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+    const arString = profile.aspectRatio === '16:9' 
+      ? '16:9 widescreen cinematic framing' 
+      : (profile.aspectRatio === '1:1' ? '1:1 square social framing' : '9:16 vertical smartphone portrait framing');
+
     const days: DayContent[] = episodeTemplates.map((ep, idx) => {
       const emotionalTrigger = EMOTIONAL_TRIGGERS[idx % EMOTIONAL_TRIGGERS.length];
 
-      const masterKeyframePrompt = `Hyper-realistic 9:16 vertical cinematic Three-Shot: On Screen-Left, ${hero.visualAnchor}. On Screen-Right, ${villain.visualAnchor}. In Background, ${supporting.visualAnchor}. Moody high-contrast corporate glass boardroom at night, rainy window reflections, single dramatic overhead spotlight, 8k Unreal Engine 5 render.`;
+      const masterKeyframePrompt = `Hyper-realistic ${arString} Three-Shot (--ar ${profile.aspectRatio || '9:16'}): On Screen-Left, ${hero.visualAnchor}. On Screen-Right, ${villain.visualAnchor}. In Background, ${supporting.visualAnchor}. ${profile.customTwistInput ? `Director Story Twist: ${profile.customTwistInput}. ` : ''}Moody high-contrast corporate glass boardroom at night, rainy window reflections, single dramatic overhead spotlight, 8k Unreal Engine 5 render.`;
 
       const scenes: Scene[] = ep.scenes.map((s) => ({
         sceneNumber: s.sNum,
@@ -352,7 +356,7 @@ export const aiGenerator = {
         listenerName: s.listener.name,
         listenerReaction: s.listenerReaction,
         cameraAngleType: s.angle,
-        visualPrompt: `[Strict Speaker Isolation]: ${s.angle} focusing on ${s.speaker.name} (${s.speaker.roleLabel}), animated mouth articulating spoken dialogue with high dramatic intensity. In background, ${s.listener.name} stays completely silent, reacting with: ${s.listenerReaction}.`,
+        visualPrompt: `[Strict Speaker Isolation - ${profile.aspectRatio || '9:16'}]: ${s.angle} focusing on ${s.speaker.name} (${s.speaker.roleLabel}), animated mouth articulating spoken dialogue with high dramatic intensity. In background, ${s.listener.name} stays completely silent, reacting with: ${s.listenerReaction}.`,
         facialExpression: s.speaker.role === 'protagonist' ? 'Determined piercing gaze, sharp micro-nod' : (s.speaker.role === 'antagonist' ? 'Cynical smirk, cold predatory eyes' : 'Intense calculating expression, scanning room'),
         bodyLanguage: s.speaker.role === 'protagonist' ? 'Stepping firmly forward, decisive gesture' : (s.speaker.role === 'antagonist' ? 'Leaning back, adjusting cuffs' : 'Holding tablet, whispering urgently'),
         eyeContactCue: s.sNum === 3 ? 'Locks direct unblinking eye contact into camera for final 2.5s cliffhanger retention' : 'Intense eye contact locked with scene partner',

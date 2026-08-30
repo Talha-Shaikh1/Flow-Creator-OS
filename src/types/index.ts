@@ -58,6 +58,8 @@ export interface CreatorProfile {
   seasonTitle?: string;
   seasonSynopsis?: string;
   castEnsemble?: DramaCharacter[];
+  selectedVibeTags?: string[];
+  customTwistInput?: string;
   contentType: ContentType;
   videoFormatMode: VideoFormatMode;
   videoDuration?: VideoDuration;
@@ -160,6 +162,9 @@ export interface WeeklyPlan {
   seasonTitle?: string;
   seasonSynopsis?: string;
   castEnsemble?: DramaCharacter[];
+  selectedVibeTags?: string[];
+  customTwistInput?: string;
+  aspectRatio?: AspectRatio;
   contentType: ContentType;
   videoFormatMode: VideoFormatMode;
   videoDuration?: VideoDuration;

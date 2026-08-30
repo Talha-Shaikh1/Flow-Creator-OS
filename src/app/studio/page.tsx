@@ -12,7 +12,7 @@ import {
 import { 
   Sparkles, Film, Copy, Check, Download, Video, MessageSquare, 
   Eye, Music, Share2, UploadCloud, Mic, Clock, 
-  Plus, Zap, Monitor, Smartphone, Square, RefreshCw, Globe, Trash2, Smile, Activity, BarChart3, TrendingUp, ShieldCheck, FastForward, Clapperboard, Users, User, Flame, UserCheck 
+  Plus, Zap, Monitor, Smartphone, Square, RefreshCw, Globe, Trash2, Smile, Activity, BarChart3, TrendingUp, ShieldCheck, FastForward, Clapperboard, Users, User, Flame, CheckSquare, Edit3 
 } from 'lucide-react';
 
 export default function StudioPage() {
@@ -25,14 +25,16 @@ export default function StudioPage() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showCreationForm, setShowCreationForm] = useState(true);
 
-  // Production Mode (Standalone Daily vs Episodic Season Drama)
-  const [productionMode, setProductionMode] = useState<ProductionMode>('standalone_daily');
+  // Multi-Select Checkbox Vibes Catalog
+  const [selectedVibes, setSelectedVibes] = useState<string[]>(['☕ Sarcastic Coffee Mug']);
+  const [customTwist, setCustomTwist] = useState('');
 
-  // Drama Cast Ensemble State (Hero, Villain, Supporting Ally)
-  const [heroName, setHeroName] = useState('Leo');
-  const [villainName, setVillainName] = useState('Marcus');
-  const [supportingName, setSupportingName] = useState('Ayla');
-  const [seasonPremise, setSeasonPremise] = useState('');
+  // Production Mode & Form Settings
+  const [productionMode, setProductionMode] = useState<ProductionMode>('standalone_daily');
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('9:16');
+  const [duration, setDuration] = useState<VideoDuration>('30s');
+  const [language, setLanguage] = useState<ContentLanguage>('english_global');
+  const [hasRefImage, setHasRefImage] = useState(false);
 
   // Quota & Rate Limit State
   const [quota, setQuota] = useState<{ allowed: boolean; remaining: number; totalDailyLimit: number; isByok: boolean }>({
@@ -54,16 +56,6 @@ export default function StudioPage() {
   const [reRollingSceneNum, setReRollingSceneNum] = useState<number | null>(null);
   const [customReRollPrompt, setCustomReRollPrompt] = useState('');
   const [isReRolling, setIsReRolling] = useState(false);
-
-  // Form Inputs
-  const [nicheInput, setNicheInput] = useState('');
-  const [archetype, setArchetype] = useState<CreatorArchetype>('talking_object');
-  const [contentType, setContentType] = useState<ContentType>('video');
-  const [formatMode, setFormatMode] = useState<VideoFormatMode>('podcast_fixed');
-  const [duration, setDuration] = useState<VideoDuration>('30s');
-  const [language, setLanguage] = useState<ContentLanguage>('english_global');
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('9:16');
-  const [hasRefImage, setHasRefImage] = useState(false);
 
   // Modals
   const [isApiKeyOpen, setIsApiKeyOpen] = useState(false);
@@ -111,92 +103,21 @@ export default function StudioPage() {
     }
   };
 
-  const handleQuickPreset = (topic: string, arch: CreatorArchetype, mode: VideoFormatMode, lang: ContentLanguage = 'english_global') => {
-    setNicheInput(topic);
-    setArchetype(arch);
-    setFormatMode(mode);
-    setLanguage(lang);
-    setAspectRatio('9:16');
-  };
-
-  const DRAMA_PRESETS = [
-    {
-      genre: '🏢 Corporate Revenge (Silicon Valley)',
-      premise: 'A junior AI engineer exposes a $50B corporate algorithm theft inside a corrupt Silicon Valley boardroom',
-      hero: 'Leo (Junior Dev)',
-      villain: 'Marcus (Corrupt CEO)',
-      ally: 'Ayla (Cyber Analyst)',
-      arch: 'human_influencer' as CreatorArchetype,
-      lang: 'english_global' as ContentLanguage,
-    },
-    {
-      genre: '🕵️ Cyberpunk Neural Heist (Sci-Fi)',
-      premise: 'An underground neural hacker discovers a megacorp is secretly erasing memories of rogue AI artists',
-      hero: 'Jax (Neural Runner)',
-      villain: 'Victor Vance (Corp Chief)',
-      ally: 'Kora (Tech Broker)',
-      arch: 'human_influencer' as CreatorArchetype,
-      lang: 'english_global' as ContentLanguage,
-    },
-    {
-      genre: '🇵🇰 Desi Startup Badla (Roman Urdu)',
-      premise: 'Raat ke 2 baje founding investor ne secret patent chori kiya aur junior developer ne live broadcast kardia',
-      hero: 'Bilal (Hero Developer)',
-      villain: 'Dawood (Boss Villain)',
-      ally: 'Zara (Office Hacker)',
-      arch: 'human_influencer' as CreatorArchetype,
-      lang: 'roman_urdu_hindi' as ContentLanguage,
-    },
-    {
-      genre: '🥑 Mug vs Energy Drink (Comedy Duo)',
-      premise: 'Bob the sarcastic coffee mug and Marcus the hyperactive energy drink battle over office wellness culture',
-      hero: 'Bob (Caffeine Mug)',
-      villain: 'Marcus (Energy Drink)',
-      ally: 'Leo (Healthy Avocado)',
-      arch: 'talking_object' as CreatorArchetype,
-      lang: 'english_global' as ContentLanguage,
-    },
-    {
-      genre: '♟️ Dark Billionaire Frame Control (Noir)',
-      premise: 'A reclusive billionaire prodigy uses psychological silence to dismantle an aggressive hostile takeover',
-      hero: 'Julian (Silent Prodigy)',
-      villain: 'Sterling (Hostile Raider)',
-      ally: 'Elena (Secret Auditor)',
-      arch: 'faceless_niche' as CreatorArchetype,
-      lang: 'english_global' as ContentLanguage,
-    },
-  ];
-
-  const [surpriseIndex, setSurpriseIndex] = useState(0);
-
-  const handleShuffleDramaPreset = () => {
-    const nextIdx = (surpriseIndex + 1) % DRAMA_PRESETS.length;
-    setSurpriseIndex(nextIdx);
-    const item = DRAMA_PRESETS[nextIdx];
-    handleQuickDramaPreset(
-      item.premise,
-      item.hero,
-      item.villain,
-      item.ally,
-      item.arch,
-      item.lang
-    );
-  };
-
-  const handleQuickDramaPreset = (premise: string, hero: string, villain: string, ally: string, arch: CreatorArchetype, lang: ContentLanguage = 'english_global') => {
-    setSeasonPremise(premise);
-    setHeroName(hero);
-    setVillainName(villain);
-    setSupportingName(ally);
-    setNicheInput(premise);
-    setArchetype(arch);
-    setLanguage(lang);
+  // Toggle multi-select checkbox vibe
+  const toggleVibe = (vibe: string) => {
+    if (selectedVibes.includes(vibe)) {
+      if (selectedVibes.length > 1) {
+        setSelectedVibes(selectedVibes.filter((v) => v !== vibe));
+      }
+    } else {
+      setSelectedVibes([...selectedVibes, vibe]);
+    }
   };
 
   const handleExportMarkdown = (plan: WeeklyPlan) => {
     const isDrama = plan.productionMode === 'episodic_season';
     let md = `# FlowCreator OS - ${isDrama ? `${plan.seasonTitle || 'AI Drama Season 1'} (7 Episodes)` : `7-Day Content Plan for ${plan.profileName}`}\n`;
-    md += `Mode: ${plan.productionMode || 'standalone_daily'} | Format: ${plan.videoFormatMode} | Duration: ${plan.videoDuration || '30s'} | Language: ${plan.language || 'english_global'}\n\n---\n\n`;
+    md += `Aspect Ratio: ${plan.aspectRatio || '9:16'} | Mode: ${plan.productionMode || 'standalone_daily'} | Duration: ${plan.videoDuration || '30s'} | Language: ${plan.language || 'english_global'}\n\n---\n\n`;
 
     plan.days.forEach((d) => {
       md += `## Day ${d.dayNumber} (${d.dayName}): ${isDrama ? `Episode ${d.episodeNumber}: ${d.title}` : d.title}\n`;
@@ -204,7 +125,7 @@ export default function StudioPage() {
       if (d.cliffhangerHook) {
         md += `**⚡ Cliffhanger Hook:** ${d.cliffhangerHook}\n`;
       }
-      md += `\n### Master Keyframe / Multi-Character Prompt:\n\`${d.masterKeyframePrompt}\`\n\n`;
+      md += `\n### Master Keyframe Prompt:\n\`${d.masterKeyframePrompt}\`\n\n`;
       md += `### Google Flow 10s Scenes (Directing Blueprint):\n`;
       d.scenes.forEach((s) => {
         md += `#### Scene ${s.sceneNumber} (${s.duration}) - ${s.phase}\n`;
@@ -232,11 +153,11 @@ export default function StudioPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleCreateAndGenerate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const topic = productionMode === 'episodic_season' ? seasonPremise : nicheInput;
-    if (!topic.trim()) {
-      alert('Please enter your topic / story premise or click one of the inspiration chips.');
+  const handleCreateAndGenerate = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    if (selectedVibes.length === 0 && !customTwist.trim()) {
+      alert('Please select at least 1 vibe checkbox or type a custom twist.');
       return;
     }
 
@@ -250,34 +171,45 @@ export default function StudioPage() {
 
     setIsGenerating(true);
     try {
+      const combinedNiche = `${selectedVibes.join(' + ')}${customTwist.trim() ? ` (Twist: ${customTwist.trim()})` : ''}`;
+      const isTalkingObject = selectedVibes.some((v) => v.includes('Mug') || v.includes('Avocado') || v.includes('Drink') || v.includes('Laptop') || v.includes('Bottle'));
+      const isFaceless = selectedVibes.some((v) => v.includes('Stoic') || v.includes('Mafia') || v.includes('Cosmic'));
+      const archetype: CreatorArchetype = isTalkingObject ? 'talking_object' : (isFaceless ? 'faceless_niche' : 'human_influencer');
+
       const generatedName = productionMode === 'episodic_season'
-        ? `${heroName} vs ${villainName} (Season 1)`
-        : nicheInput.split(' ').slice(0, 4).join(' ') + (archetype === 'talking_object' ? ' (Object)' : ' Studio');
+        ? `${selectedVibes[0].replace(/[^\w\s]/gi, '').trim()} Season 1`
+        : `${selectedVibes.slice(0, 2).map((v) => v.replace(/[^\w\s]/gi, '').trim()).join(' & ')} Studio`;
 
       const castEnsemble: DramaCharacter[] = productionMode === 'episodic_season'
         ? [
             {
               id: 'char_hero',
-              name: heroName.trim() || 'Leo',
+              name: isTalkingObject ? 'Bob (The Mug)' : 'Leo (Protagonist)',
               role: 'protagonist',
               roleLabel: 'Protagonist / Hero',
-              visualAnchor: `Screen-Left: ${heroName.trim()} in navy hoodie with sharp determined focus`,
+              visualAnchor: isTalkingObject 
+                ? 'Screen-Left: navy blue ceramic mug with 3D expressive eyebrows' 
+                : 'Screen-Left: 24yo determined AI engineer in sleek navy hoodie with sharp focus',
               color: '#26D9E6',
             },
             {
               id: 'char_villain',
-              name: villainName.trim() || 'Marcus',
+              name: isTalkingObject ? 'Marcus (Energy Can)' : 'Marcus (Antagonist)',
               role: 'antagonist',
               roleLabel: 'Antagonist / Villain',
-              visualAnchor: `Screen-Right: ${villainName.trim()} in charcoal suit with cold cynical smirk`,
+              visualAnchor: isTalkingObject
+                ? 'Screen-Right: sleek red energy drink can with angry lightning decal eyebrows'
+                : 'Screen-Right: 45yo ruthless tech CEO in bespoke charcoal suit with cold arrogant smirk',
               color: '#FF4D6D',
             },
             {
               id: 'char_supporting',
-              name: supportingName.trim() || 'Ayla',
+              name: isTalkingObject ? 'Leo (Avocado)' : 'Ayla (Cyber Analyst)',
               role: 'supporting',
               roleLabel: 'Supporting Ally / Insider',
-              visualAnchor: `Screen-Center: ${supportingName.trim()} in dark blazer with holographic tablet`,
+              visualAnchor: isTalkingObject
+                ? 'Screen-Center: chill organic avocado wearing tiny white headphones'
+                : 'Screen-Center: 23yo elite cybersecurity analyst in dark blazer with holographic tablet',
               color: '#D84DFF',
             },
           ]
@@ -288,22 +220,26 @@ export default function StudioPage() {
         name: generatedName,
         productionMode,
         seasonNumber: 1,
-        seasonTitle: productionMode === 'episodic_season' ? `${topic.split(' ').slice(0, 4).join(' ')}: Season 1` : undefined,
-        seasonSynopsis: topic,
+        seasonTitle: productionMode === 'episodic_season' ? `${generatedName}: The Reckoning` : undefined,
+        seasonSynopsis: combinedNiche,
         castEnsemble,
+        selectedVibeTags: selectedVibes,
+        customTwistInput: customTwist.trim() || undefined,
         archetype,
-        contentType,
-        videoFormatMode: formatMode,
+        contentType: 'video',
+        videoFormatMode: 'podcast_fixed',
         videoDuration: duration,
         language,
         hasReferenceImage: hasRefImage,
-        niche: topic,
-        objectName: archetype === 'talking_object' ? 'Ceramic Coffee Mug' : undefined,
-        objectMetaphor: archetype === 'talking_object' ? 'Burned-out corporate philosopher' : undefined,
-        characterDna: archetype === 'talking_object' ? 'A photorealistic navy-blue ceramic coffee mug with 3D expressive facial rigging' : archetype === 'human_influencer' ? 'Ayla Khan, 24yo South-Asian tech & lifestyle creator in aesthetic studio' : 'Cinematic noir silhouette and statues with obsidian lighting',
+        niche: combinedNiche,
+        objectName: isTalkingObject ? 'Ceramic Coffee Mug' : undefined,
+        objectMetaphor: isTalkingObject ? 'Burned-out corporate philosopher' : undefined,
+        characterDna: isTalkingObject 
+          ? 'A photorealistic navy-blue ceramic coffee mug with 3D expressive facial rigging' 
+          : archetype === 'human_influencer' ? 'Ayla Khan, 24yo South-Asian tech & lifestyle creator in aesthetic studio' : 'Cinematic noir silhouette and statues with obsidian lighting',
         aspectRatio,
-        visualStyle: 'Cinematic 8k photorealistic hyper-detailed',
-        tone: productionMode === 'episodic_season' ? 'High-tension suspense drama with cliffhangers' : (archetype === 'talking_object' ? 'Sarcastic & relatable' : 'Inspiring & authoritative'),
+        visualStyle: `Cinematic 8k photorealistic ${aspectRatio} vertical portrait`,
+        tone: productionMode === 'episodic_season' ? 'High-tension suspense drama with cliffhangers' : (isTalkingObject ? 'Sarcastic & relatable' : 'Inspiring & authoritative'),
         targetAudience: 'Reels & TikTok viewers seeking binge-worthy content',
         createdAt: Date.now(),
       };
@@ -319,6 +255,7 @@ export default function StudioPage() {
       newPlan.videoDuration = duration;
       newPlan.language = language;
       newPlan.hasReferenceImage = hasRefImage;
+      newPlan.aspectRatio = aspectRatio;
       setCurrentPlan(newPlan);
       storageService.saveCurrentPlan(newPlan);
 
@@ -368,7 +305,7 @@ export default function StudioPage() {
         hasReferenceImage: currentPlan.hasReferenceImage,
         niche: currentPlan.niche,
         characterDna: currentPlan.archetype === 'talking_object' ? 'A photorealistic ceramic coffee mug with 3D expressions' : 'Aesthetic creator in studio',
-        aspectRatio: '9:16',
+        aspectRatio: currentPlan.aspectRatio || '9:16',
         visualStyle: 'Cinematic 8k',
         tone: isDrama ? 'High-tension suspense drama' : 'Authentic & viral',
         targetAudience: 'Short-form viewers',
@@ -382,6 +319,7 @@ export default function StudioPage() {
       nextPlan.videoDuration = currentPlan.videoDuration;
       nextPlan.language = currentPlan.language;
       nextPlan.hasReferenceImage = currentPlan.hasReferenceImage;
+      nextPlan.aspectRatio = currentPlan.aspectRatio || '9:16';
       setCurrentPlan(nextPlan);
       storageService.saveCurrentPlan(nextPlan);
 
@@ -528,9 +466,9 @@ export default function StudioPage() {
       />
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 space-y-6">
-        {/* STATE 1: CREATOR INPUT FORM */}
+        {/* STATE 1: ZERO-FRICTION CHECKBOX DIRECTOR UI */}
         {showCreationForm || !currentPlan ? (
-          <div className="mx-auto max-w-2xl rounded-3xl border border-cyan-950/80 bg-[#080d26]/90 p-6 sm:p-8 backdrop-blur-2xl shadow-2xl space-y-6">
+          <div className="mx-auto max-w-3xl rounded-3xl border border-cyan-950/80 bg-[#080d26]/95 p-6 sm:p-8 backdrop-blur-2xl shadow-2xl space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-cyan-950/80 pb-4">
               <div className="space-y-1">
                 <div className="inline-flex items-center gap-2 rounded-full border border-[#26D9E6]/30 bg-[#26D9E6]/10 px-3 py-0.5 text-xs font-semibold text-[#26D9E6]">
@@ -538,7 +476,7 @@ export default function StudioPage() {
                   <span>AI Video Director Studio</span>
                 </div>
                 <h1 className="text-2xl font-black text-white sm:text-3xl">
-                  {productionMode === 'episodic_season' ? 'Direct 7-Episode AI Drama' : 'Generate 7-Day Plan'}
+                  {productionMode === 'episodic_season' ? 'Direct 7-Episode Drama Season' : 'Direct 7-Day Content Plan'}
                 </h1>
               </div>
 
@@ -562,398 +500,316 @@ export default function StudioPage() {
               </div>
             </div>
 
-            {/* TOP PRODUCTION MODE SWITCHER: Standalone Reels vs Drama Seasons */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
-                <Clapperboard className="h-4 w-4 text-[#9B4DFF]" /> Choose Production Format:
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setProductionMode('standalone_daily')}
-                  className={`flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                    productionMode === 'standalone_daily'
-                      ? 'border-[#26D9E6] bg-[#0c153b] text-white ring-1 ring-[#26D9E6]'
-                      : 'border-cyan-950 bg-black/40 text-zinc-400 hover:bg-[#0c1438]'
-                  }`}
-                >
-                  <Smartphone className="h-5 w-5 text-[#26D9E6] shrink-0" />
-                  <div>
-                    <div className="text-xs font-bold text-white">📱 Standalone Reels</div>
-                    <div className="text-[10px] text-zinc-400">7 Independent Daily Viral Videos</div>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setProductionMode('episodic_season')}
-                  className={`flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                    productionMode === 'episodic_season'
-                      ? 'border-[#D84DFF] bg-[#0c153b] text-white ring-1 ring-[#D84DFF]'
-                      : 'border-cyan-950 bg-black/40 text-zinc-400 hover:bg-[#0c1438]'
-                  }`}
-                >
-                  <Film className="h-5 w-5 text-[#D84DFF] shrink-0" />
-                  <div>
-                    <div className="text-xs font-bold text-white">🎬 AI Drama & Seasons</div>
-                    <div className="text-[10px] text-zinc-400">7-Episode Story Arc with Cliffhangers</div>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* Quick Inspiration Chips */}
-            <div className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
-                <Zap className="h-3 w-3 text-[#26D9E6]" /> Quick 1-Click Inspirations:
-              </span>
-              
-              {productionMode === 'standalone_daily' ? (
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleQuickPreset(
-                        'Sarcastic coffee mug roasting 9-to-5 corporate burnout and urgent weekend emails',
-                        'talking_object',
-                        'podcast_fixed',
-                        'english_global'
-                      )
-                    }
-                    className="rounded-xl border border-cyan-950 bg-[#0a0f2e] px-2.5 py-1.5 text-xs text-zinc-300 hover:border-[#26D9E6] hover:text-white transition-all cursor-pointer"
-                  >
-                    ☕ Sarcastic Coffee Mug (EN)
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleQuickPreset(
-                        'Weekend pe boss ka urgent message aur corporate life ka funny roast',
-                        'talking_object',
-                        'podcast_fixed',
-                        'roman_urdu_hindi'
-                      )
-                    }
-                    className="rounded-xl border border-cyan-950 bg-[#0a0f2e] px-2.5 py-1.5 text-xs text-zinc-300 hover:border-[#26D9E6] hover:text-white transition-all cursor-pointer"
-                  >
-                    🇵🇰 9-to-5 Roast (Roman Urdu)
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleQuickPreset(
-                        'AI girl creator sharing solopreneur automation workflows and aesthetic desk setup',
-                        'human_influencer',
-                        'podcast_fixed',
-                        'english_global'
-                      )
-                    }
-                    className="rounded-xl border border-cyan-950 bg-[#0a0f2e] px-2.5 py-1.5 text-xs text-zinc-300 hover:border-[#9B4DFF] hover:text-white transition-all cursor-pointer"
-                  >
-                    ✨ AI Influencer Podcast
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleQuickPreset(
-                        'Dark psychology rules on silent frame control and stoic emotional mastery in negotiations',
-                        'faceless_niche',
-                        'cinematic_multi',
-                        'english_global'
-                      )
-                    }
-                    className="rounded-xl border border-cyan-950 bg-[#0a0f2e] px-2.5 py-1.5 text-xs text-zinc-300 hover:border-[#D84DFF] hover:text-white transition-all cursor-pointer"
-                  >
-                    ♟️ Dark Stoic Psychology
-                  </button>
-                </div>
-              ) : (
-                /* Drama Inspirations */
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={handleShuffleDramaPreset}
-                    className="rounded-xl border border-[#26D9E6]/60 bg-[#0c1840] px-3 py-1.5 text-xs font-black text-[#26D9E6] hover:border-[#26D9E6] hover:text-white transition-all cursor-pointer shadow-md flex items-center gap-1.5"
-                    title="Click to shuffle through completely different viral storylines & casts!"
-                  >
-                    <span>🎲 Shuffle / Surprise Me</span>
-                    <span className="text-[10px] text-[#26D9E6]/70 font-mono">({surpriseIndex + 1}/{DRAMA_PRESETS.length})</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleQuickDramaPreset(
-                        'A junior AI engineer exposes a $50B corporate algorithm theft inside a corrupt Silicon Valley boardroom',
-                        'Leo (Junior Dev)',
-                        'Marcus (Corrupt CEO)',
-                        'Ayla (Cyber Analyst)',
-                        'human_influencer',
-                        'english_global'
-                      )
-                    }
-                    className="rounded-xl border border-cyan-950 bg-[#0a0f2e] px-2.5 py-1.5 text-xs text-zinc-300 hover:border-[#D84DFF] hover:text-white transition-all cursor-pointer"
-                  >
-                    🏢 Corporate Revenge (EN)
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleQuickDramaPreset(
-                        'Raat ke 2 baje boss ne secret patent chori kiya aur junior developer ne live broadcast kardia',
-                        'Bilal (Hero Developer)',
-                        'Dawood (Boss Villain)',
-                        'Zara (Office Hacker)',
-                        'human_influencer',
-                        'roman_urdu_hindi'
-                      )
-                    }
-                    className="rounded-xl border border-cyan-950 bg-[#0a0f2e] px-2.5 py-1.5 text-xs text-zinc-300 hover:border-[#D84DFF] hover:text-white transition-all cursor-pointer"
-                  >
-                    🇵🇰 Corporate Badla (Roman Urdu)
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleQuickDramaPreset(
-                        'Bob the sarcastic coffee mug and Leo the healthy avocado argue over office wellness propaganda',
-                        'Bob (Caffeine Mug)',
-                        'Marcus (Energy Drink)',
-                        'Leo (Healthy Avocado)',
-                        'talking_object',
-                        'english_global'
-                      )
-                    }
-                    className="rounded-xl border border-cyan-950 bg-[#0a0f2e] px-2.5 py-1.5 text-xs text-zinc-300 hover:border-[#26D9E6] hover:text-white transition-all cursor-pointer"
-                  >
-                    🥑 Mug vs Avocado Comedy Trio
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <form onSubmit={handleCreateAndGenerate} className="space-y-5">
-              {/* Question 1: Topic or Season Premise */}
+            <form onSubmit={handleCreateAndGenerate} className="space-y-6">
+              {/* STEP 1: PRODUCTION FORMAT TOGGLE */}
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-                  {productionMode === 'episodic_season' ? '1. What is your drama series about? (Or pick a 1-click preset above)' : '1. What is your channel topic or idea?'} <span className="text-[#26D9E6]">*</span>
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                  <Clapperboard className="h-4 w-4 text-[#9B4DFF]" /> 1. Choose Production Format:
                 </label>
-                <textarea
-                  value={productionMode === 'episodic_season' ? seasonPremise : nicheInput}
-                  onChange={(e) => {
-                    if (productionMode === 'episodic_season') {
-                      setSeasonPremise(e.target.value);
-                    } else {
-                      setNicheInput(e.target.value);
-                    }
-                  }}
-                  placeholder={
-                    productionMode === 'episodic_season'
-                      ? 'Type your series idea (e.g. AI intern vs corrupt CEO) or simply click a preset above...'
-                      : 'Describe your video perspective or click an inspiration chip above...'
-                  }
-                  rows={3}
-                  className="w-full rounded-2xl border border-cyan-950/80 bg-[#0a0f2e] p-3.5 text-xs text-white placeholder-zinc-500 focus:border-[#26D9E6] focus:outline-none leading-relaxed"
-                  required
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setProductionMode('standalone_daily')}
+                    className={`flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                      productionMode === 'standalone_daily'
+                        ? 'border-[#26D9E6] bg-[#0c153b] text-white ring-1 ring-[#26D9E6] shadow-lg shadow-[#26D9E6]/10'
+                        : 'border-cyan-950 bg-black/40 text-zinc-400 hover:bg-[#0c1438]'
+                    }`}
+                  >
+                    <Smartphone className="h-5 w-5 text-[#26D9E6] shrink-0" />
+                    <div>
+                      <div className="text-xs font-bold text-white">📱 Standalone Reels</div>
+                      <div className="text-[10px] text-zinc-400">7 Independent Daily Viral Videos</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setProductionMode('episodic_season')}
+                    className={`flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                      productionMode === 'episodic_season'
+                        ? 'border-[#D84DFF] bg-[#0c153b] text-white ring-1 ring-[#D84DFF] shadow-lg shadow-[#D84DFF]/10'
+                        : 'border-cyan-950 bg-black/40 text-zinc-400 hover:bg-[#0c1438]'
+                    }`}
+                  >
+                    <Film className="h-5 w-5 text-[#D84DFF] shrink-0" />
+                    <div>
+                      <div className="text-xs font-bold text-white">🎬 AI Drama & Seasons</div>
+                      <div className="text-[10px] text-zinc-400">7-Episode Story Arc with Cliffhangers</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* STEP 2: MULTI-SELECT CHECKBOX VIBE CATALOG (ORGANIZED BY CATEGORY) */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                    <CheckSquare className="h-4 w-4 text-[#26D9E6]" /> 2. Select Niche & Vibe (Pick 1 or Multiple to Fuse!):
+                  </label>
+                  <span className="text-[10px] text-[#26D9E6] font-semibold">
+                    {selectedVibes.length} Selected
+                  </span>
+                </div>
+
+                {/* Category A: Talking Objects */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
+                    🥑 Talking Objects & Relatable Satire:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      '☕ Sarcastic Coffee Mug',
+                      '🥑 Chill Healthy Avocado',
+                      '⚡ Hyperactive Energy Drink',
+                      '💻 Burned-Out Work Laptop',
+                      '🏋️ Gym Shaker Bottle',
+                    ].map((vibe) => {
+                      const isSelected = selectedVibes.includes(vibe);
+                      return (
+                        <button
+                          key={vibe}
+                          type="button"
+                          onClick={() => toggleVibe(vibe)}
+                          className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                            isSelected
+                              ? 'border-[#26D9E6] bg-[#0c1f44] text-[#26D9E6] ring-1 ring-[#26D9E6] shadow-sm'
+                              : 'border-cyan-950/80 bg-[#0a0f2e]/70 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                          }`}
+                        >
+                          <span>{isSelected ? '✓' : '+'}</span>
+                          <span>{vibe}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Category B: Human Cast & Thriller */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
+                    🏢 Human Cast & Drama Series:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      '🏢 Silicon Valley Whistleblower',
+                      '✨ AI Girl Tech Solopreneur',
+                      '🕵️ Cyberpunk Neural Heist',
+                      '💼 Junior Intern vs Ruthless CEO',
+                    ].map((vibe) => {
+                      const isSelected = selectedVibes.includes(vibe);
+                      return (
+                        <button
+                          key={vibe}
+                          type="button"
+                          onClick={() => toggleVibe(vibe)}
+                          className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                            isSelected
+                              ? 'border-[#9B4DFF] bg-[#1a0e38] text-[#9B4DFF] ring-1 ring-[#9B4DFF] shadow-sm'
+                              : 'border-cyan-950/80 bg-[#0a0f2e]/70 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                          }`}
+                        >
+                          <span>{isSelected ? '✓' : '+'}</span>
+                          <span>{vibe}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Category C: Dark Psychology & Noir */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
+                    ♟️ Dark Psychology & Noir:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      '♟️ Stoic Silent Frame Control',
+                      '🕶️ Mafia Power & Negotiation',
+                      '🌌 Cosmic Existential Philosophy',
+                    ].map((vibe) => {
+                      const isSelected = selectedVibes.includes(vibe);
+                      return (
+                        <button
+                          key={vibe}
+                          type="button"
+                          onClick={() => toggleVibe(vibe)}
+                          className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                            isSelected
+                              ? 'border-[#D84DFF] bg-[#220a3a] text-[#D84DFF] ring-1 ring-[#D84DFF] shadow-sm'
+                              : 'border-cyan-950/80 bg-[#0a0f2e]/70 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                          }`}
+                        >
+                          <span>{isSelected ? '✓' : '+'}</span>
+                          <span>{vibe}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Category D: Desi Pop Culture & Satire */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
+                    🇵🇰 Desi Pop Culture & Satire:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      '🇵🇰 Karachi 2 AM Startup Badla',
+                      '☕ Desi 9-to-5 Corporate Chai Roast',
+                      '💍 Desi Rishta & Society Satire',
+                    ].map((vibe) => {
+                      const isSelected = selectedVibes.includes(vibe);
+                      return (
+                        <button
+                          key={vibe}
+                          type="button"
+                          onClick={() => toggleVibe(vibe)}
+                          className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                            isSelected
+                              ? 'border-emerald-400 bg-[#072418] text-emerald-300 ring-1 ring-emerald-400 shadow-sm'
+                              : 'border-cyan-950/80 bg-[#0a0f2e]/70 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                          }`}
+                        >
+                          <span>{isSelected ? '✓' : '+'}</span>
+                          <span>{vibe}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* STEP 3: OPTIONAL CUSTOM IDEA / TWIST INPUT */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                  <Edit3 className="h-3.5 w-3.5 text-[#26D9E6]" /> 3. Custom Twist / Specific Idea (Optional):
+                </label>
+                <input
+                  type="text"
+                  value={customTwist}
+                  onChange={(e) => setCustomTwist(e.target.value)}
+                  placeholder="e.g. Make the villain a greedy landlord, or add a sudden courtroom climax..."
+                  className="w-full rounded-2xl border border-cyan-950/80 bg-[#0a0f2e] p-3 text-xs text-white placeholder-zinc-500 focus:border-[#26D9E6] focus:outline-none"
                 />
               </div>
 
-              {/* DRAMA MODE SPECIFIC: 3-CHARACTER ENSEMBLE (HERO, VILLAIN, SUPPORTING ALLY) */}
-              {productionMode === 'episodic_season' && (
-                <div className="rounded-2xl border border-cyan-950/80 bg-[#090e29] p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
-                      <Users className="h-4 w-4 text-[#D84DFF]" /> 3-Character Cast Ensemble (Strict Speaker Isolation):
-                    </span>
-                    <span className="text-[10px] text-zinc-400">Zero Dialogue Mix-Ups</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-[#26D9E6] flex items-center gap-1">
-                        <User className="h-3 w-3" /> 🔵 Protagonist / Hero:
-                      </label>
-                      <input
-                        type="text"
-                        value={heroName}
-                        onChange={(e) => setHeroName(e.target.value)}
-                        placeholder="e.g. Leo (Junior Dev)"
-                        className="w-full rounded-xl border border-cyan-950 bg-black/50 p-2 text-xs text-white placeholder-zinc-500 focus:border-[#26D9E6] focus:outline-none"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-[#FF4D6D] flex items-center gap-1">
-                        <User className="h-3 w-3" /> 🔴 Antagonist / Villain:
-                      </label>
-                      <input
-                        type="text"
-                        value={villainName}
-                        onChange={(e) => setVillainName(e.target.value)}
-                        placeholder="e.g. Marcus (Corrupt CEO)"
-                        className="w-full rounded-xl border border-cyan-950 bg-black/50 p-2 text-xs text-white placeholder-zinc-500 focus:border-[#FF4D6D] focus:outline-none"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-[#D84DFF] flex items-center gap-1">
-                        <User className="h-3 w-3" /> 🟣 Supporting Ally / Insider:
-                      </label>
-                      <input
-                        type="text"
-                        value={supportingName}
-                        onChange={(e) => setSupportingName(e.target.value)}
-                        placeholder="e.g. Ayla (Cyber Insider)"
-                        className="w-full rounded-xl border border-cyan-950 bg-black/50 p-2 text-xs text-white placeholder-zinc-500 focus:border-[#D84DFF] focus:outline-none"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Question 2: Persona Archetype */}
+              {/* STEP 4: ASPECT RATIO SELECTION */}
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-                  {productionMode === 'episodic_season' ? '2. Visual Style & Universe Archetype' : '2. Choose Character Archetype'}
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                  <Monitor className="h-3.5 w-3.5 text-[#9B4DFF]" /> 4. Aspect Ratio (Enforced in Prompts):
                 </label>
-                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                <div className="grid grid-cols-3 gap-2.5">
                   <button
                     type="button"
-                    onClick={() => setArchetype('talking_object')}
-                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all cursor-pointer ${
-                      archetype === 'talking_object'
+                    onClick={() => setAspectRatio('9:16')}
+                    className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      aspectRatio === '9:16'
                         ? 'border-[#26D9E6] bg-[#0c153b] text-white ring-1 ring-[#26D9E6]'
                         : 'border-cyan-950/70 bg-[#0a0f2b]/60 text-zinc-400 hover:bg-[#0c1438]'
                     }`}
                   >
-                    <span className="text-2xl mb-1">🥑</span>
-                    <span className="text-xs font-bold">Talking Object</span>
-                    <span className="text-[10px] text-zinc-400 mt-0.5">Coffee mug, Avocado</span>
+                    <Smartphone className="h-3.5 w-3.5 text-[#26D9E6]" />
+                    <span>9:16 Vertical (Reels/TikTok)</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setArchetype('human_influencer')}
-                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all cursor-pointer ${
-                      archetype === 'human_influencer'
+                    onClick={() => setAspectRatio('16:9')}
+                    className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      aspectRatio === '16:9'
                         ? 'border-[#9B4DFF] bg-[#0c153b] text-white ring-1 ring-[#9B4DFF]'
                         : 'border-cyan-950/70 bg-[#0a0f2b]/60 text-zinc-400 hover:bg-[#0c1438]'
                     }`}
                   >
-                    <span className="text-2xl mb-1">✨</span>
-                    <span className="text-xs font-bold">Human Cast</span>
-                    <span className="text-[10px] text-zinc-400 mt-0.5">Realistic Characters</span>
+                    <Monitor className="h-3.5 w-3.5 text-[#9B4DFF]" />
+                    <span>16:9 Widescreen (YouTube)</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setArchetype('faceless_niche')}
-                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all cursor-pointer ${
-                      archetype === 'faceless_niche'
+                    onClick={() => setAspectRatio('1:1')}
+                    className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      aspectRatio === '1:1'
                         ? 'border-[#D84DFF] bg-[#0c153b] text-white ring-1 ring-[#D84DFF]'
                         : 'border-cyan-950/70 bg-[#0a0f2b]/60 text-zinc-400 hover:bg-[#0c1438]'
                     }`}
                   >
-                    <span className="text-2xl mb-1">🕶️</span>
-                    <span className="text-xs font-bold">Dark Noir</span>
-                    <span className="text-[10px] text-zinc-400 mt-0.5">Shadows & Statues</span>
+                    <Square className="h-3.5 w-3.5 text-[#D84DFF]" />
+                    <span>1:1 Square (Instagram/Post)</span>
                   </button>
                 </div>
               </div>
 
-              {/* Question 3: Duration & Language */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {/* Duration Choice */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-                    3. Episode Duration
+              {/* STEP 5: DURATION & LANGUAGE */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Duration */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+                    5. Video Duration:
                   </label>
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setDuration('30s')}
-                      className={`w-full flex items-center gap-2 p-2.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                      className={`p-2 rounded-xl border text-xs font-bold transition-all cursor-pointer text-center ${
                         duration === '30s'
                           ? 'border-[#26D9E6] bg-[#0c153b] text-white ring-1 ring-[#26D9E6]'
-                          : 'border-cyan-950/70 bg-[#0a0f2b]/60 text-zinc-400 hover:bg-[#0c1438]'
+                          : 'border-cyan-950 bg-black/40 text-zinc-400'
                       }`}
                     >
-                      <Clock className="h-4 w-4 text-[#26D9E6] shrink-0" />
-                      <div>
-                        <div className="text-xs font-bold text-white">⚡ 30s (3 Scenes / Ep)</div>
-                        <div className="text-[10px] text-zinc-400">Fast Viral Cliffhanger Pacing</div>
-                      </div>
+                      ⚡ 30s (3 Clips)
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setDuration('60s')}
-                      className={`w-full flex items-center gap-2 p-2.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                      className={`p-2 rounded-xl border text-xs font-bold transition-all cursor-pointer text-center ${
                         duration === '60s'
                           ? 'border-[#9B4DFF] bg-[#0c153b] text-white ring-1 ring-[#9B4DFF]'
-                          : 'border-cyan-950/70 bg-[#0a0f2b]/60 text-zinc-400 hover:bg-[#0c1438]'
+                          : 'border-cyan-950 bg-black/40 text-zinc-400'
                       }`}
                     >
-                      <Clock className="h-4 w-4 text-[#9B4DFF] shrink-0" />
-                      <div>
-                        <div className="text-xs font-bold text-white">🎬 60s (6 Scenes / Ep)</div>
-                        <div className="text-[10px] text-zinc-400">Full Cinematic Dialogue Depth</div>
-                      </div>
+                      🎬 60s (6 Clips)
                     </button>
                   </div>
                 </div>
 
-                {/* Language / Slang Choice */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-                    4. Dialogue Language
+                {/* Language */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+                    6. Dialogue Language:
                   </label>
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setLanguage('english_global')}
-                      className={`w-full flex items-center gap-2 p-2.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                      className={`p-2 rounded-xl border text-xs font-bold transition-all cursor-pointer text-center ${
                         language === 'english_global'
                           ? 'border-[#26D9E6] bg-[#0c153b] text-white ring-1 ring-[#26D9E6]'
-                          : 'border-cyan-950/70 bg-[#0a0f2b]/60 text-zinc-400 hover:bg-[#0c1438]'
+                          : 'border-cyan-950 bg-black/40 text-zinc-400'
                       }`}
                     >
-                      <Globe className="h-4 w-4 text-[#26D9E6] shrink-0" />
-                      <div>
-                        <div className="text-xs font-bold text-white">English (Global)</div>
-                        <div className="text-[10px] text-zinc-400">Hollywood Script Dialogues</div>
-                      </div>
+                      🌐 English
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setLanguage('roman_urdu_hindi')}
-                      className={`w-full flex items-center gap-2 p-2.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                      className={`p-2 rounded-xl border text-xs font-bold transition-all cursor-pointer text-center ${
                         language === 'roman_urdu_hindi'
                           ? 'border-[#D84DFF] bg-[#0c153b] text-white ring-1 ring-[#D84DFF]'
-                          : 'border-cyan-950/70 bg-[#0a0f2b]/60 text-zinc-400 hover:bg-[#0c1438]'
+                          : 'border-cyan-950 bg-black/40 text-zinc-400'
                       }`}
                     >
-                      <Globe className="h-4 w-4 text-[#D84DFF] shrink-0" />
-                      <div>
-                        <div className="text-xs font-bold text-white">Roman Urdu/Hindi</div>
-                        <div className="text-[10px] text-zinc-400">Desi Drama Dialogues</div>
-                      </div>
+                      🇵🇰 Roman Urdu
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* Reference Image Checkbox */}
-              <div className="flex items-center justify-between rounded-2xl border border-cyan-950/70 bg-[#0a0f2b]/70 p-3.5">
+              <div className="flex items-center justify-between rounded-2xl border border-cyan-950/70 bg-[#0a0f2b]/70 p-3">
                 <div className="flex items-center gap-2.5">
                   <UploadCloud className="h-4 w-4 text-[#26D9E6]" />
                   <div>
@@ -975,7 +831,7 @@ export default function StudioPage() {
                   <button
                     type="button"
                     onClick={() => setShowCreationForm(false)}
-                    className="flex-1 rounded-2xl border border-zinc-800 bg-[#0a0f2b] py-3 text-xs font-bold text-zinc-300 hover:bg-[#121a44] transition-all cursor-pointer"
+                    className="flex-1 rounded-2xl border border-zinc-800 bg-[#0a0f2b] py-3.5 text-xs font-bold text-zinc-300 hover:bg-[#121a44] transition-all cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -984,13 +840,13 @@ export default function StudioPage() {
                 <button
                   type="submit"
                   disabled={isGenerating}
-                  className="flex-[2] flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#26D9E6] via-[#9B4DFF] to-[#D84DFF] py-3.5 text-xs font-extrabold text-white shadow-xl shadow-[#26D9E6]/25 hover:opacity-95 active:scale-98 transition-all cursor-pointer disabled:opacity-50"
+                  className="flex-[2] flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#26D9E6] via-[#9B4DFF] to-[#D84DFF] py-4 text-xs font-extrabold text-white shadow-xl shadow-[#26D9E6]/25 hover:opacity-95 active:scale-98 transition-all cursor-pointer disabled:opacity-50"
                 >
                   <Sparkles className={`h-4 w-4 text-[#26D9E6] ${isGenerating ? 'animate-spin' : ''}`} />
                   <span>
                     {isGenerating 
-                      ? 'Synthesizing with Loop Engineering...' 
-                      : (productionMode === 'episodic_season' ? '🎬 Direct 7-Episode Season 1' : 'Generate 7-Day Plan')}
+                      ? 'Directing with AI Loop Engineering...' 
+                      : (productionMode === 'episodic_season' ? '🎬 Direct 7-Episode Drama Season' : '🚀 Direct 7-Day Content Plan')}
                   </span>
                 </button>
               </div>
@@ -1011,10 +867,13 @@ export default function StudioPage() {
                   }`}>
                     {isDramaMode ? `Season ${currentPlan.seasonNumber || 1} • 7 Episodes` : 'Standalone 7-Day'}
                   </span>
+                  <span className="rounded bg-[#26D9E6]/15 px-2 py-0.5 text-[10px] font-bold text-[#26D9E6] border border-[#26D9E6]/30 uppercase">
+                    📐 {currentPlan.aspectRatio || '9:16'}
+                  </span>
                   <span className="rounded bg-[#9B4DFF]/15 px-2 py-0.5 text-[10px] font-bold text-[#9B4DFF] border border-[#9B4DFF]/30">
                     {currentPlan.videoDuration || '30s'} • {currentPlan.days[0]?.scenes.length || 3} Clips
                   </span>
-                  <span className="rounded bg-[#26D9E6]/15 px-2 py-0.5 text-[10px] font-bold text-[#26D9E6] border border-[#26D9E6]/30">
+                  <span className="rounded bg-[#D84DFF]/15 px-2 py-0.5 text-[10px] font-bold text-[#D84DFF] border border-[#D84DFF]/30">
                     {currentPlan.language === 'roman_urdu_hindi' ? '🇵🇰 Roman Urdu' : '🌐 English'}
                   </span>
                 </div>
@@ -1122,14 +981,14 @@ export default function StudioPage() {
                   </div>
                 </div>
 
-                {/* STEP 1: Video Frame Image Prompt Box OR Multi-Character Prompt */}
+                {/* STEP 1: Video Frame Image Prompt Box */}
                 <div className="rounded-2xl border border-[#26D9E6]/40 bg-[#081232]/80 p-4 space-y-2">
                   <div className="flex items-center justify-between border-b border-[#26D9E6]/20 pb-2">
                     <span className="text-xs font-extrabold uppercase tracking-wider text-[#26D9E6] flex items-center gap-1.5">
                       <Sparkles className="h-4 w-4" /> 
                       {isDramaMode 
-                        ? 'Step 1: Master Three-Shot Frame Prompt (Hero on Left, Villain on Right, Ally in Center)' 
-                        : (currentPlan.hasReferenceImage ? 'Step 1: Master Character Image Active' : 'Step 1: Video Frame Image Prompt')}
+                        ? `Step 1: Master Frame Prompt (${currentPlan.aspectRatio || '9:16'} Three-Shot)` 
+                        : (currentPlan.hasReferenceImage ? 'Step 1: Master Character Image Active' : `Step 1: Video Frame Image Prompt (${currentPlan.aspectRatio || '9:16'})`)}
                     </span>
                     <div className="flex items-center gap-2">
                       <button
