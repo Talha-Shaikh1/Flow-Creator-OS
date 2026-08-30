@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #050816;
+  --foreground: #F5F7FA;
+  --brand-cyan: #26D9E6;
+  --brand-purple: #9B4DFF;
+  --brand-magenta: #D84DFF;
+  --brand-bg: #050816;
 }
 
 @theme inline {
@@ -12,15 +16,114 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background-color: #050816;
+  color: #F5F7FA;
+  font-family: Arial, Helvetica, sans-serif;
+  color-scheme: dark;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom Brand Gradients */
+.brand-gradient-text {
+  background: linear-gradient(135deg, #26D9E6 0%, #9B4DFF 50%, #D84DFF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.brand-gradient-btn {
+  background: linear-gradient(135deg, #26D9E6 0%, #9B4DFF 100%);
+  color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.brand-gradient-btn:hover {
+  opacity: 0.95;
+  box-shadow: 0 10px 25px -5px rgba(38, 217, 230, 0.3), 0 8px 10px -6px rgba(155, 77, 255, 0.3);
+}
+
+/* ========================================================
+   CLERK COMPONENT DEEP OBSIDIAN DARK THEME OVERRIDES
+   ======================================================== */
+.cl-rootBox,
+.cl-card,
+.cl-signIn-root,
+.cl-signUp-root {
+  background-color: #050816 !important;
+  color: #F5F7FA !important;
+}
+
+.cl-card {
+  background: rgba(10, 14, 34, 0.95) !important;
+  border: 1px solid rgba(38, 217, 230, 0.2) !important;
+  box-shadow: 0 25px 50px -12px rgba(5, 8, 22, 0.9) !important;
+  border-radius: 1.25rem !important;
+}
+
+.cl-headerTitle {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+
+.cl-headerSubtitle,
+.cl-formFieldLabel,
+.cl-footerActionText,
+.cl-identityPreviewText {
+  color: #a1a1aa !important;
+}
+
+.cl-formFieldInput {
+  background-color: #0c122b !important;
+  border: 1px solid #1e294f !important;
+  color: #ffffff !important;
+  border-radius: 0.75rem !important;
+}
+
+.cl-formFieldInput:focus {
+  border-color: #26D9E6 !important;
+  box-shadow: 0 0 0 2px rgba(38, 217, 230, 0.25) !important;
+}
+
+.cl-formButtonPrimary {
+  background: linear-gradient(135deg, #26D9E6 0%, #9B4DFF 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 15px -3px rgba(38, 217, 230, 0.3) !important;
+}
+
+.cl-formButtonPrimary:hover {
+  opacity: 0.95 !important;
+}
+
+.cl-socialButtonsBlockButton {
+  background-color: #0c122b !important;
+  border: 1px solid #1e294f !important;
+  color: #ffffff !important;
+  border-radius: 0.75rem !important;
+}
+
+.cl-socialButtonsBlockButton:hover {
+  background-color: #162047 !important;
+}
+
+.cl-dividerLine {
+  background-color: #1e294f !important;
+}
+
+.cl-dividerText {
+  color: #71717a !important;
+}
+
+.cl-footerActionLink {
+  color: #26D9E6 !important;
+  font-weight: 600 !important;
+}
+
+.cl-footerActionLink:hover {
+  color: #9B4DFF !important;
+}
+
+.cl-footer {
+  background: transparent !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
