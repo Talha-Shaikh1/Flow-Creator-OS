@@ -1097,81 +1097,47 @@ export default function StudioPage() {
                             </div>
                           )}
 
-                          {/* Video Motion Prompt (With Strict Speaker Isolation Command) */}
-                          <div>
-                            <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-400">
-                              <span className="flex items-center gap-1">
-                                <Video className="h-3 w-3 text-[#26D9E6]" /> Video Motion Prompt
+                          {/* UNIFIED MASTER PRODUCTION PROMPT BLOCK (1-Click Complete Google Flow Directive) */}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#26D9E6] flex items-center gap-1">
+                                <Sparkles className="h-3.5 w-3.5" /> Full Director Scene Prompt:
                               </span>
                               <button
-                                onClick={() => copyToClipboard(scene.visualPrompt, `vis_${scene.sceneNumber}`)}
-                                className="text-[#26D9E6] hover:underline text-[11px] cursor-pointer"
+                                onClick={() => copyToClipboard(scene.visualPrompt, `full_prompt_${scene.sceneNumber}`)}
+                                className="flex items-center gap-1 rounded-lg bg-[#26D9E6] px-2.5 py-1 text-[11px] font-black text-[#050816] hover:opacity-90 transition-all cursor-pointer shadow-sm"
                               >
-                                {copiedKey === `vis_${scene.sceneNumber}` ? 'Copied' : 'Copy'}
+                                {copiedKey === `full_prompt_${scene.sceneNumber}` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                                <span>{copiedKey === `full_prompt_${scene.sceneNumber}` ? 'Copied!' : 'Copy Scene Prompt'}</span>
                               </button>
                             </div>
                             <textarea
                               value={scene.visualPrompt}
                               onChange={(e) => handleUpdateScene(scene.sceneNumber, 'visualPrompt', e.target.value)}
-                              rows={3}
-                              className="mt-1 w-full rounded-lg border border-white/5 bg-black/50 p-2 text-xs font-mono text-zinc-200 focus:border-[#26D9E6] focus:outline-none leading-relaxed"
+                              rows={5}
+                              className="w-full rounded-xl border border-cyan-950/80 bg-black/70 p-2.5 text-xs font-mono text-zinc-200 focus:border-[#26D9E6] focus:outline-none leading-relaxed"
                             />
                           </div>
 
-                          {/* Spoken Dialogue */}
-                          <div>
-                            <div className="flex items-center justify-between text-[11px] font-semibold text-emerald-400">
-                              <span className="flex items-center gap-1">
-                                <MessageSquare className="h-3 w-3" /> Spoken Dialogue ({scene.speaker || 'Voice'})
+                          {/* Spoken Dialogue Box */}
+                          <div className="space-y-1 rounded-xl bg-emerald-950/20 p-2.5 border border-emerald-500/20">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+                                <MessageSquare className="h-3 w-3" /> Spoken Dialogue ({scene.speaker || 'Character'}):
                               </span>
                               <button
                                 onClick={() => copyToClipboard(scene.dialogue, `dial_${scene.sceneNumber}`)}
-                                className="text-emerald-400 hover:underline text-[11px] cursor-pointer"
+                                className="text-[10px] text-emerald-400 hover:underline cursor-pointer font-bold"
                               >
-                                {copiedKey === `dial_${scene.sceneNumber}` ? 'Copied' : 'Copy'}
+                                {copiedKey === `dial_${scene.sceneNumber}` ? 'Copied' : 'Copy Dialogue'}
                               </button>
                             </div>
                             <textarea
                               value={scene.dialogue}
                               onChange={(e) => handleUpdateScene(scene.sceneNumber, 'dialogue', e.target.value)}
                               rows={2}
-                              className="mt-1 w-full rounded-lg border border-emerald-500/20 bg-emerald-950/20 p-2 text-xs text-emerald-200 italic focus:border-emerald-400 focus:outline-none leading-relaxed"
+                              className="w-full rounded-lg border border-emerald-500/20 bg-black/40 p-2 text-xs text-emerald-200 italic focus:border-emerald-400 focus:outline-none leading-relaxed"
                             />
-                          </div>
-
-                          {/* Listener Silent Reaction */}
-                          {scene.listenerReaction && (
-                            <div className="rounded-xl bg-[#140b28] p-2 border border-[#9B4DFF]/30 text-[10px]">
-                              <span className="font-bold text-[#D84DFF]">🤐 Silent Reaction ({scene.listenerName || 'Listener'}):</span>
-                              <div className="text-zinc-300 mt-0.5 italic">{scene.listenerReaction}</div>
-                            </div>
-                          )}
-
-                          {/* Face & Eye Directing Box */}
-                          <div className="rounded-xl bg-[#0c1438] p-2.5 border border-cyan-950 space-y-2 text-[11px]">
-                            <div>
-                              <div className="text-[10px] font-bold text-[#26D9E6] flex items-center gap-1">
-                                <Smile className="h-3 w-3" /> Face & Micro-Expression:
-                              </div>
-                              <input
-                                type="text"
-                                value={scene.facialExpression || ''}
-                                onChange={(e) => handleUpdateScene(scene.sceneNumber, 'facialExpression', e.target.value)}
-                                className="mt-0.5 w-full rounded border border-transparent bg-black/30 p-1 text-[10px] text-zinc-300 focus:border-[#26D9E6] focus:outline-none"
-                              />
-                            </div>
-
-                            <div>
-                              <div className="text-[10px] font-bold text-[#D84DFF] flex items-center gap-1">
-                                <Eye className="h-3 w-3" /> Eye-Contact Cue:
-                              </div>
-                              <input
-                                type="text"
-                                value={scene.eyeContactCue || ''}
-                                onChange={(e) => handleUpdateScene(scene.sceneNumber, 'eyeContactCue', e.target.value)}
-                                className="mt-0.5 w-full rounded border border-transparent bg-black/30 p-1 text-[10px] text-zinc-300 focus:border-[#D84DFF] focus:outline-none"
-                              />
-                            </div>
                           </div>
                         </div>
                       </div>
