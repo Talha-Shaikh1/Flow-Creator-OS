@@ -1,208 +1,213 @@
-export type CreatorArchetype = 'human_influencer' | 'talking_object' | 'faceless_niche';
+export type ContentFormat = 'object_talking' | 'character_drama' | 'podcast_style' | 'faceless_ambient' | 'pet_comedy';
 
-export type AspectRatio = '9:16' | '16:9' | '1:1';
+export type GenreTheme = 
+  | 'Family Drama'
+  | 'Revenge'
+  | 'Romance'
+  | 'Comedy'
+  | 'Rivalry'
+  | 'Redemption'
+  | 'Mystery'
+  | 'Motivational';
 
-export type VideoFormatMode = 'podcast_fixed' | 'cinematic_multi';
+export type ContentTone = 'Emotional / Heavy' | 'Light / Fun' | 'Intense / Suspenseful' | 'Inspirational';
 
-export type VideoDuration = '30s' | '60s';
+export type CharacterRole = 'Hero' | 'Villain' | 'Side' | 'Narrator';
 
-export type ContentLanguage = 'english_global' | 'roman_urdu_hindi' | 'spanish_global';
+export type VisualStylePreset = 
+  | 'Hyper-Realistic Cinematic'
+  | 'Stylized 3D Animation'
+  | 'Moody Film Noir'
+  | 'Vibrant Commercial Gloss'
+  | 'Vintage 90s Camcorder';
 
-export type ContentType = 'video' | 'post';
-
-export type ProductionMode = 'standalone_daily' | 'episodic_season';
-
-export type CharacterRole = 'protagonist' | 'antagonist' | 'supporting' | 'mentor';
-
-export interface DramaCharacter {
+export interface CastMember {
   id: string;
   name: string;
   role: CharacterRole;
-  roleLabel: string;   // e.g. "Protagonist / Hero", "Antagonist / Villain", "Supporting / Hacker"
-  visualAnchor: string; // e.g. "Screen-left: navy blue hoodie with silver watch"
-  color: string;        // e.g. "#26D9E6", "#FF4D6D", "#D84DFF"
+  description: string;
+  dnaPrompt: string; // Master visual anchor or ref image directive
+  usesReferenceImage?: boolean;
+  personalityVibe?: string;
+  baseIdentity?: string;
 }
 
-export type EmotionalTriggerType =
-  | 'shock_curiosity'     // Mon: Shock / Curiosity ("WTF Factor") -> 3s Hook Retention
-  | 'deep_empathy'        // Tue: Relatability / "That's so me" -> Comments & DMs
-  | 'controversy_debate'  // Wed: Provocative Debate -> Comment Flame Wars (Algorithm Push)
-  | 'sarcasm_humor'       // Thu: Satire & Sarcasm -> High Direct Shares & DMs
-  | 'high_value_secret'   // Fri: Behind-the-Scenes Epiphany -> Maximum Saves & Bookmarks
-  | 'hard_reality_check'  // Sat: Hard Truth & Wake-Up Call -> Authority & Retention
-  | 'inspiration_awe';    // Sun: Transformation & Vision -> Profile Visits & Follows
+export type NicheWorkflowCategory =
+  | 'ai_influencer_ugc'
+  | 'talking_object'
+  | 'cinematic_drama'
+  | 'faceless_aesthetic'
+  | 'podcast_debate'
+  | 'pet_comedy'
+  | 'custom';
 
-export interface EmotionalProfile {
-  type: EmotionalTriggerType;
-  label: string;
-  icon: string;
-  algorithmicGoal: string;
-  color: string;
-}
+export type HookArchetype =
+  | 'curiosity_gap' // "Nobody is talking about this hidden truth..."
+  | 'shock_reversal' // Visual shock followed by instant perspective flip
+  | 'secret_expose' // "What they don't want you to know..."
+  | 'cold_open_standoff' // Mid-action climax opener
+  | 'controversial_opinion'; // High-retention polar argument
 
-export interface RecurringCharacter {
+export type PacingCadence =
+  | 'rapid_tiktok_22w' // 20-22 words/10s, high-retention fast cuts
+  | 'measured_cinematic_16w' // 15-18 words/10s, dramatic breathing room
+  | 'ambient_voiceover_12w'; // 10-12 words/10s, poetic aesthetic flow
+
+export interface WorkflowPipeline {
   id: string;
   name: string;
-  personality: string;
-  visualDna: string;
-  archetype: CreatorArchetype;
-  imageUrl?: string;
+  nicheType: NicheWorkflowCategory;
+  customNicheTitle?: string;
+  description: string;
+  personaSubjectAnchor: string; // Master character / subject DNA definition
+  cameraShootingStyle: string; // e.g. "Handheld iPhone 16 Pro 4K UGC, eye-level ring light"
+  hookArchetype: HookArchetype;
+  pacingCadence: PacingCadence;
+  audioFoleyMood?: string; // e.g. "Subtle room reverb, crisp vocal isolation, punchy bass sub-drop"
+  visualStylePreset: VisualStylePreset;
+  defaultLocations: string[];
+  isPinned?: boolean;
+  createdAt: string;
 }
 
-export interface CreatorProfile {
+export interface StorySpec {
   id: string;
-  name: string;
-  archetype: CreatorArchetype;
-  productionMode?: ProductionMode;
-  seasonNumber?: number;
-  seasonTitle?: string;
-  seasonSynopsis?: string;
-  castEnsemble?: DramaCharacter[];
-  selectedVibeTags?: string[];
-  customTwistInput?: string;
-  contentType: ContentType;
-  videoFormatMode: VideoFormatMode;
-  videoDuration?: VideoDuration;
-  language?: ContentLanguage;
-  castMembers?: RecurringCharacter[];
-  hasReferenceImage: boolean;
-  referenceImageUrl?: string;
-  niche: string;
-  objectName?: string;
-  objectMetaphor?: string;
-  characterDna: string;
-  aspectRatio: AspectRatio;
-  visualStyle: string;
-  tone: string;
-  targetAudience: string;
-  createdAt: number;
+  format: ContentFormat;
+  genres: GenreTheme[];
+  tone: ContentTone;
+  castCount: number;
+  cast: CastMember[];
+  visualStyle: VisualStylePreset;
+  formatLength: 'single_video' | 'multi_episode_series';
+  episodeCount?: number;
+  locationSettings: string[]; // List of locations (e.g., Living Room, Office, Rooftop)
+  customStoryIdea?: string; // Optional user-provided premise / concept
+  workflowPipeline?: WorkflowPipeline; // Linked custom niche workflow pipeline
+  createdAt: string;
 }
 
-export interface Scene {
-  sceneNumber: number;
-  duration: string;
-  phase: string;
-  speaker?: string;             // Character name speaking
-  speakerRole?: CharacterRole;  // 'protagonist' | 'antagonist' | 'supporting' | 'mentor'
-  listenerName?: string;        // Name of character listening/reacting
-  listenerReaction?: string;    // e.g. "Stares coldly on screen-right with clenched jaw"
-  cameraAngleType?: string;     // e.g. "Over-the-shoulder Left", "Reverse Angle Right", "Two-Shot Wide"
-  keyframeImagePrompt?: string;
-  visualPrompt: string;
-  facialExpression?: string;
-  bodyLanguage?: string;
-  eyeContactCue?: string;
-  actingDirection: string;
-  dialogue: string;
-  alternateHooks?: string[];
-  cameraMotion: string;
-  lightingAndMood: string;
+
+export interface SecBySecAction {
+  timeRange: string; // e.g. "0:00 - 0:02"
+  visualAction: string;
+  cameraMovement: string;
+  characterPose?: string; // e.g. "Tense forward lean, hands gripped on desk edge"
+  pauseBeat?: string; // e.g. "1.5s heavy suspenseful pause, breath intake"
+  spokenDialogue?: string; // Spoken line articulated in this window
+  lipSyncDirective?: string; // Specific lip and mouth motion directive
+  activeSpeaker?: string;
+  silentCharacters?: string[];
+  lightingMood?: string;
+  sfxCue?: string; // Sound effect / foley audio directive
 }
 
-export interface PlatformMetadata {
-  instagram: {
-    hookCaption: string;
-    bodyCaption: string;
-    hashtags: string[];
-    callToAction: string;
+
+export interface ClipPrompt {
+  clipIndex: number;
+  totalClips: number;
+  sceneName: string;
+  locationAnchor: string;
+  masterKeyframeLock: string;
+  shotType: 'Master Wide' | 'Shot-Reverse-Shot Close-Up' | 'Over-the-Shoulder' | 'Dynamic Tracking' | 'Point of View';
+  frameImagePrompt: string; // The exact prompt to generate the starting keyframe/video frame image
+  flowPromptText: string; // Full video motion directive for Google Flow
+  speakerIsolation: {
+    activeSpeaker: string;
+    speakingDialogue: string;
+    silentCharacters: string[];
+    cameraCutApplied: boolean;
   };
-  tiktok: {
-    textOverlayHook: string;
+  timeline: SecBySecAction[];
+  retentionHookReasoning?: string;
+  pacingWordCount: number;
+  sceneWardrobe?: string; // Story & location adaptive clothing
+  requiresReferenceImageAttachment?: boolean; // Reminder badge to attach user ref image
+  foleySoundDesign?: string; // Complete audio ambience and sound design directive
+  negativePromptDirectives?: string; // Negative prompt directives for cleaner video output
+}
+
+export interface QualityCritique {
+  spatialLockScore: number; // 0-100
+  speakerIsolationScore: number; // 0-100
+  retentionHookScore: number; // 0-100
+  overallScore: number; // 0-100
+  passedQualityGate: boolean;
+  critiqueNotes: string[];
+  refinementsApplied: string[];
+}
+
+export interface VideoVariation {
+  id: string;
+  variationLabel: 'Variation A (High Tension)' | 'Variation B (Emotional Core)' | 'Variation C (Fast Hook)';
+  title: string;
+  hookDescription: string;
+  masterFrameImagePrompt?: string;
+  characterAnchors: {
+    characterName: string;
+    anchorPrompt: string;
+  }[];
+  locationAnchors: {
+    locationName: string;
+    anchorPrompt: string;
+  }[];
+  clips: ClipPrompt[];
+  dialogueScript: {
+    speaker: string;
+    line: string;
+    timing: string;
+  }[];
+  metadata: {
     caption: string;
-    seoKeywords: string[];
+    hashtags: string[];
     audioVibe: string;
   };
-  youtubeShorts: {
-    title: string;
-    description: string;
-    tags: string[];
-    pinnedComment: string;
-  };
-  threads: {
-    threadPost: string;
-  };
-  pinterest: {
-    pinTitle: string;
-    pinDescription: string;
-    suggestedBoard: string;
-    keywords: string[];
-  };
-  facebook: {
-    storyCaption: string;
-  };
+  critique: QualityCritique;
+  seriesContinuityRecap?: string; // Episode plot continuity & cliffhanger note
+  isProduced?: boolean; // True when full frame prompts and Flow motion directives have been produced
 }
 
-export interface DayContent {
-  dayNumber: number;
-  dayName: string;
+export interface DailyPhotoPost {
+  id: string;
+  category: 'Cafe Candid' | 'Mirror OOTD' | 'Golden Hour Street' | 'Desk / BTS Flatlay';
   title: string;
-  episodeNumber?: number;
-  episodeTitle?: string;
-  cliffhangerHook?: string;
-  angleArchetype: string;
-  emotionalTrigger: EmotionalProfile;
-  viralScore: number;
-  targetEmotion: string;
-  videoFormatMode: VideoFormatMode;
-  masterKeyframePrompt: string;
-  scenes: Scene[];
-  bgmPrompt: string;
-  lifestylePhotoPrompt?: string;
-  lifestyleCaption?: string;
-  platformMetadata: PlatformMetadata;
+  caption: string;
+  hashtags: string[];
+  outfit: string;
+  imagePrompt: string; // The exact Midjourney / Flux / Google Flow prompt
 }
 
-export interface WeeklyPlan {
+export interface DayContentPackage {
+  dayNumber: number; // 1-7
+  dayName: string; // e.g. "Monday"
+  dailyEmotion: string; // e.g. "Monday Hook - Curiosity & Intrigue"
+  variations: VideoVariation[];
+  selectedVariationId?: string;
+  dailyPhotoPosts?: DailyPhotoPost[]; // 3-4 daily authentic lifestyle photos
+}
+
+
+export interface SeriesBibleSummary {
+  arcOverview: string;
+  characterArcs: { name: string; weekArc: string }[];
+  keyCliffhangers: string[];
+}
+
+export interface TokenUsageReport {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  estimatedCostUsd: number;
+  model: string;
+  source: 'gemini-api' | 'procedural-engine' | 'regenerate-clip';
+  timestamp: string;
+}
+
+export interface WeeklyBatchDelivery {
   id: string;
-  profileId: string;
-  profileName: string;
-  archetype: CreatorArchetype;
-  productionMode?: ProductionMode;
-  seasonNumber?: number;
-  seasonTitle?: string;
-  seasonSynopsis?: string;
-  castEnsemble?: DramaCharacter[];
-  selectedVibeTags?: string[];
-  customTwistInput?: string;
-  aspectRatio?: AspectRatio;
-  contentType: ContentType;
-  videoFormatMode: VideoFormatMode;
-  videoDuration?: VideoDuration;
-  language?: ContentLanguage;
-  castMembers?: RecurringCharacter[];
-  hasReferenceImage: boolean;
-  referenceImageUrl?: string;
-  niche: string;
-  createdAt: number;
-  days: DayContent[];
+  spec: StorySpec;
+  createdAt: string;
+  days: DayContentPackage[];
+  seriesBible?: SeriesBibleSummary;
+  tokenUsage?: TokenUsageReport;
 }
 
-export interface VaultItem {
-  id: string;
-  topic: string;
-  angle: string;
-  emotionalTrigger: string;
-  archetype: CreatorArchetype;
-  usedInDate: string;
-}
-
-export interface DiagnosticFeedback {
-  dropOffDiagnosis: 'hook_issue' | 'seo_distribution_issue' | 'cta_engagement_issue' | 'viral_winner';
-  consecutiveTestsCount: number;
-  aiGrowthRecommendation: string;
-}
-
-export interface PerformanceLog {
-  id: string;
-  planId: string;
-  videoTitle: string;
-  dayNumber: number;
-  emotionalTrigger: string;
-  result: 'viral' | 'good' | 'flop';
-  viewsCount?: string;
-  retentionRate?: string;
-  diagnostic: DiagnosticFeedback;
-  userNotes?: string;
-  keyLearnings: string;
-  createdAt: number;
-}

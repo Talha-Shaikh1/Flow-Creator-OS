@@ -1,38 +1,37 @@
-import { NextResponse } from 'next/server';
-import { geminiService } from '../../../services/geminiService';
+import { NextRequest, NextResponse } from 'next/server';
+import { StorySpecSchema } from '@/lib/schemas/story-spec.schema';
+import { generateWeeklyBatchWithGemini } from '@/lib/engine/gemini';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { profile, vaultItems, performanceLogs } = await req.json();
+    const body = await req.json();
+    const parseResult = StorySpecSchema.safeParse(body);
 
-    const serverApiKey = process.env.GEMINI_API_KEY || '';
-
-    if (!serverApiKey || serverApiKey.trim().length < 8) {
-      return NextResponse.json({
-        success: false,
-        source: 'missing_gemini_key',
-        message: 'No GEMINI_API_KEY found in .env.local',
-      });
+    if (!parseResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Invalid Story Spec input',
+          details: parseResult.error.format(),
+        },
+        { status: 400 }
+      );
     }
 
-    const plan = await geminiService.generateWeeklyPlanWithGemini(
-      serverApiKey,
-      profile,
-      vaultItems || [],
-      performanceLogs || []
-    );
+    const spec = parseResult.data;
+    const batch = await generateWeeklyBatchWithGemini(spec, { mode: 'mind_maps' });
 
     return NextResponse.json({
       success: true,
-      source: 'platform_server_gemini',
-      plan,
+      batch,
     });
   } catch (error: any) {
-    console.warn('Gemini API call warning in /api/generate:', error.message);
-    return NextResponse.json({
-      success: false,
-      source: 'gemini_api_fallback',
-      error: error.message,
-    });
+    console.error('Error generating weekly batch:', error);
+    return NextResponse.json(
+      {
+        error: 'Failed to generate weekly batch',
+        message: error?.message || 'Internal Server Error',
+      },
+      { status: 500 }
+    );
   }
 }
