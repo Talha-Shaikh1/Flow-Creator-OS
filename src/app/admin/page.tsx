@@ -172,6 +172,15 @@ function AdminDashboardContent() {
             </button>
 
             <Link
+              href="/creator-ops"
+              className="px-3 py-1.5 text-xs font-bold rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 transition flex items-center gap-1.5 border border-emerald-500/30 shadow-sm"
+              title="Open CreatorOps Daily Hub"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>⚡ CreatorOps Hub</span>
+            </Link>
+
+            <Link
               href="/"
               className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 transition flex items-center gap-1.5 border border-neutral-700"
             >

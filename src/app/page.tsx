@@ -147,6 +147,14 @@ export default function StudioPage() {
             <span className="px-3 py-1.5 rounded-lg bg-neutral-800 text-white font-medium shadow-sm border border-neutral-700/60">
               General Studio
             </span>
+            <Link
+              href="/creator-ops"
+              className="px-3 py-1.5 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition flex items-center gap-1.5 font-bold border border-emerald-500/20 shadow-sm"
+              title="Daily Multi-Account Operations Hub & WhatsApp Reminders"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>⚡ CreatorOps Hub</span>
+            </Link>
             {isSuperAdmin && (
               <>
                 <Link

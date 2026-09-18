@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model content_calendar_events {
+  id              String    @id
+  user_id         String    @default("guest_anonymous")
+  batch_id        String
+  day_number      Int
+  scheduled_date  DateTime  @db.Date
+  variation_id    String
+  variation_title String
+  format          String
+  is_adopted      Boolean?  @default(false)
+  status          String    @default("draft")
+  clips_summary   Json?
+  metadata        Json?
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([user_id, scheduled_date], map: "idx_calendar_user_date")
+}
+
+model creator_profiles {
+  id              String  @id @db.VarChar(255)
+  user_id         String  @db.VarChar(255)
+  name            String  @db.VarChar(255)
+  archetype       String  @db.VarChar(100)
+  niche           String  @db.VarChar(255)
+  object_name     String?
+  object_metaphor String?
+  character_dna   String
+  aspect_ratio    String  @db.VarChar(20)
+  visual_style    String
+  tone            String  @db.VarChar(255)
+  target_audience String
+  created_at      BigInt
+}
+
+model performance_logs {
+  id                String  @id @db.VarChar(255)
+  user_id           String  @db.VarChar(255)
+  plan_id           String  @db.VarChar(255)
+  video_title       String
+  day_number        Int
+  emotional_trigger String? @db.VarChar(255)
+  result            String  @db.VarChar(50)
+  views_count       String? @db.VarChar(100)
+  retention_rate    String? @db.VarChar(100)
+  user_notes        String?
+  key_learnings     String
+  created_at        BigInt
+}
+
+model saved_batches {
+  id         String    @id
+  user_id    String    @default("guest_anonymous")
+  spec       Json
+  batch      Json
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([user_id, updated_at(sort: Desc)], map: "idx_batches_user")
+}
+
+model saved_characters {
+  id          String    @id
+  user_id     String    @default("guest_anonymous")
+  name        String
+  role        String
+  description String
+  dna_prompt  String
+  is_pinned   Boolean?  @default(false)
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([user_id], map: "idx_chars_user")
+}
+
+model saved_workflows {
+  id         String    @id
+  user_id    String    @default("guest_anonymous")
+  name       String
+  niche_type String
+  workflow   Json
+  is_pinned  Boolean?  @default(false)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model system_users {
+  id             String    @id
+  email          String?
+  name           String?
+  image_url      String?
+  role           String    @default("creator")
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  last_active_at DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([role], map: "idx_system_users_role")
+}
+
+model vault_items {
+  id                String  @id @db.VarChar(255)
+  user_id           String  @db.VarChar(255)
+  topic             String
+  angle             String  @db.VarChar(255)
+  emotional_trigger String? @db.VarChar(255)
+  archetype         String  @db.VarChar(100)
+  used_in_date      String  @db.VarChar(50)
+}
+
+model weekly_plans {
+  id           String @id @db.VarChar(255)
+  user_id      String @db.VarChar(255)
+  profile_id   String @db.VarChar(255)
+  profile_name String @db.VarChar(255)
+  archetype    String @db.VarChar(100)
+  niche        String @db.VarChar(255)
+  days_json    Json
+  created_at   BigInt
+}
+
+// ==========================================
+// CREATOROPS HUB MODELS
+// ==========================================
+
+model Persona {
+  id                 String              @id @default(cuid())
+  name               String              @unique
+  displayName        String?
+  assignedDay        Int?                // 0 = Sunday, 1 = Monday, ... 6 = Saturday
+  niche              String?
+  language           String?             @default("English")
+  targetAudience     String?
+  visualStyle        String?
+  framePrompt        String?
+  masterVideoPrompt  String?
+  weeklyReelsTarget  Int                 @default(3)
+  weeklyFeedTarget   Int                 @default(4)
+  dailyStoriesTarget Int                 @default(5)
+  gmailAccountId     String?
+  gmailAccount       GmailAccount?       @relation(fields: [gmailAccountId], references: [id], onDelete: SetNull)
+  youtubeHandle      String?
+  youtubeUrl         String?
+  instaHandle        String?
+  instaUrl           String?
+  tiktokHandle       String?
+  tiktokUrl          String?
+  facebookHandle     String?
+  facebookUrl        String?
+  dailyUploads       DailyUpload[]
+  contentPlans       DailyContentPlan[]
+  createdAt          DateTime            @default(now())
+}
+
+model GmailAccount {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  subscription    String    @default("Free")
+  renewalDate     DateTime?
+  browserProfile  String?
+  notes           String?
+  personas        Persona[]
+  createdAt       DateTime  @default(now())
+}
+
+model DailyUpload {
+  id              String   @id @default(cuid())
+  date            String   // "YYYY-MM-DD" in PKT
+  personaId       String
+  persona         Persona  @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  videoTitle      String?
+  notes           String?
+  youtubeDone     Boolean  @default(false)
+  instaDone       Boolean  @default(false)
+  tiktokDone      Boolean  @default(false)
+  facebookDone    Boolean  @default(false)
+  youtubeUrl      String?
+  instaUrl        String?
+  tiktokUrl       String?
+  facebookUrl     String?
+  allCompleted    Boolean  @default(false)
+  feedPostsCount  Int      @default(0)
+  storiesCount    Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  @@unique([date, personaId])
+}
+
+model DailyContentPlan {
+  id               String   @id @default(cuid())
+  date             String   // "YYYY-MM-DD"
+  personaId        String
+  persona          Persona  @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  trendingTopic    String?
+  trendingAudio    String?
+  hook             String?
+  reelScript       String?
+  imagePostType    String?
+  imagePrompt      String?
+  carouselSlides   String?  // JSON string
+  storiesPlan      String?  // JSON string
+  ytTitle          String?
+  ytDescription    String?
+  ytTags           String?
+  tiktokCaption    String?
+  tiktokHashtags   String?
+  instaCaption     String?
+  instaHashtags    String?
+  facebookCaption  String?
+  facebookHashtags String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([date, personaId])
+}
+
+model SystemSettings {
+  id                  String   @id @default("default")
+  provider            String   @default("greenapi")
+  whatsappPhone       String?
+  callmebotApiKey     String?
+  greenApiIdInstance  String?
+  greenApiApiToken    String?
+  geminiApiKey        String?
+  cronSecret          String?  @default("creatorops_super_secret_cron_token_2025")
+  startHourPKT        Int      @default(14)
+  endHourPKT          Int      @default(23)
+  appUrl              String?
+}
+

@@ -166,6 +166,14 @@ function InfluencerStudioContent() {
             >
               <span>General Studio</span>
             </Link>
+            <Link
+              href="/creator-ops"
+              className="px-3 py-1.5 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition flex items-center gap-1.5 font-bold border border-emerald-500/20 shadow-sm"
+              title="Daily Multi-Account Operations Hub & WhatsApp Reminders"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>⚡ CreatorOps Hub</span>
+            </Link>
             <span className="px-3 py-1.5 rounded-lg bg-pink-500/15 text-pink-300 font-semibold shadow-sm border border-pink-500/30 flex items-center gap-1.5">
               <Sparkles className="w-3 h-3 text-pink-400" />
               <span>Persona 1 (Elena)</span>
