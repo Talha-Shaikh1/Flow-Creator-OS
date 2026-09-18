@@ -62,6 +62,12 @@ export const StorySpecSchema = z.object({
   locationSettings: z.array(z.string()).min(1, 'At least one location setting is required'),
   customStoryIdea: z.string().optional(),
   workflowPipeline: WorkflowPipelineSchema.optional(),
+  seasonNumber: z.number().int().min(1).max(20).optional(),
+  seasonTitle: z.string().optional(),
+  stakesTier: z.string().optional(),
+  previousSeasonRecap: z.string().optional(),
+  unresolvedMysteries: z.array(z.string()).optional(),
+  clipDurationSeconds: z.union([z.literal(30), z.literal(45), z.literal(60)]).optional(),
   createdAt: z.string(),
 });
 

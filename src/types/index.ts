@@ -83,8 +83,99 @@ export interface StorySpec {
   locationSettings: string[]; // List of locations (e.g., Living Room, Office, Rooftop)
   customStoryIdea?: string; // Optional user-provided premise / concept
   workflowPipeline?: WorkflowPipeline; // Linked custom niche workflow pipeline
+  seasonNumber?: number; // Current Season in multi-season series arc (1-8)
+  seasonTitle?: string; // e.g. "The Criminal Cover-Up"
+  stakesTier?: string; // e.g. "Criminal Blackmail & Federal Stakes"
+  previousSeasonRecap?: string; // Continuity plot recap carried from previous season Day 7 finale
+  unresolvedMysteries?: string[]; // Loose ends / clues carried forward into this season
+  clipDurationSeconds?: 30 | 45 | 60; // Desired episode length
   createdAt: string;
 }
+
+export interface SeasonEscalationStage {
+  seasonNumber: number;
+  seasonTitle: string;
+  stakesTier: string;
+  coreConflict: string;
+  newCharacterRole: string;
+  newCharacterArchetype: string;
+  escalationSummary: string;
+}
+
+export const SEASON_ESCALATION_LADDER: SeasonEscalationStage[] = [
+  {
+    seasonNumber: 1,
+    seasonTitle: 'The Local Betrayal',
+    stakesTier: 'Corporate Fraud',
+    coreConflict: '40% stolen company shares & forged signatures in boardroom',
+    newCharacterRole: 'The Power Broker',
+    newCharacterArchetype: 'Marcus Kane (Underground Intelligence Fixer)',
+    escalationSummary: 'Internal rivalry between Julian and Elena explodes over missing family assets.'
+  },
+  {
+    seasonNumber: 2,
+    seasonTitle: 'The Criminal Cover-Up',
+    stakesTier: 'Criminal Blackmail & Federal Stakes',
+    coreConflict: 'Wiretapped audio recordings & high-stakes federal audit blackmail',
+    newCharacterRole: 'The Federal Investigator',
+    newCharacterArchetype: 'Detective Sarah Vance (Internal Affairs / Estranged Sister)',
+    escalationSummary: 'The cover-up spirals into criminal territory as federal investigators knock on the door.'
+  },
+  {
+    seasonNumber: 3,
+    seasonTitle: 'The Shadow Syndicate',
+    stakesTier: 'Off-Shore Cartel & Life-or-Death',
+    coreConflict: 'Swiss secret accounts & high-level assassination threats',
+    newCharacterRole: 'The Shadow Broker',
+    newCharacterArchetype: 'Dominic Sterling (Exiled Patriarch / Shadow Syndicate Financier)',
+    escalationSummary: 'Julian and Elena realize the company was a front for a ruthless international financial syndicate.'
+  },
+  {
+    seasonNumber: 4,
+    seasonTitle: 'The High Table Standoff',
+    stakesTier: 'Global Syndicate & Physical Danger',
+    coreConflict: 'Physical hostage negotiations & midnight airstrip escape',
+    newCharacterRole: 'The Asset / Enforcer',
+    newCharacterArchetype: 'Viktor Ruiz (High-End Syndicate Operative)',
+    escalationSummary: 'Stakes escalate from boardroom paperwork to midnight armed standoff.'
+  },
+  {
+    seasonNumber: 5,
+    seasonTitle: 'Broken Alliances',
+    stakesTier: 'Forced Partnership & Double Agents',
+    coreConflict: 'Elena and Julian forced into secret alliance to survive',
+    newCharacterRole: 'The Whistleblower',
+    newCharacterArchetype: 'Chloe Lin (Lead Cybersecurity Architect)',
+    escalationSummary: 'Mortal enemies must protect each other as the walls close in from all sides.'
+  },
+  {
+    seasonNumber: 6,
+    seasonTitle: 'The Puppet Master',
+    stakesTier: 'Ultimate Revelation',
+    coreConflict: 'The father was alive all along, orchestrating both sides',
+    newCharacterRole: 'The True Puppet Master',
+    newCharacterArchetype: 'Arthur Vance (Presumed Dead Patriarch)',
+    escalationSummary: 'The shocking truth unravels every secret from Season 1 to 5.'
+  },
+  {
+    seasonNumber: 7,
+    seasonTitle: 'The Fall of the Empire',
+    stakesTier: 'Total Warfare',
+    coreConflict: 'Public collapse, high-court trial & midnight escape plan',
+    newCharacterRole: 'The Chief Prosecutor',
+    newCharacterArchetype: 'District Attorney Evelyn Cross',
+    escalationSummary: 'Everything burns as the legal and underground empire faces complete destruction.'
+  },
+  {
+    seasonNumber: 8,
+    seasonTitle: 'The Final Reckoning',
+    stakesTier: 'Series Climax Finale',
+    coreConflict: 'Final physical and moral face-off; only one walks away clean',
+    newCharacterRole: 'Final Antagonist Standoff',
+    newCharacterArchetype: 'The Architect of the Fall',
+    escalationSummary: 'The ultimate climax where every debt is paid and the series reaches its final resolution.'
+  }
+];
 
 
 export interface SecBySecAction {

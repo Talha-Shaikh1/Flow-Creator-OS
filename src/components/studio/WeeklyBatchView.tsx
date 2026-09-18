@@ -8,6 +8,7 @@ import { CritiqueInspector } from './CritiqueInspector';
 import { DailyPhotoPostsView } from './DailyPhotoPostsView';
 import { TokenBurnBadge } from './TokenBurnBadge';
 import { VariantMindMapCard } from './VariantMindMapCard';
+import { MasterCastDeck } from './MasterCastDeck';
 import { recordTokenBurn } from '@/lib/engine/tokens';
 import { exportBatchToMarkdown, exportBatchToJson } from '@/lib/utils/export';
 import {
@@ -47,6 +48,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
   const [copiedMasterFrame, setCopiedMasterFrame] = useState(false);
   const [isRegeneratingDay, setIsRegeneratingDay] = useState(false);
   const [isProducing, setIsProducing] = useState(false);
+  const [isGeneratingNextSeason, setIsGeneratingNextSeason] = useState(false);
   const [showSeriesBibleModal, setShowSeriesBibleModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [adoptedDays, setAdoptedDays] = useState<Record<number, boolean>>({});
@@ -347,6 +349,29 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
     });
   };
 
+  const handleGenerateNextSeason = async () => {
+    setIsGeneratingNextSeason(true);
+    try {
+      const res = await fetch('/api/generate/next-season', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentBatch: batch }),
+      });
+      const data = await res.json();
+      if (data.success && data.batch) {
+        onUpdateBatch(data.batch);
+        setActiveDayIndex(0);
+        setActiveVariationIndex(0);
+      } else {
+        alert(data.error || 'Failed to generate next season');
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Error generating next season');
+    } finally {
+      setIsGeneratingNextSeason(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Header Navigation */}
@@ -411,6 +436,28 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
                 : 'Produce & Copy Flow Bundle'}
             </span>
           </button>
+          {/* Generate Next Season Button */}
+          {batch.spec.format === 'character_drama' && (
+            <button
+              onClick={handleGenerateNextSeason}
+              disabled={isGeneratingNextSeason}
+              className="px-3.5 py-2 text-xs font-bold rounded-lg bg-gradient-to-r from-amber-600 via-rose-600 to-indigo-600 hover:from-amber-500 hover:to-indigo-500 text-white transition flex items-center gap-1.5 shadow-lg shadow-amber-600/20 disabled:opacity-50"
+              title="Escalate storyline into the next 7-day arc"
+            >
+              {isGeneratingNextSeason ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Directing Season {(batch.spec.seasonNumber || 1) + 1}...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>🎬 Generate Season {(batch.spec.seasonNumber || 1) + 1}</span>
+                </>
+              )}
+            </button>
+          )}
+
           <button
             onClick={handleExportMarkdown}
             className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 transition flex items-center gap-1.5 border border-neutral-700"
@@ -436,6 +483,45 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
           </button>
         </div>
       </div>
+
+      {/* Multi-Season Continuity & Stakes Escalation Banner */}
+      {batch.spec.format === 'character_drama' && (
+        <div className="p-4 rounded-xl bg-gradient-to-r from-neutral-900 via-indigo-950/40 to-neutral-900 border border-indigo-500/30 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-extrabold text-sm shrink-0">
+              S{batch.spec.seasonNumber || 1}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white">
+                  Season {batch.spec.seasonNumber || 1}: {batch.spec.seasonTitle || 'The Local Betrayal'}
+                </h3>
+                <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider">
+                  {batch.spec.stakesTier || 'Corporate Fraud'}
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400 mt-0.5 line-clamp-2">
+                {batch.spec.previousSeasonRecap
+                  ? batch.spec.previousSeasonRecap
+                  : 'Season 1: 40% Stolen Shares, Boardroom Forgery, & Vault CCTV Standoff.'}
+              </p>
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <span className="text-[11px] text-neutral-400">Continuous Arc</span>
+            <div className="text-xs text-amber-300 font-medium">Days 1–7 • Dynamic Arc (30s–50s / Episode)</div>
+          </div>
+        </div>
+      )}
+
+      {/* Master Cast & Character DNA Deck (Central Reference Prompt Hub) */}
+      {batch.spec.cast && batch.spec.cast.length > 0 && (
+        <MasterCastDeck
+          cast={batch.spec.cast}
+          title={batch.spec.customStoryIdea || `${batch.spec.genres.join(' & ')} Series`}
+          seriesLogline={batch.spec.customStoryIdea}
+        />
+      )}
 
       {/* 7-Day Horizontal Arc Tabs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
@@ -584,7 +670,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
                 <div className="pt-3 mt-3 border-t border-neutral-800/60 flex items-center justify-between text-[11px]">
                   <span className="text-neutral-500">
                     {v.isProduced && v.clips && v.clips.length > 0
-                      ? `${v.clips.length} Clips (40s Story)`
+                      ? `${v.clips.length} Clips (${v.clips.length * 10}s Arc)`
                       : 'Stage 1: Mind Map Ready'}
                   </span>
                   <span className={isSelected ? 'text-blue-400 font-semibold' : 'text-neutral-500'}>

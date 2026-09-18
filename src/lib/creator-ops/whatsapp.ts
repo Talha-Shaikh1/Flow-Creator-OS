@@ -38,9 +38,30 @@ export async function sendWhatsAppMessage(params: WhatsAppSendParams): Promise<{
         }),
       });
 
-      const data = await res.json();
+      const rawText = await res.text();
+      let data: any = {};
+      try {
+        data = rawText ? JSON.parse(rawText) : {};
+      } catch {
+        data = { raw: rawText };
+      }
+
       if (!res.ok) {
-        return { success: false, error: data?.message || `Green-API responded with status ${res.status}`, data };
+        if (res.status === 401) {
+          return {
+            success: false,
+            error: 'Green-API 401 Unauthorized: idInstance ya apiTokenInstance ghalat hai. Green-API dashboard se apna 50-character apiTokenInstance copy karke Tab 6 mein enter karein.',
+            data,
+          };
+        }
+        if (res.status === 403) {
+          return {
+            success: false,
+            error: 'Green-API 403 Forbidden: Aapka WhatsApp QR code scan/authorized nahi hai ya instance inactive hai.',
+            data,
+          };
+        }
+        return { success: false, error: data?.message || `Green-API responded with status ${res.status}: ${rawText}`, data };
       }
 
       return { success: true, data };
@@ -51,13 +72,17 @@ export async function sendWhatsAppMessage(params: WhatsAppSendParams): Promise<{
 
   if (provider === 'callmebot') {
     if (!callmebotApiKey) {
-      return { success: false, error: 'CallMeBot API Key is missing.' };
+      return { success: false, error: 'CallMeBot API Key is missing. Configure in Tab 6 (WhatsApp Settings).' };
     }
 
     try {
       const url = `https://api.callmebot.com/whatsapp.php?phone=${cleanPhone}&text=${encodeURIComponent(message)}&apikey=${callmebotApiKey.trim()}`;
       const res = await fetch(url);
       const text = await res.text();
+
+      if (!res.ok || text.toLowerCase().includes('error')) {
+        return { success: false, error: `CallMeBot Error: ${text}`, data: text };
+      }
 
       return { success: true, data: text };
     } catch (err: any) {

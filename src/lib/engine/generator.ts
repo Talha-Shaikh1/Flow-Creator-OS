@@ -44,7 +44,7 @@ export function produceVariationDirectives(
       break;
     case 'character_drama':
     default:
-      builtOutput = buildCharacterDramaClips(spec, arc.dailyEmotion, variationType);
+      builtOutput = buildCharacterDramaClips(spec, arc.dailyEmotion, variationType, dayNum);
       break;
   }
 
@@ -84,6 +84,39 @@ export function generateWeeklyBatch(
   spec: StorySpec,
   options: { mode?: 'mind_maps' | 'full' } = { mode: 'mind_maps' }
 ): WeeklyBatchDelivery {
+  // If character drama and cast is empty/unspecified, autonomously generate Hollywood Netflix Noir cast
+  if (spec.format === 'character_drama' && (!spec.cast || spec.cast.length === 0)) {
+    spec.cast = [
+      {
+        id: 'char-julian',
+        name: 'Julian Vance',
+        role: 'Hero',
+        description: '32yo high-profile corporate defense attorney fighting betrayal from within.',
+        dnaPrompt: '32-year-old aristocratic man, sharp chiseled jawline, intense deep-set dark obsidian eyes, slicked-back charcoal pompadour hair, light tailored 5 o\'clock shadow, sharp cheekbones. Tailored charcoal bespoke three-piece wool suit, crisp white spread collar, silk slate-gray tie. Master 8K photorealistic keyframe portrait.',
+        usesReferenceImage: true,
+        personalityVibe: 'Stoic, razor-sharp intellect, fierce restrained anger'
+      },
+      {
+        id: 'char-elena',
+        name: 'Elena Sterling',
+        role: 'Villain',
+        description: '30yo ruthless venture partner orchestrating an aggressive hostile takeover.',
+        dnaPrompt: '30-year-old cold and calculating woman, chiseled symmetrical cheekbones, piercing icy-hazel eyes, slicked-back raven hair in an immaculate low chignon, flawless matte porcelain complexion, subtle plum lipstick. Minimalist structured midnight-navy double-breasted designer blazer with platinum cuff buttons. Master 8K photorealistic keyframe portrait.',
+        usesReferenceImage: true,
+        personalityVibe: 'Unflinching, icy composure, dismissive smirk, calculating'
+      },
+      {
+        id: 'char-marcus',
+        name: 'Marcus Kane',
+        role: 'Side',
+        description: '45yo private intelligence fixer with connections to high-level power brokers.',
+        dnaPrompt: '45-year-old weathered private investigator, silver-streaked hair swept back, scarred left eyebrow, piercing hawk-like hazel eyes, tired hollows under eyes. Worn dark cashmere turtleneck under a distressed black leather trench coat. Master 8K photorealistic keyframe portrait.',
+        usesReferenceImage: true,
+        personalityVibe: 'Cynical, gravelly voice, enigmatic, sees right through lies'
+      }
+    ];
+  }
+
   const days: DayContentPackage[] = [];
   const isMindMapOnly = options.mode === 'mind_maps';
 
@@ -118,7 +151,7 @@ export function generateWeeklyBatch(
           break;
         case 'character_drama':
         default:
-          builtOutput = buildCharacterDramaClips(spec, arc.dailyEmotion, v.type);
+          builtOutput = buildCharacterDramaClips(spec, arc.dailyEmotion, v.type, dayNum);
           break;
       }
 

@@ -113,9 +113,10 @@ export function SpecWizard({ onGenerate, isLoading }: Props) {
   const [format, setFormat] = useState<ContentFormat>('character_drama');
   const [selectedGenres, setSelectedGenres] = useState<GenreTheme[]>(['Family Drama', 'Rivalry']);
   const [tone, setTone] = useState<ContentTone>('Intense / Suspenseful');
-  const [visualStyle, setVisualStyle] = useState<VisualStylePreset>('Hyper-Realistic Cinematic');
+  const [visualStyle, setVisualStyle] = useState<VisualStylePreset>('Moody Film Noir');
   const [formatLength, setFormatLength] = useState<'single_video' | 'multi_episode_series'>('multi_episode_series');
-  const [castCount, setCastCount] = useState<number>(2);
+  const [autonomousCast, setAutonomousCast] = useState<boolean>(true);
+  const [castCount, setCastCount] = useState<number>(3);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([
     'Penthouse Study at Night',
     'Modern High-End Boardroom',
@@ -286,23 +287,40 @@ export function SpecWizard({ onGenerate, isLoading }: Props) {
       return podcastCast;
     }
 
-    // Character Drama default
+    // Character Drama default (Global Hollywood / Netflix Noir)
     const dramaCast: CastMember[] = [
       {
-        id: 'char-1',
-        name: 'Julian (Brother 1)',
+        id: 'char-julian',
+        name: 'Julian Vance',
         role: 'Hero',
-        description: '30yo sharp-featured man with intense dark eyes, charcoal coat, intense gaze.',
-        dnaPrompt: '30yo sharp-featured man, dark intense eyes, charcoal coat, distinct jawline.',
+        description: '32yo high-profile corporate defense attorney fighting betrayal from within.',
+        dnaPrompt: '32-year-old aristocratic man, sharp chiseled jawline, intense deep-set dark obsidian eyes, slicked-back charcoal pompadour hair, light tailored 5 o\'clock shadow, sharp cheekbones. Tailored charcoal bespoke three-piece wool suit, crisp white spread collar, silk slate-gray tie. Master 8K photorealistic keyframe portrait.',
+        usesReferenceImage: true,
+        personalityVibe: 'Stoic, razor-sharp intellect, fierce restrained anger'
       },
       {
-        id: 'char-2',
-        name: 'Elena (Rival)',
+        id: 'char-elena',
+        name: 'Elena Sterling',
         role: 'Villain',
-        description: '28yo poised woman with sharp cheekbones and minimalist beige blazer.',
-        dnaPrompt: '28yo poised woman, auburn hair, beige tailored blazer, calm piercing gaze.',
+        description: '30yo ruthless venture partner orchestrating an aggressive hostile takeover.',
+        dnaPrompt: '30-year-old cold and calculating woman, chiseled symmetrical cheekbones, piercing icy-hazel eyes, slicked-back raven hair in an immaculate low chignon, flawless matte porcelain complexion, subtle plum lipstick. Minimalist structured midnight-navy double-breasted designer blazer with platinum cuff buttons. Master 8K photorealistic keyframe portrait.',
+        usesReferenceImage: true,
+        personalityVibe: 'Unflinching, icy composure, dismissive smirk, calculating'
       },
+      {
+        id: 'char-marcus',
+        name: 'Marcus Kane',
+        role: 'Side',
+        description: '45yo private intelligence fixer with connections to high-level power brokers.',
+        dnaPrompt: '45-year-old weathered private investigator, silver-streaked hair swept back, scarred left eyebrow, piercing hawk-like hazel eyes, tired hollows under eyes. Worn dark cashmere turtleneck under a distressed black leather trench coat. Master 8K photorealistic keyframe portrait.',
+        usesReferenceImage: true,
+        personalityVibe: 'Cynical, gravelly voice, enigmatic, sees right through lies'
+      }
     ];
+
+    if (autonomousCast) {
+      return dramaCast;
+    }
     return dramaCast.slice(0, count);
   };
 
@@ -503,13 +521,18 @@ export function SpecWizard({ onGenerate, isLoading }: Props) {
                   onClick={() => setVisualStyle(st)}
                   className={`px-3 py-2 rounded-lg border text-xs font-medium text-left transition flex items-center justify-between ${
                     isSelected
-                      ? 'bg-neutral-800 border-indigo-500 text-white'
+                      ? 'bg-neutral-800 border-indigo-500 text-white shadow-sm'
                       : 'bg-neutral-950/60 border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
                   }`}
                 >
                   <span className="flex items-center gap-2">
                     <Palette className="w-3.5 h-3.5 text-neutral-400" />
-                    {st}
+                    <span>{st}</span>
+                    {st === 'Moody Film Noir' && (
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wider">
+                        Global Hollywood / Netflix Noir
+                      </span>
+                    )}
                   </span>
                   {isSelected && <Check className="w-3.5 h-3.5 text-indigo-400" />}
                 </button>
@@ -594,62 +617,169 @@ export function SpecWizard({ onGenerate, isLoading }: Props) {
           </div>
 
 
-          {/* Saved Characters Library */}
-          {savedCharacters.length > 0 && (
-            <div className="space-y-2">
-              <span className="text-[11px] text-neutral-400">Your Saved / Pinned Character Library:</span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {savedCharacters.map((c) => {
-                  const isSelected = selectedCharacterIds.includes(c.id);
-                  return (
-                    <div
-                      key={c.id}
-                      onClick={() => {
-                        if (isSelected) {
-                          setSelectedCharacterIds(selectedCharacterIds.filter((id) => id !== c.id));
-                        } else {
-                          setSelectedCharacterIds([...selectedCharacterIds, c.id]);
-                        }
-                      }}
-                      className={`p-3 rounded-xl border text-xs cursor-pointer transition flex items-center justify-between ${
-                        isSelected
-                          ? 'bg-indigo-600/20 border-indigo-500 text-white'
+          {/* Autonomous Cast vs Manual Mode Switcher */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setAutonomousCast(true)}
+              className={`p-3 rounded-xl border text-xs font-semibold text-left transition flex items-center justify-between ${
+                autonomousCast
+                  ? 'bg-gradient-to-r from-indigo-950/60 to-purple-950/40 border-indigo-500/80 text-white shadow-lg shadow-indigo-900/20'
+                  : 'bg-neutral-950/60 border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Sparkles className={`w-4 h-4 ${autonomousCast ? 'text-amber-400' : 'text-neutral-500'}`} />
+                <div>
+                  <div className="text-white font-bold flex items-center gap-1.5">
+                    <span>✨ AI Autonomous Cast Generation</span>
+                    <span className="px-1.5 py-0.2 text-[9px] rounded bg-indigo-500/30 text-indigo-300 uppercase tracking-wide">
+                      Recommended
+                    </span>
+                  </div>
+                  <p className="text-[11px] font-normal text-neutral-400">
+                    Auto-generates Hollywood Noir cast based on your story conflict
+                  </p>
+                </div>
+              </div>
+              {autonomousCast && <Check className="w-4 h-4 text-indigo-400 shrink-0 ml-2" />}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setAutonomousCast(false)}
+              className={`p-3 rounded-xl border text-xs font-semibold text-left transition flex items-center justify-between ${
+                !autonomousCast
+                  ? 'bg-neutral-800 border-indigo-500 text-white shadow-sm'
+                  : 'bg-neutral-950/60 border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <BookmarkCheck className={`w-4 h-4 ${!autonomousCast ? 'text-indigo-400' : 'text-neutral-500'}`} />
+                <div>
+                  <div className="text-neutral-200 font-bold">Manual Cast / Saved Library</div>
+                  <p className="text-[11px] font-normal text-neutral-400">
+                    Pick presets or select from your pinned characters
+                  </p>
+                </div>
+              </div>
+              {!autonomousCast && <Check className="w-4 h-4 text-indigo-400 shrink-0 ml-2" />}
+            </button>
+          </div>
+
+          {/* Autonomous Cast Intelligence Banner */}
+          {autonomousCast ? (
+            <div className="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wider">
+                    Netflix Noir Cast Engine Active
+                  </span>
+                  <span className="text-xs text-neutral-300 font-medium">3 Autonomous Characters Generated</span>
+                </div>
+                <span className="text-[11px] text-indigo-300 font-semibold flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  Consistent Reference Anchors
+                </span>
+              </div>
+
+              <p className="text-xs text-neutral-300 leading-relaxed">
+                The AI Director autonomously binds 3 deep Hollywood Noir characters to your story premise. Their Master Prompts are grouped in the <strong className="text-white font-semibold">Master Cast Deck</strong> at the top of your series, and all video frame keyframes use <strong className="text-white font-semibold">Reference Image Anchoring</strong> to guarantee 100% facial consistency without face morphing.
+              </p>
+
+              {/* Character Preview Badges */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-1">
+                <div className="p-2.5 rounded-lg bg-neutral-900/80 border border-neutral-800 flex items-start gap-2">
+                  <div className="w-6 h-6 rounded-md bg-blue-500/20 text-blue-400 flex items-center justify-center text-[10px] font-bold shrink-0">
+                    H
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-white truncate">Julian Vance</p>
+                    <p className="text-[10px] text-neutral-400 truncate">Lead Defense Counsel • Charcoal suit</p>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-neutral-900/80 border border-neutral-800 flex items-start gap-2">
+                  <div className="w-6 h-6 rounded-md bg-rose-500/20 text-rose-400 flex items-center justify-center text-[10px] font-bold shrink-0">
+                    V
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-white truncate">Elena Sterling</p>
+                    <p className="text-[10px] text-neutral-400 truncate">Venture Partner • Raven chignon</p>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-neutral-900/80 border border-neutral-800 flex items-start gap-2">
+                  <div className="w-6 h-6 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center text-[10px] font-bold shrink-0">
+                    S
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-white truncate">Marcus Kane</p>
+                    <p className="text-[10px] text-neutral-400 truncate">Intelligence Fixer • Leather coat</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Saved Characters Library */}
+              {savedCharacters.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-[11px] text-neutral-400">Your Saved / Pinned Character Library:</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {savedCharacters.map((c) => {
+                      const isSelected = selectedCharacterIds.includes(c.id);
+                      return (
+                        <div
+                          key={c.id}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedCharacterIds(selectedCharacterIds.filter((id) => id !== c.id));
+                            } else {
+                              setSelectedCharacterIds([...selectedCharacterIds, c.id]);
+                            }
+                          }}
+                          className={`p-3 rounded-xl border text-xs cursor-pointer transition flex items-center justify-between ${
+                            isSelected
+                              ? 'bg-indigo-600/20 border-indigo-500 text-white'
+                              : 'bg-neutral-950/60 border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                          }`}
+                        >
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1.5 font-semibold text-neutral-200">
+                              <BookmarkCheck className="w-3.5 h-3.5 text-indigo-400" />
+                              <span>{c.name} ({c.role})</span>
+                            </div>
+                            <p className="text-[11px] text-neutral-400 line-clamp-1">{c.dnaPrompt}</p>
+                          </div>
+                          {isSelected && <Check className="w-4 h-4 text-indigo-400 shrink-0" />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Preset Cast Selector */}
+              {selectedCharacterIds.length === 0 && (
+                <div className="flex gap-2">
+                  {[1, 2, 3].map((num) => (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => setCastCount(num)}
+                      className={`flex-1 py-2.5 px-3 rounded-lg border text-xs font-medium transition ${
+                        castCount === num
+                          ? 'bg-indigo-600 text-white border-indigo-500'
                           : 'bg-neutral-950/60 border-neutral-800 text-neutral-400 hover:border-neutral-700'
                       }`}
                     >
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5 font-semibold text-neutral-200">
-                          <BookmarkCheck className="w-3.5 h-3.5 text-indigo-400" />
-                          <span>{c.name} ({c.role})</span>
-                        </div>
-                        <p className="text-[11px] text-neutral-400 line-clamp-1">{c.dnaPrompt}</p>
-                      </div>
-                      {isSelected && <Check className="w-4 h-4 text-indigo-400 shrink-0" />}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Preset Cast Selector */}
-          {selectedCharacterIds.length === 0 && (
-            <div className="flex gap-2">
-              {[1, 2, 3].map((num) => (
-                <button
-                  key={num}
-                  type="button"
-                  onClick={() => setCastCount(num)}
-                  className={`flex-1 py-2.5 px-3 rounded-lg border text-xs font-medium transition ${
-                    castCount === num
-                      ? 'bg-indigo-600 text-white border-indigo-500'
-                      : 'bg-neutral-950/60 border-neutral-800 text-neutral-400 hover:border-neutral-700'
-                  }`}
-                >
-                  Default Preset: {num} Character{num > 1 ? 's' : ''}
-                </button>
-              ))}
-            </div>
+                      Default Preset: {num} Character{num > 1 ? 's' : ''}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

@@ -33,6 +33,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { YouTubeIcon, InstagramIcon, TikTokIcon, FacebookIcon } from '@/components/creator-ops/SocialIcons';
+import { getScheduledTasksForDay, ScheduledTask, getWeeklyTargetBreakdown } from '@/lib/creator-ops/schedule';
+import { SocialMetaPack } from '@/lib/creator-ops/meta-manager';
 
 interface Persona {
   id: string;
@@ -115,6 +117,17 @@ export default function CreatorOpsPage() {
   const [imagePostType, setImagePostType] = useState<string>('carousel (3-5 slides, 4:5 vertical)');
   const [contentPlan, setContentPlan] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [providerType, setProviderType] = useState<'greenapi' | 'callmebot'>('greenapi');
+
+  // Scheduled Tasks for Today
+  const [scheduledTasks, setScheduledTasks] = useState<ScheduledTask[]>([]);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+  // Social Meta Manager State
+  const [socialMeta, setSocialMeta] = useState<SocialMetaPack | null>(null);
+  const [isGeneratingMeta, setIsGeneratingMeta] = useState<boolean>(false);
+  const [copiedSection, setCopiedSection] = useState<string | null>(null);
+  const [metaActivePlatform, setMetaActivePlatform] = useState<'youtube' | 'instagram' | 'tiktok' | 'facebook'>('youtube');
 
   // Live PKT Clock
   useEffect(() => {
@@ -160,12 +173,22 @@ export default function CreatorOpsPage() {
       if (personasData.personas) {
         setPersonas(personasData.personas);
 
-        // Detect active persona based on today's PKT day of week
+        // Detect active persona and scheduled tasks based on today's PKT day of week
         const now = new Date();
         const pktDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));
         const currentDayIndex = pktDate.getDay();
 
-        let active = personasData.personas.find((p: Persona) => p.assignedDay === currentDayIndex);
+        const tasksToday = getScheduledTasksForDay(currentDayIndex);
+        setScheduledTasks(tasksToday);
+
+        let active: Persona | undefined;
+        if (tasksToday.length > 0) {
+          active = personasData.personas.find((p: Persona) => p.name === tasksToday[0].personaSlug);
+          setSelectedTaskId(tasksToday[0].id);
+        }
+        if (!active) {
+          active = personasData.personas.find((p: Persona) => p.assignedDay === currentDayIndex);
+        }
         if (!active && personasData.personas.length > 0) active = personasData.personas[0];
         setActivePersona(active || null);
         if (active) setStudioPersonaId(active.id);
@@ -180,6 +203,9 @@ export default function CreatorOpsPage() {
           const planRes = await fetch(`/api/creator-ops/plans?personaId=${active.id}&date=${personasData.today}`);
           const planData = await planRes.json();
           if (planData.plan) setContentPlan(planData.plan);
+
+          // Auto-load Social Meta Pack
+          loadSocialMeta(active.name, tasksToday[0]?.taskType || 'carousel');
         }
       }
 
@@ -189,7 +215,12 @@ export default function CreatorOpsPage() {
       }
 
       if (gmailData.accounts) setGmailAccounts(gmailData.accounts);
-      if (settingsData.settings) setSettings(settingsData.settings);
+      if (settingsData.settings) {
+        setSettings(settingsData.settings);
+        if (settingsData.settings.provider) {
+          setProviderType(settingsData.settings.provider as any);
+        }
+      }
     } catch (err) {
       console.error('Failed to load CreatorOps data:', err);
     } finally {
@@ -214,6 +245,108 @@ export default function CreatorOpsPage() {
       const planData = await planRes.json();
       setContentPlan(planData.plan || null);
     } catch (e) {}
+    loadSocialMeta(persona.name, 'carousel');
+  };
+
+  // Select Scheduled Task for Today
+  const handleSelectScheduledTask = async (task: ScheduledTask) => {
+    setSelectedTaskId(task.id);
+    const target = personas.find((p) => p.name === task.personaSlug);
+    if (target) {
+      setActivePersona(target);
+      setStudioPersonaId(target.id);
+      try {
+        const uploadRes = await fetch(`/api/creator-ops/uploads?personaId=${target.id}&date=${todayDateStr}`);
+        const uploadData = await uploadRes.json();
+        setCurrentUpload(uploadData.upload || null);
+
+        const planRes = await fetch(`/api/creator-ops/plans?personaId=${target.id}&date=${todayDateStr}`);
+        const planData = await planRes.json();
+        setContentPlan(planData.plan || null);
+      } catch (e) {}
+    }
+    loadSocialMeta(task.personaSlug, task.taskType);
+  };
+
+  // Load Social Meta Pack
+  const loadSocialMeta = async (personaSlug: string, format: 'reel' | 'carousel' | 'stories', topic?: string) => {
+    try {
+      setIsGeneratingMeta(true);
+      const res = await fetch('/api/creator-ops/meta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ personaSlug, format, topic }),
+      });
+      const data = await res.json();
+      if (data.metaPack) {
+        setSocialMeta(data.metaPack);
+      }
+    } catch (err) {
+      console.warn('Error loading social meta:', err);
+    } finally {
+      setIsGeneratingMeta(false);
+    }
+  };
+
+  // Copy helpers
+  const handleCopyText = (text: string, sectionKey: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedSection(sectionKey);
+    setTimeout(() => setCopiedSection(null), 2500);
+  };
+
+  const handleCopyEntireMetaPack = () => {
+    if (!socialMeta) return;
+    const fullText = `=== CREATOROPS SOCIAL META PACK ===
+Brand: ${socialMeta.personaSlug}
+Format: ${socialMeta.format.toUpperCase()}
+Topic: ${socialMeta.topic}
+Best PKT Posting Times: ${socialMeta.bestPktTimes.join(' | ')}
+
+--- 🔴 YOUTUBE SHORTS ---
+Title: ${socialMeta.youtube.title}
+
+Description:
+${socialMeta.youtube.description}
+
+Tags:
+${socialMeta.youtube.tags.join(', ')}
+
+Pinned Comment:
+${socialMeta.youtube.pinnedComment}
+
+--- 🟣 INSTAGRAM ---
+Hook: ${socialMeta.instagram.firstLineHook}
+
+Caption Body:
+${socialMeta.instagram.captionBody}
+
+${socialMeta.instagram.carouselSlidesMeta ? socialMeta.instagram.carouselSlidesMeta.map(s => `[Slide ${s.slideNumber}: ${s.heading}]\n${s.caption}`).join('\n\n') : ''}
+
+CTA: ${socialMeta.instagram.callToAction}
+
+Pinned Comment: ${socialMeta.instagram.pinnedComment}
+
+Hashtags:
+${socialMeta.instagram.hashtags.join(' ')}
+
+--- 🎵 TIKTOK ---
+Caption: ${socialMeta.tiktok.caption}
+Sound: ${socialMeta.tiktok.recommendedSound}
+Tags: ${socialMeta.tiktok.hashtags.join(' ')}
+
+--- 🔵 FACEBOOK ---
+Headline: ${socialMeta.facebook.postHeadline}
+Discussion Prompt: ${socialMeta.facebook.discussionPrompt}
+
+Full Text:
+${socialMeta.facebook.fullText}
+
+Tags: ${socialMeta.facebook.hashtags.join(' ')}
+`;
+    navigator.clipboard.writeText(fullText);
+    setCopiedSection('entire_pack');
+    setTimeout(() => setCopiedSection(null), 2500);
   };
 
   // Toggle channel completion
@@ -366,24 +499,24 @@ export default function CreatorOpsPage() {
   };
 
   // Send Manual WhatsApp Alert
-  const handleSendReminderNow = async () => {
+  const handleSendReminderNow = async (customPayload?: any) => {
     try {
       setActionNotice({ type: 'success', message: 'Sending test WhatsApp alert...' });
       const res = await fetch('/api/creator-ops/test-whatsapp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify(customPayload || {}),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setActionNotice({ type: 'success', message: '✅ WhatsApp reminder delivered to your phone!' });
       } else {
-        setActionNotice({ type: 'error', message: data.error || 'Could not send WhatsApp message. Check Tab 6.' });
+        setActionNotice({ type: 'error', message: data.error || 'Could not send WhatsApp message. Please check Tab 6 settings.' });
       }
-    } catch (e) {
-      setActionNotice({ type: 'error', message: 'Failed to trigger reminder.' });
+    } catch (e: any) {
+      setActionNotice({ type: 'error', message: e?.message || 'Failed to trigger reminder.' });
     }
-    setTimeout(() => setActionNotice(null), 5000);
+    setTimeout(() => setActionNotice(null), 8000);
   };
 
   // Calculate completion percentage
@@ -546,6 +679,84 @@ export default function CreatorOpsPage() {
         {/* TAB 1: TODAY'S MISSION (DAILY UPLOAD MATRIX) */}
         {activeTab === 'mission' && (
           <div className="space-y-6">
+            {/* Today's Scheduled Content Tasks Queue (7-Day Timetable) */}
+            <div className="p-5 rounded-2xl bg-gradient-to-r from-[#11131c] via-[#141824] to-[#11131c] border border-cyan-500/20 shadow-xl space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center font-bold">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <span>Today's Production Schedule</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 font-mono font-bold uppercase tracking-wider border border-cyan-500/30">
+                        {DAYS_OF_WEEK[new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Karachi' })).getDay()]} Tasks
+                      </span>
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs text-neutral-400">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="font-semibold text-emerald-400">30-60 Days Monetization Engine Active</span>
+                </div>
+              </div>
+
+              {/* Task Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                {scheduledTasks.map((task) => {
+                  const isSelected = selectedTaskId === task.id || activePersona?.name === task.personaSlug;
+                  return (
+                    <div
+                      key={task.id}
+                      onClick={() => handleSelectScheduledTask(task)}
+                      className={`p-4 rounded-xl border transition-all cursor-pointer select-none space-y-2 relative overflow-hidden ${
+                        isSelected
+                          ? 'bg-gradient-to-br from-emerald-500/10 via-cyan-500/5 to-transparent border-emerald-500/50 shadow-md shadow-emerald-500/10'
+                          : 'bg-neutral-950/60 border-neutral-800 hover:border-neutral-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded flex items-center gap-1 ${
+                              task.taskType === 'carousel'
+                                ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
+                                : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                            }`}
+                          >
+                            {task.taskType === 'carousel' ? <Camera className="w-3 h-3" /> : <Video className="w-3 h-3" />}
+                            <span>{task.taskType === 'carousel' ? 'Carousel (4-5 Slides)' : 'Reel (60s)'}</span>
+                          </span>
+
+                          <span className="text-xs font-bold text-white font-mono">@{task.personaSlug}</span>
+                        </div>
+
+                        {isSelected && (
+                          <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-emerald-500 text-black shadow-sm">
+                            Active Task
+                          </span>
+                        )}
+                      </div>
+
+                      <div>
+                        <h4 className="text-xs sm:text-sm font-bold text-neutral-100">{task.title}</h4>
+                        <p className="text-[11px] text-neutral-400 line-clamp-2 mt-0.5 leading-relaxed">{task.description}</p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-neutral-800/60 text-[11px]">
+                        <span className="text-cyan-300 font-mono flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-cyan-400" />
+                          <span>Best Times: {task.recommendedPktTimes.join(' | ')}</span>
+                        </span>
+                        <span className="text-neutral-400 font-medium">Click to Load & Deploy ⚡</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Active Persona Hero Card */}
             {activePersona ? (
               <div className="p-6 rounded-2xl bg-[#11131c] border border-neutral-800 relative overflow-hidden shadow-2xl">
@@ -766,6 +977,390 @@ export default function CreatorOpsPage() {
               </div>
             </div>
 
+            {/* ⚡ SOCIAL META MANAGER: HIGH-CTR & MONETIZATION PACK */}
+            <div className="p-6 rounded-2xl bg-[#11131c] border border-cyan-500/30 space-y-6 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+
+              {/* Header & Main Actions */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 text-[11px] font-bold">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Social Meta Manager • 30-60 Days Earning Acceleration</span>
+                  </div>
+                  <h3 className="text-lg font-black text-white flex items-center gap-2">
+                    <span>Ready-to-Publish Multi-Platform Meta Pack</span>
+                    {activePersona && (
+                      <span className="text-xs font-mono font-normal text-cyan-400 px-2.5 py-0.5 rounded-lg bg-neutral-900 border border-neutral-800">
+                        @{activePersona.name}
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-neutral-400">
+                    Never repost duplicate captions. Each platform has tailored SEO tags, engagement-velocity questions, and peak PKT upload slots.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activePersona) {
+                        loadSocialMeta(activePersona.name, 'carousel');
+                      }
+                    }}
+                    disabled={isGeneratingMeta}
+                    className="px-3.5 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-semibold transition border border-neutral-800 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-cyan-400 ${isGeneratingMeta ? 'animate-spin' : ''}`} />
+                    <span>{isGeneratingMeta ? 'Generating...' : 'Regenerate Meta'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyEntireMetaPack}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold transition shadow-lg shadow-cyan-600/25 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {copiedSection === 'entire_pack' ? (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-300" />
+                        <span>All Meta Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        <span>Copy All 4 Channels Pack</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Social Meta Platform Sub-Tabs */}
+              <div className="flex items-center gap-2 border-b border-neutral-800/80 pb-2 overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setMetaActivePlatform('youtube')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                    metaActivePlatform === 'youtube'
+                      ? 'bg-red-500/15 text-red-400 border border-red-500/30'
+                      : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                  }`}
+                >
+                  <YouTubeIcon className="w-4 h-4" />
+                  <span>YouTube Shorts</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMetaActivePlatform('instagram')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                    metaActivePlatform === 'instagram'
+                      ? 'bg-pink-500/15 text-pink-400 border border-pink-500/30'
+                      : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                  }`}
+                >
+                  <InstagramIcon className="w-4 h-4" />
+                  <span>Instagram (Reels & Carousels)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMetaActivePlatform('tiktok')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                    metaActivePlatform === 'tiktok'
+                      ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30'
+                      : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                  }`}
+                >
+                  <TikTokIcon className="w-4 h-4" />
+                  <span>TikTok</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMetaActivePlatform('facebook')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                    metaActivePlatform === 'facebook'
+                      ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                      : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                  }`}
+                >
+                  <FacebookIcon className="w-4 h-4" />
+                  <span>Facebook Reels & Posts</span>
+                </button>
+              </div>
+
+              {/* Active Platform Content Card */}
+              {socialMeta ? (
+                <div className="space-y-4">
+                  {/* YOUTUBE SHORTS PANEL */}
+                  {metaActivePlatform === 'youtube' && (
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-neutral-950 border border-neutral-800 text-xs">
+                        <span className="text-neutral-400 font-medium flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-red-400" />
+                          <span>Optimal PKT Upload Window:</span>
+                          <strong className="text-white">{socialMeta.bestPktTimes.join(' or ')}</strong>
+                        </span>
+                        <span className="text-[11px] text-red-400 font-semibold">Max Reach Algorithm Slot</span>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-neutral-300">High-CTR Title (&lt;70 chars)</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyText(socialMeta.youtube.title, 'yt_title')}
+                            className="text-xs text-neutral-400 hover:text-red-400 flex items-center gap-1 cursor-pointer"
+                          >
+                            {copiedSection === 'yt_title' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedSection === 'yt_title' ? 'Copied' : 'Copy'}</span>
+                          </button>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-neutral-900 text-xs text-white font-medium select-all">
+                          {socialMeta.youtube.title}
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-neutral-300">SEO-Rich Description &amp; Hashtags</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyText(socialMeta.youtube.description, 'yt_desc')}
+                            className="text-xs text-neutral-400 hover:text-red-400 flex items-center gap-1 cursor-pointer"
+                          >
+                            {copiedSection === 'yt_desc' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedSection === 'yt_desc' ? 'Copied' : 'Copy'}</span>
+                          </button>
+                        </div>
+                        <pre className="p-2.5 rounded-lg bg-neutral-900 text-xs text-neutral-300 font-sans whitespace-pre-wrap select-all leading-relaxed">
+                          {socialMeta.youtube.description}
+                        </pre>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-neutral-300">YouTube Search Tags</span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyText(socialMeta.youtube.tags.join(', '), 'yt_tags')}
+                              className="text-xs text-neutral-400 hover:text-red-400 flex items-center gap-1 cursor-pointer"
+                            >
+                              {copiedSection === 'yt_tags' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                              <span>{copiedSection === 'yt_tags' ? 'Copied' : 'Copy Tags'}</span>
+                            </button>
+                          </div>
+                          <div className="p-2.5 rounded-lg bg-neutral-900 text-[11px] text-cyan-300 font-mono select-all">
+                            {socialMeta.youtube.tags.join(', ')}
+                          </div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-neutral-300">Pinned Comment (Reply Accelerator)</span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyText(socialMeta.youtube.pinnedComment, 'yt_comment')}
+                              className="text-xs text-neutral-400 hover:text-red-400 flex items-center gap-1 cursor-pointer"
+                            >
+                              {copiedSection === 'yt_comment' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                              <span>{copiedSection === 'yt_comment' ? 'Copied' : 'Copy'}</span>
+                            </button>
+                          </div>
+                          <div className="p-2.5 rounded-lg bg-neutral-900 text-xs text-amber-300 italic select-all">
+                            {socialMeta.youtube.pinnedComment}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* INSTAGRAM PANEL */}
+                  {metaActivePlatform === 'instagram' && (
+                    <div className="space-y-3">
+                      <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-pink-400">First-Line Scroll Stopper Hook</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyText(socialMeta.instagram.firstLineHook, 'ig_hook')}
+                            className="text-xs text-neutral-400 hover:text-pink-400 flex items-center gap-1 cursor-pointer"
+                          >
+                            {copiedSection === 'ig_hook' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedSection === 'ig_hook' ? 'Copied' : 'Copy Hook'}</span>
+                          </button>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-neutral-900 text-xs text-white font-semibold select-all">
+                          {socialMeta.instagram.firstLineHook}
+                        </div>
+                      </div>
+
+                      {/* Carousel Slides Breakdown if available */}
+                      {socialMeta.instagram.carouselSlidesMeta && socialMeta.instagram.carouselSlidesMeta.length > 0 && (
+                        <div className="p-4 rounded-xl bg-neutral-950 border border-purple-500/20 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-purple-300">5-Slide Carousel Copy Breakdown (Friday Special)</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const slidesText = socialMeta.instagram.carouselSlidesMeta!
+                                  .map((s) => `[Slide ${s.slideNumber}: ${s.heading}]\n${s.caption}`)
+                                  .join('\n\n');
+                                handleCopyText(slidesText, 'ig_slides');
+                              }}
+                              className="text-xs text-neutral-400 hover:text-purple-300 flex items-center gap-1 cursor-pointer"
+                            >
+                              {copiedSection === 'ig_slides' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                              <span>{copiedSection === 'ig_slides' ? 'Copied' : 'Copy All Slides'}</span>
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 pt-1">
+                            {socialMeta.instagram.carouselSlidesMeta.map((slide) => (
+                              <div key={slide.slideNumber} className="p-2.5 rounded-lg bg-neutral-900 border border-neutral-800 text-[11px] space-y-1">
+                                <span className="font-bold text-purple-400 block">Slide {slide.slideNumber}</span>
+                                <strong className="text-white block text-[11px]">{slide.heading}</strong>
+                                <p className="text-neutral-300 text-[10px] leading-relaxed line-clamp-3">{slide.caption}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-neutral-300">Storytelling Caption Body &amp; Call To Action</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyText(`${socialMeta.instagram.captionBody}\n\n${socialMeta.instagram.callToAction}`, 'ig_body')}
+                            className="text-xs text-neutral-400 hover:text-pink-400 flex items-center gap-1 cursor-pointer"
+                          >
+                            {copiedSection === 'ig_body' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedSection === 'ig_body' ? 'Copied' : 'Copy Caption'}</span>
+                          </button>
+                        </div>
+                        <pre className="p-2.5 rounded-lg bg-neutral-900 text-xs text-neutral-300 font-sans whitespace-pre-wrap select-all leading-relaxed">
+                          {socialMeta.instagram.captionBody}
+                          {'\n\n'}
+                          <span className="text-pink-300 font-medium">{socialMeta.instagram.callToAction}</span>
+                        </pre>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-neutral-300">25-30 Tiered Algorithm Hashtags</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyText(socialMeta.instagram.hashtags.join(' '), 'ig_hashtags')}
+                            className="text-xs text-neutral-400 hover:text-pink-400 flex items-center gap-1 cursor-pointer"
+                          >
+                            {copiedSection === 'ig_hashtags' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedSection === 'ig_hashtags' ? 'Copied' : 'Copy Hashtags'}</span>
+                          </button>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-neutral-900 text-[11px] text-cyan-300 font-mono select-all leading-relaxed">
+                          {socialMeta.instagram.hashtags.join(' ')}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TIKTOK PANEL */}
+                  {metaActivePlatform === 'tiktok' && (
+                    <div className="space-y-3">
+                      <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-cyan-400">TikTok Short Caption (&lt;140 chars)</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyText(`${socialMeta.tiktok.caption} ${socialMeta.tiktok.hashtags.join(' ')}`, 'tt_caption')}
+                            className="text-xs text-neutral-400 hover:text-cyan-400 flex items-center gap-1 cursor-pointer"
+                          >
+                            {copiedSection === 'tt_caption' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedSection === 'tt_caption' ? 'Copied' : 'Copy'}</span>
+                          </button>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-neutral-900 text-xs text-white font-medium select-all">
+                          {socialMeta.tiktok.caption} <span className="text-cyan-400">{socialMeta.tiktok.hashtags.join(' ')}</span>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
+                        <span className="text-xs font-bold text-neutral-300">Recommended Audio / Sound Vibe</span>
+                        <div className="p-2.5 rounded-lg bg-neutral-900 text-xs text-pink-300 font-mono flex items-center gap-2">
+                          <Music className="w-4 h-4 text-pink-400" />
+                          <span>{socialMeta.tiktok.recommendedSound}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* FACEBOOK PANEL */}
+                  {metaActivePlatform === 'facebook' && (
+                    <div className="space-y-3">
+                      <div className="p-4 rounded-xl bg-neutral-950 border border-blue-500/20 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-blue-400">High-Engagement Discussion Question (Comment Velocity Payout Booster)</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyText(socialMeta.facebook.discussionPrompt, 'fb_prompt')}
+                            className="text-xs text-neutral-400 hover:text-blue-400 flex items-center gap-1 cursor-pointer"
+                          >
+                            {copiedSection === 'fb_prompt' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedSection === 'fb_prompt' ? 'Copied' : 'Copy Question'}</span>
+                          </button>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-neutral-900 text-xs text-white font-semibold select-all">
+                          "{socialMeta.facebook.discussionPrompt}"
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-neutral-300">Facebook Full Post Text &amp; Tags</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyText(`${socialMeta.facebook.postHeadline}\n\n${socialMeta.facebook.fullText}\n\n${socialMeta.facebook.hashtags.join(' ')}`, 'fb_full')}
+                            className="text-xs text-neutral-400 hover:text-blue-400 flex items-center gap-1 cursor-pointer"
+                          >
+                            {copiedSection === 'fb_full' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedSection === 'fb_full' ? 'Copied' : 'Copy Post'}</span>
+                          </button>
+                        </div>
+                        <pre className="p-2.5 rounded-lg bg-neutral-900 text-xs text-neutral-300 font-sans whitespace-pre-wrap select-all leading-relaxed">
+                          <strong>{socialMeta.facebook.postHeadline}</strong>
+                          {'\n\n'}
+                          {socialMeta.facebook.fullText}
+                          {'\n\n'}
+                          <span className="text-blue-400">{socialMeta.facebook.hashtags.join(' ')}</span>
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Monetization Pro Tips Banner */}
+                  {socialMeta.monetizationTips && socialMeta.monetizationTips.length > 0 && (
+                    <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-start gap-2.5 text-xs text-emerald-300">
+                      <TrendingUp className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <strong className="font-bold block text-emerald-200">30-60 Days Monetization Pro Tip:</strong>
+                        <p className="text-[11px] text-neutral-300 leading-relaxed">
+                          {socialMeta.monetizationTips.join(' • ')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-8 rounded-xl bg-neutral-950 border border-neutral-800 text-center space-y-2">
+                  <RefreshCw className="w-6 h-6 text-cyan-400 animate-spin mx-auto" />
+                  <p className="text-xs text-neutral-400">Generating tailored social meta pack for today's mission...</p>
+                </div>
+              )}
+            </div>
+
             {/* Post Details & Live Upload URLs Form */}
             <form onSubmit={handleSaveDetails} className="p-6 rounded-2xl bg-[#11131c] border border-neutral-800 space-y-4">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -851,6 +1446,66 @@ export default function CreatorOpsPage() {
                 </button>
               </div>
             </form>
+
+            {/* 30-60 DAYS MONETIZATION QUOTA & TARGET TRACKER */}
+            <div className="p-6 rounded-2xl bg-[#11131c] border border-amber-500/20 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Flame className="w-4 h-4 text-orange-400" />
+                    <span>30 to 60 Days Monetization Quota Matrix</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-bold uppercase">
+                      Weekly Targets
+                    </span>
+                  </h3>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    Consistent weekly volume required to qualify for YouTube Shorts Monetization, Instagram Gifts/Bonuses, and TikTok Creator Rewards.
+                  </p>
+                </div>
+
+                <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 font-bold flex items-center gap-1.5 self-start sm:self-auto">
+                  <span>🎯 Minimum Cadence: 10-12 Posts / Week</span>
+                </div>
+              </div>
+
+              {/* 4 Personas Quota Progress Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+                {personas.map((p) => {
+                  return (
+                    <div key={p.id} className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white font-mono truncate max-w-[130px]">
+                          @{p.name}
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-neutral-300 font-bold">
+                          {p.assignedDay !== null ? DAYS_OF_WEEK[p.assignedDay] : 'Flex'}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center justify-between text-[11px] text-neutral-400">
+                          <span>Reels Target:</span>
+                          <strong className="text-emerald-400 font-mono">{p.weeklyReelsTarget || 3} / week</strong>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-neutral-400">
+                          <span>Carousel Post:</span>
+                          <strong className="text-purple-400 font-mono">1 / week (4-5 slides)</strong>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-neutral-400">
+                          <span>Daily Stories:</span>
+                          <strong className="text-cyan-400 font-mono">{p.dailyStoriesTarget || 5} / day</strong>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-neutral-800/60 flex items-center justify-between text-[10px]">
+                        <span className="text-neutral-500">Monetization Status</span>
+                        <span className="text-emerald-400 font-bold">On Track 🔥</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 
@@ -1172,42 +1827,56 @@ export default function CreatorOpsPage() {
             {/* 7-Day Visual Calendar */}
             <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
               {DAYS_OF_WEEK.map((dayName, idx) => {
-                const assigned = personas.filter((p) => p.assignedDay === idx);
+                const tasksForDay = getScheduledTasksForDay(idx);
                 const isToday = new Date().getDay() === idx;
 
                 return (
                   <div
                     key={dayName}
-                    className={`p-4 rounded-2xl border min-h-[160px] flex flex-col justify-between ${
+                    className={`p-4 rounded-2xl border min-h-[180px] flex flex-col justify-between ${
                       isToday
                         ? 'bg-emerald-500/10 border-emerald-500/40 shadow-lg shadow-emerald-500/10'
                         : 'bg-[#11131c] border-neutral-800'
                     }`}
                   >
                     <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold text-xs text-white uppercase tracking-wider">{dayName.slice(0, 3)}</span>
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="font-bold text-xs text-white uppercase tracking-wider">{dayName}</span>
                         {isToday && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
                             Today
                           </span>
                         )}
                       </div>
 
-                      {assigned.length > 0 ? (
-                        assigned.map((p) => (
-                          <div key={p.id} className="p-2.5 rounded-xl bg-neutral-950 border border-neutral-800 mb-2">
-                            <div className="font-bold text-xs text-white truncate">{p.displayName || p.name}</div>
-                            <div className="text-[10px] text-neutral-400 line-clamp-1">{p.niche}</div>
-                          </div>
-                        ))
+                      {tasksForDay.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {tasksForDay.map((task) => (
+                            <div key={task.id} className="p-2 rounded-xl bg-neutral-950 border border-neutral-800 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-[11px] text-white truncate max-w-[85px]">{task.personaName}</span>
+                                <span
+                                  className={`text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded ${
+                                    task.taskType === 'carousel'
+                                      ? 'bg-purple-500/20 text-purple-300'
+                                      : 'bg-emerald-500/20 text-emerald-300'
+                                  }`}
+                                >
+                                  {task.taskType}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-neutral-400 line-clamp-1">{task.title}</p>
+                            </div>
+                          ))}
+                        </div>
                       ) : (
-                        <div className="text-[11px] text-neutral-500 italic mt-4">Rest / Content Prep</div>
+                        <div className="text-[11px] text-neutral-500 italic mt-4">Flex Planning</div>
                       )}
                     </div>
 
-                    <div className="text-[10px] text-neutral-400 font-mono pt-2 border-t border-neutral-800/60">
-                      Target: {assigned[0]?.weeklyReelsTarget || 2} Reels / Wk
+                    <div className="text-[10px] text-cyan-400 font-mono pt-2 border-t border-neutral-800/60 flex items-center justify-between">
+                      <span>{tasksForDay.length} Post{tasksForDay.length > 1 ? 's' : ''}</span>
+                      <span className="text-neutral-500">Scheduled</span>
                     </div>
                   </div>
                 );
@@ -1369,14 +2038,15 @@ export default function CreatorOpsPage() {
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-300 mb-1">Provider</label>
+                    <label className="block text-xs font-semibold text-neutral-300 mb-1">Provider Engine</label>
                     <select
                       name="provider"
-                      defaultValue={settings?.provider || 'greenapi'}
+                      value={providerType}
+                      onChange={(e) => setProviderType(e.target.value as any)}
                       className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
                     >
-                      <option value="greenapi">Green-API (Recommended for Pakistan)</option>
-                      <option value="callmebot">CallMeBot</option>
+                      <option value="greenapi">Green-API (Dedicated WhatsApp Web Instance)</option>
+                      <option value="callmebot">CallMeBot (Free & Instant Setup via WhatsApp)</option>
                     </select>
                   </div>
 
@@ -1386,38 +2056,74 @@ export default function CreatorOpsPage() {
                       type="text"
                       name="whatsappPhone"
                       defaultValue={settings?.whatsappPhone || '923399336639'}
-                      placeholder="e.g. 923121964939"
+                      placeholder="e.g. 923399336639 (Country code + number, no +)"
                       className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
                     />
+                    <span className="text-[10px] text-neutral-500 mt-1 block">Bina '+' ke country code ke sath likhein (e.g. 923121234567)</span>
                   </div>
                 </div>
 
-                {/* Green-API Specific Fields */}
-                <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-3">
-                  <span className="text-xs font-bold text-emerald-400 block">Green-API Instance Credentials</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] text-neutral-400 mb-1">idInstance</label>
-                      <input
-                        type="text"
-                        name="greenApiIdInstance"
-                        defaultValue={settings?.greenApiIdInstance || ''}
-                        placeholder="e.g. 1101823..."
-                        className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
-                      />
+                {/* Conditional Provider Fields */}
+                {providerType === 'greenapi' ? (
+                  <div className="p-4 rounded-xl bg-neutral-950 border border-emerald-500/20 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-emerald-400 block">Green-API Instance Credentials</span>
+                      <a
+                        href="https://green-api.com"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] text-emerald-400/80 hover:text-emerald-300 underline"
+                      >
+                        green-api.com ↗
+                      </a>
+                    </div>
+                    <p className="text-[11px] text-neutral-400 leading-relaxed">
+                      Green-API console se instance create karein aur phone se QR code scan karein. Yaad rahe: <span className="text-white font-mono">idInstance</span> (10-12 numbers) aur <span className="text-white font-mono">apiTokenInstance</span> (50-character alphanumeric token) alag alag hotay hain!
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-neutral-400 mb-1">idInstance (Numeric)</label>
+                        <input
+                          type="text"
+                          name="greenApiIdInstance"
+                          defaultValue={settings?.greenApiIdInstance || ''}
+                          placeholder="e.g. 7107227374"
+                          className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-neutral-400 mb-1">apiTokenInstance (50-char hex token)</label>
+                        <input
+                          type="text"
+                          name="greenApiApiToken"
+                          defaultValue={settings?.greenApiApiToken || ''}
+                          placeholder="e.g. d7b29a8f4c5e... (Console se copy karein)"
+                          className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-neutral-950 border border-cyan-500/20 space-y-3">
+                    <span className="text-xs font-bold text-cyan-400 block">CallMeBot Free WhatsApp API Key</span>
+                    <div className="p-3 rounded-lg bg-cyan-950/30 border border-cyan-500/20 text-xs text-neutral-300 space-y-1.5 leading-relaxed">
+                      <p className="font-semibold text-cyan-300">⚡ 10 Seconds Free Activation:</p>
+                      <p>1. Apne WhatsApp se is number ko message karein: <span className="text-white font-mono bg-neutral-900 px-1.5 py-0.5 rounded select-all">+34 941 080 523</span></p>
+                      <p>2. Message text yeh likhein: <span className="text-white font-mono bg-neutral-900 px-1.5 py-0.5 rounded select-all">I allow callmebot to send me messages</span></p>
+                      <p>3. CallMeBot reply mein aapko API Key send kar dega. Woh key neeche paste karein!</p>
                     </div>
                     <div>
-                      <label className="block text-[11px] text-neutral-400 mb-1">apiTokenInstance</label>
+                      <label className="block text-[11px] text-neutral-400 mb-1">CallMeBot API Key</label>
                       <input
-                        type="password"
-                        name="greenApiApiToken"
-                        defaultValue={settings?.greenApiApiToken || ''}
-                        placeholder="e.g. d7b29a8f..."
-                        className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                        type="text"
+                        name="callmebotApiKey"
+                        defaultValue={settings?.callmebotApiKey || ''}
+                        placeholder="e.g. 1234567"
+                        className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
                       />
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -1428,7 +2134,7 @@ export default function CreatorOpsPage() {
                       defaultValue={settings?.startHourPKT ?? 14}
                       className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
                     />
-                    <span className="text-[10px] text-neutral-500 mt-1 block">14 = 2:00 PM PKT</span>
+                    <span className="text-[10px] text-neutral-500 mt-1 block">14 = 2:00 PM PKT (Reminders start)</span>
                   </div>
 
                   <div>
@@ -1439,15 +2145,29 @@ export default function CreatorOpsPage() {
                       defaultValue={settings?.endHourPKT ?? 23}
                       className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
                     />
-                    <span className="text-[10px] text-neutral-500 mt-1 block">23 = 11:00 PM PKT</span>
+                    <span className="text-[10px] text-neutral-500 mt-1 block">23 = 11:00 PM PKT (Reminders end)</span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={handleSendReminderNow}
-                    className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 text-xs font-semibold transition border border-neutral-800 flex items-center gap-1.5 cursor-pointer"
+                    onClick={(e) => {
+                      const form = (e.currentTarget as HTMLButtonElement).closest('form');
+                      if (form) {
+                        const fd = new FormData(form);
+                        handleSendReminderNow({
+                          provider: fd.get('provider') || providerType,
+                          phone: fd.get('whatsappPhone'),
+                          greenApiIdInstance: fd.get('greenApiIdInstance'),
+                          greenApiApiToken: fd.get('greenApiApiToken'),
+                          callmebotApiKey: fd.get('callmebotApiKey'),
+                        });
+                      } else {
+                        handleSendReminderNow();
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-semibold transition border border-neutral-800 flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Send Test WhatsApp Message</span>
@@ -1455,9 +2175,10 @@ export default function CreatorOpsPage() {
 
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-lg shadow-emerald-600/30 cursor-pointer"
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    Save Settings
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Save Settings</span>
                   </button>
                 </div>
               </form>

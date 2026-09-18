@@ -57,7 +57,8 @@ export function generateSecBySecTimeline(
   hookAction: string,
   sfxTheme?: string,
   customPose?: string,
-  customPause?: string
+  customPause?: string,
+  isFinalClip: boolean = false
 ): SecBySecAction[] {
   return [
     {
@@ -95,16 +96,27 @@ export function generateSecBySecTimeline(
       lightingMood: 'Gradual shadow emphasis deepening across background.',
       sfxCue: 'Heavy silence, faint ominous sub-bass pulse, lingering acoustic resonance.',
     },
-    {
-      timeRange: '0:09 - 0:10',
-      visualAction: 'Dramatic micro-expression or sudden motion leading into immediate cliffhanger cut.',
-      cameraMovement: 'Sudden punch-in or rapid Dutch tilt transition before abrupt black cut.',
-      characterPose: 'Micro-reaction of defiance or realization.',
-      pauseBeat: 'Sudden audio and visual freeze before clip transition.',
-      silentCharacters: silentCharacters,
-      lightingMood: 'High contrast shadow cutoff.',
-      sfxCue: 'Sharp cliffhanger riser, abrupt audio drop, black screen cut.',
-    },
+    isFinalClip
+      ? {
+          timeRange: '0:09 - 0:10',
+          visualAction: 'Dramatic micro-expression or sudden revelation leading into immediate episode cliffhanger cut.',
+          cameraMovement: 'Sudden slow punch-in before abrupt black cut at 0:09.5s.',
+          characterPose: 'Micro-reaction of shock, realization or defiance.',
+          pauseBeat: 'Abrupt audio and visual freeze before cutting to black.',
+          silentCharacters: silentCharacters,
+          lightingMood: 'High contrast shadow cutoff.',
+          sfxCue: 'Sharp cliffhanger riser, abrupt sub-bass drop, sudden cut to black screen.',
+        }
+      : {
+          timeRange: '0:09 - 0:10',
+          visualAction: 'Seamless reaction beat holding unbroken tension into subsequent reverse shot. No black screen.',
+          cameraMovement: 'Subtle drift holding eye-line lock, preparing seamless match-cut to counterpart angle.',
+          characterPose: 'Unwavering gaze locked toward counterpart; breath held steady, resolute expression.',
+          pauseBeat: 'Continuous cinematic flow (unbroken scene continuity).',
+          silentCharacters: silentCharacters,
+          lightingMood: 'Consistent atmospheric chiaroscuro lighting across cuts.',
+          sfxCue: 'Unbroken room acoustic ambience and continuous low-frequency tension drone (zero audio cutoff).',
+        },
   ];
 }
 
@@ -161,5 +173,5 @@ export function buildCinematicFlowVeoPrompt(params: CinematicVeoPromptParams): s
 ${timelineFormatted}
 
 [LIGHTING & ATMOSPHERE]: ${params.lightingTheme}
-${params.cliffhangerNote ? `[CLIFFHANGER NOTE]: ${params.cliffhangerNote}\n` : ''}${params.negativePromptDirectives ? `[NEGATIVE DIRECTIVES]: ${params.negativePromptDirectives}` : ''}`;
+${params.cliffhangerNote ? `[CLIFFHANGER NOTE]: ${params.cliffhangerNote}\n` : '[TRANSITION NOTE]: Seamless match-cut to subsequent reverse shot. No black cut. Continuous ambient room acoustic drone.\n'}${params.negativePromptDirectives ? `[NEGATIVE DIRECTIVES]: ${params.negativePromptDirectives}` : ''}`;
 }

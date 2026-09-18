@@ -20,7 +20,29 @@ export async function POST(req: NextRequest) {
 
     if (!phone) {
       return NextResponse.json(
-        { error: 'Phone number is required. Please provide a recipient phone number in Tab 6.' },
+        { error: 'Phone number missing hai! Tab 6 (WhatsApp Settings) mein recipient WhatsApp number enter karein.' },
+        { status: 400 }
+      );
+    }
+
+    if (provider === 'greenapi') {
+      if (!greenApiIdInstance || !greenApiApiToken) {
+        return NextResponse.json(
+          { error: 'Green-API idInstance ya apiTokenInstance missing hai. Tab 6 (WhatsApp Settings) mein credentials enter karein.' },
+          { status: 400 }
+        );
+      }
+      if (greenApiIdInstance.trim() === greenApiApiToken.trim()) {
+        return NextResponse.json(
+          { error: 'idInstance aur apiTokenInstance donon same hain! Green-API Console se apna 50-character "apiTokenInstance" (hex token) copy karke Tab 6 mein enter karein.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (provider === 'callmebot' && !callmebotApiKey) {
+      return NextResponse.json(
+        { error: 'CallMeBot API Key missing hai. Tab 6 mein CallMeBot API key enter karein.' },
         { status: 400 }
       );
     }
