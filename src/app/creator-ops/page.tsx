@@ -501,6 +501,7 @@ Tags: ${socialMeta.facebook.hashtags.join(' ')}
   // Send Manual WhatsApp Alert
   const handleSendReminderNow = async (customPayload?: any) => {
     try {
+      console.log('[CreatorOps][WhatsApp] Triggering test alert with payload:', customPayload);
       setActionNotice({ type: 'success', message: 'Sending test WhatsApp alert...' });
       const res = await fetch('/api/creator-ops/test-whatsapp', {
         method: 'POST',
@@ -508,15 +509,24 @@ Tags: ${socialMeta.facebook.hashtags.join(' ')}
         body: JSON.stringify(customPayload || {}),
       });
       const data = await res.json().catch(() => ({}));
+      console.log('[CreatorOps][WhatsApp] Response received:', { status: res.status, ok: res.ok, data });
       if (res.ok) {
+        console.log('[CreatorOps][WhatsApp] Test message delivered successfully!');
         setActionNotice({ type: 'success', message: '✅ WhatsApp reminder delivered to your phone!' });
+        setTimeout(() => setActionNotice(null), 5000);
       } else {
-        setActionNotice({ type: 'error', message: data.error || 'Could not send WhatsApp message. Please check Tab 6 settings.' });
+        console.error('[CreatorOps][WhatsApp] API Error details:', data);
+        setActionNotice({
+          type: 'error',
+          message: data.error || `HTTP ${res.status}: Failed to send WhatsApp message. Check Tab 6 or browser console logs.`
+        });
+        setTimeout(() => setActionNotice(null), 15000);
       }
     } catch (e: any) {
-      setActionNotice({ type: 'error', message: e?.message || 'Failed to trigger reminder.' });
+      console.error('[CreatorOps][WhatsApp] Exception triggered:', e);
+      setActionNotice({ type: 'error', message: e?.message || 'Network error while calling test-whatsapp API.' });
+      setTimeout(() => setActionNotice(null), 15000);
     }
-    setTimeout(() => setActionNotice(null), 8000);
   };
 
   // Calculate completion percentage

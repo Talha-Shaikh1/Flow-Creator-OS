@@ -6,6 +6,8 @@ import { useUser, SignInButton, UserButton } from '@clerk/nextjs';
 import { GUEST_STORAGE_KEY } from '@/lib/auth/session';
 import { LogIn } from 'lucide-react';
 
+import { ClerkErrorBoundary } from './ClerkErrorBoundary';
+
 export function ClerkAuthSync() {
   const { isSignedIn, user } = useUser();
 
@@ -49,15 +51,29 @@ export function ClerkAuthSync() {
     );
   }
 
+  const userInitials = (user?.firstName?.[0] || user?.emailAddresses?.[0]?.emailAddress?.[0] || 'U').toUpperCase();
+
   return (
-    <div className="flex items-center gap-2">
-      <UserButton
-        appearance={{
-          elements: {
-            avatarBox: 'w-7 h-7 rounded-xl ring-1 ring-white/20',
-          },
-        }}
-      />
-    </div>
+    <ClerkErrorBoundary
+      compact
+      fallback={
+        <div
+          className="w-7 h-7 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 border border-white/20 flex items-center justify-center text-xs font-bold text-white shadow-sm"
+          title={`Signed in as ${user?.primaryEmailAddress?.emailAddress || 'User'}`}
+        >
+          {userInitials}
+        </div>
+      }
+    >
+      <div className="flex items-center gap-2">
+        <UserButton
+          appearance={{
+            elements: {
+              avatarBox: 'w-7 h-7 rounded-xl ring-1 ring-white/20',
+            },
+          }}
+        />
+      </div>
+    </ClerkErrorBoundary>
   );
 }

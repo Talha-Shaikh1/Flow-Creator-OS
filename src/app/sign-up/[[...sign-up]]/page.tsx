@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { SignUp } from '@clerk/nextjs';
 import { flowCreatorClerkTheme } from '@/lib/auth/clerk-theme';
+import { ClerkErrorBoundary } from '@/components/auth/ClerkErrorBoundary';
 import { Clapperboard, Sparkles, Film, ArrowLeft, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 export default function SignUpPage() {
@@ -77,12 +78,14 @@ export default function SignUpPage() {
         {/* Right Side: The Clerk Sign Up Card */}
         <div className="lg:col-span-6 flex justify-center lg:justify-end">
           <div className="w-full max-w-md">
-            <SignUp
-              appearance={flowCreatorClerkTheme}
-              routing="path"
-              path="/sign-up"
-              signInUrl="/sign-in"
-            />
+            <ClerkErrorBoundary>
+              <SignUp
+                appearance={flowCreatorClerkTheme}
+                routing="path"
+                path="/sign-up"
+                signInUrl="/sign-in"
+              />
+            </ClerkErrorBoundary>
           </div>
         </div>
       </main>

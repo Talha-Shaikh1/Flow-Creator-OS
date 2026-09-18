@@ -131,12 +131,12 @@ ${appUrl}/creator-ops
     }
 
     const sendResult = await sendWhatsAppMessage({
-      provider: (settings?.provider || 'greenapi') as 'greenapi' | 'callmebot',
+      provider: (settings?.provider || process.env.WHATSAPP_PROVIDER || 'greenapi') as 'greenapi' | 'callmebot',
       phone,
       message,
-      greenApiIdInstance: settings?.greenApiIdInstance,
-      greenApiApiToken: settings?.greenApiApiToken,
-      callmebotApiKey: settings?.callmebotApiKey,
+      greenApiIdInstance: settings?.greenApiIdInstance || process.env.GREEN_API_ID_INSTANCE,
+      greenApiApiToken: settings?.greenApiApiToken || process.env.GREEN_API_API_TOKEN,
+      callmebotApiKey: settings?.callmebotApiKey || process.env.CALLMEBOT_API_KEY,
     });
 
     return NextResponse.json({

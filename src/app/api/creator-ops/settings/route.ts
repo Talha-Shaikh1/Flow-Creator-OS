@@ -21,7 +21,16 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json({ settings });
+    const effectiveSettings = {
+      ...settings,
+      whatsappPhone: settings?.whatsappPhone || process.env.WHATSAPP_PHONE || null,
+      greenApiIdInstance: settings?.greenApiIdInstance || process.env.GREEN_API_ID_INSTANCE || null,
+      greenApiApiToken: settings?.greenApiApiToken || process.env.GREEN_API_API_TOKEN || null,
+      callmebotApiKey: settings?.callmebotApiKey || process.env.CALLMEBOT_API_KEY || null,
+      provider: settings?.provider || process.env.WHATSAPP_PROVIDER || 'greenapi',
+    };
+
+    return NextResponse.json({ settings: effectiveSettings });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
