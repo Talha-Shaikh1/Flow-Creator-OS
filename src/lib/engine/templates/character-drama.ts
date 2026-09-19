@@ -334,7 +334,7 @@ export function buildCharacterDramaClips(
       undefined,
       isLast
         ? '1-second suspended breath before delivering the final revelation line.'
-        : '1.5-second pregnant dramatic pause; heavy silence, breath intake before speech.',
+        : '1.5-second measured dramatic pause; heavy silence, calm breath intake before speech.',
       isLast // ONLY TRUE FOR THE VERY LAST CLIP!
     );
 
@@ -349,7 +349,7 @@ export function buildCharacterDramaClips(
         dnaPrompt: activeChar.dnaPrompt,
         voiceTone:
           activeChar.role === 'Hero'
-            ? 'Intense baritone, controlled fury, crisp English articulation'
+            ? 'Intense baritone, authoritative focus, crisp English articulation'
             : 'Poised, cold, resonant feminine cadence, unwavering composure',
       },
       silentCharacters: silentList.map((s) => ({ name: s.name, dnaPrompt: s.dnaPrompt })),

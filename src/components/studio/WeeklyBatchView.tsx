@@ -35,6 +35,7 @@ import {
 import { ContentCalendarModal } from '@/components/calendar/ContentCalendarModal';
 import { GenerationHistoryModal } from './GenerationHistoryModal';
 import { getOrCreateClientGuestId } from '@/lib/auth/session';
+import { sanitizeForGoogleFlow } from '@/lib/engine/rules/temporal';
 
 interface Props {
   batch: WeeklyBatchDelivery;
@@ -271,11 +272,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
         bundle += `>>> CLIP ${c.clipIndex}/${c.totalClips}: ${c.sceneName} (${c.pacingWordCount} words) <<<\n`;
         bundle += `[ACTIVE SPEAKER]: ${c.speakerIsolation.activeSpeaker}\n`;
         bundle += `[DIALOGUE]: "${c.speakerIsolation.speakingDialogue}"\n\n`;
-        bundle += `[GOOGLE FLOW 10s MOTION DIRECTIVE]:\n${c.flowPromptText}\n\n`;
-
-        if (c.negativePromptDirectives) {
-          bundle += `[NEGATIVE DIRECTIVES]: ${c.negativePromptDirectives}\n\n`;
-        }
+        bundle += `[GOOGLE FLOW 10s MOTION DIRECTIVE]:\n${sanitizeForGoogleFlow(c.flowPromptText)}\n\n`;
         bundle += `----------------------------------------------------------\n\n`;
       });
     } else {
@@ -288,11 +285,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
         bundle += `[DIALOGUE]: "${c.speakerIsolation.speakingDialogue}"\n\n`;
 
         bundle += `[STEP 1 - STARTING FRAME IMAGE PROMPT]:\n${c.frameImagePrompt}\n\n`;
-        bundle += `[STEP 2 - GOOGLE FLOW 10s MOTION DIRECTIVE]:\n${c.flowPromptText}\n\n`;
-
-        if (c.negativePromptDirectives) {
-          bundle += `[NEGATIVE DIRECTIVES]: ${c.negativePromptDirectives}\n\n`;
-        }
+        bundle += `[STEP 2 - GOOGLE FLOW 10s MOTION DIRECTIVE]:\n${sanitizeForGoogleFlow(c.flowPromptText)}\n\n`;
         bundle += `----------------------------------------------------------\n\n`;
       });
     }

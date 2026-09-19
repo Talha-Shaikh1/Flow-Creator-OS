@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { ClipPrompt, StorySpec } from '@/types';
+import { sanitizeForGoogleFlow } from '@/lib/engine/rules/temporal';
 import {
   Copy,
   Check,
@@ -72,11 +73,10 @@ export function ClipCard({
   };
 
   const getEnrichedFlowPrompt = () => {
-    let text = clip.flowPromptText;
+    let text = sanitizeForGoogleFlow(clip.flowPromptText);
     if (selectedAtmosphere !== 'Default Style') {
-      text += `\n[ATMOSPHERE ENHANCEMENT]: ${selectedAtmosphere}`;
+      text += ` Atmosphere: ${selectedAtmosphere}.`;
     }
-    text += `\n[ASPECT RATIO]: ${selectedAspectRatio} vertical composition`;
     return text;
   };
 

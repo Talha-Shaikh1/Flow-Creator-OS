@@ -78,8 +78,8 @@ PILLAR 3: RETENTION DYNAMICS & PSYCHOLOGICAL HOOKS
 PILLAR 4: GOOGLE FLOW SAFETY & FACE GENERATION COMPLIANCE (STRICT)
 - AVOID CELEBRITY LIKENESSES: Automated video safety filters reject photorealistic faces resembling real or famous people in dramatic confrontation scenes ("real person in sensitive situations" policy).
 - All characters MUST be designated as: "Original fictional character with distinct non-celebrity digital human facial structure".
-- PROHIBITED CONTENT: No physical violence, weapons, shouting, blood, gore, murder/hit threats, or tobacco/smoking. Channel high stakes through corporate espionage, legal countdowns, wiretapped audio, cold-storage drives, and icy psychological tension.
-- In every "flowPromptText", append safe directives: "[NEGATIVE DIRECTIVES]: no physical violence, no weapons, no aggression, no shouting, no real-world celebrities, no famous public figures, no blood, no gore, no tobacco, no distorted anatomy".
+- PROHIBITED CONTENT: Absolutely no physical violence, weapons, shouting, blood, gore, murder/hit threats, or tobacco/smoking. Channel high stakes exclusively through corporate espionage, legal countdowns, wiretapped audio, cold-storage drives, and icy psychological tension.
+- In every "flowPromptText", provide a clean, powerful, natural prose directive for Google Flow (Veo 2). NEVER write the words "blood", "weapons", "violence", "gore", or "tobacco" anywhere in the prompt (even with 'no'), because automated classifiers flag those tokens directly.
 
 PILLAR 5: IN-UNIVERSE BTS & FORENSIC FEED CONTENT (ANTI-AI CLICHÉ)
 - Never output generic AI lifestyle tropes (no generic coffee shop, gym mirror selfie, or empty street walks).
@@ -93,18 +93,8 @@ Generate a 7-Day arc (Day 1 to Day 7). For each day, create 3 variations:
 
 CRITICAL: For EACH clip, you MUST provide TWO distinct prompts:
 1. "frameImagePrompt": The Reference Image-Anchored Text-to-Image prompt for Midjourney / Flux (composition, character placement screen-left/right, scene-adaptive wardrobe, 4K/8K photorealistic Netflix Noir lighting).
-2. "flowPromptText": The Director-Level 10-second video motion directive for Google Flow (Veo). This prompt MUST EMBED THE SPOKEN DIALOGUE directly inside it with vocal tone and lip-sync directives so Google Flow generates the voice!
-Format of "flowPromptText":
-- [CINEMATIC SPEC]: 9:16 vertical video, 24fps motion blur, 4K film composition, Global Hollywood / Netflix Noir grade.
-- [LOCATION MASTER ANCHOR]: Fixed spatial coordinates and architectural depth.
-- [ACTIVE CHARACTER & SILENT CHARACTERS]: Active character in sharp focus; inactive characters explicitly marked "[NAME: 100% SILENT, LIPS SEALED, LISTENING REACTION ONLY]".
-- [AUDIO & SPOKEN DIALOGUE]: Spoken Line: "[Exact Spoken Words]" (in English with vocal tone description). Lip-Sync Directive: Realistic mouth opening, syllable matching, breath pauses.
-- [SECOND-BY-SECOND CINEMATIC CHOREOGRAPHY (10s)]:
-  • [0:00 - 0:02 | HOOK & DRAMATIC PAUSE]: Camera angle/lens, character pose, 1.5s dramatic pregnant pause before speech, ambient SFX.
-  • [0:02 - 0:07 | DIALOGUE DELIVERY & LIP-SYNC]: Camera movement, physical gesture/head tilt, spoken line "[Exact Dialogue]" with precise lip-sync.
-  • [0:07 - 0:09 | REACTION & TENSION HOLD]: Camera drift, sealed lips, heavy silent tension.
-  • [0:09 - 0:10 | CLIFFHANGER CUT]: Abrupt cutoff, dramatic cliffhanger sound design.
-- [NEGATIVE DIRECTIVES]: no physical violence, no weapons, no aggression, no shouting, no real-world celebrities, no famous public figures, no blood, no gore, no tobacco, no distorted anatomy.
+2. "flowPromptText": Clean, natural, highly effective Google Flow (Veo 2) video motion directive in natural prose (NOT markdown spec sheets). Format:
+   "Cinematic 9:16 vertical video of original fictional character [Name] in [Location]. [Shot & camera movement with 24fps motion blur]. [Name] maintains calm, composed focus. Speaking aloud with natural articulation: \"[Exact Dialogue]\". Precise realistic mouth lip-synchronization matching each spoken word, natural facial expressions and subtle breathing cadence. [Lighting & atmosphere], photorealistic 8K film quality, continuous fluid motion."
 Plus character/location reference prompts, dialogue script, and metadata (caption, hashtags).
 Return valid JSON only matching the schema.`;
 
