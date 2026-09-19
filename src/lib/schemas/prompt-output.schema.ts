@@ -92,6 +92,7 @@ export const VideoVariationSchema = z.object({
 
 export const DayContentPackageSchema = z.object({
   dayNumber: z.number().int().min(1).max(7),
+  episodeTitle: z.string().optional(),
   dayName: z.string(),
   dailyEmotion: z.string(),
   variations: z.array(VideoVariationSchema).min(1),

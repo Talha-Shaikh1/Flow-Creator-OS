@@ -82,6 +82,7 @@ export interface StorySpec {
   episodeCount?: number;
   locationSettings: string[]; // List of locations (e.g., Living Room, Office, Rooftop)
   customStoryIdea?: string; // Optional user-provided premise / concept
+  seriesTitle?: string; // Global Drama / Show Name (e.g. "The Shadow Trust")
   workflowPipeline?: WorkflowPipeline; // Linked custom niche workflow pipeline
   seasonNumber?: number; // Current Season in multi-season series arc (1-8)
   seasonTitle?: string; // e.g. "The Criminal Cover-Up"
@@ -296,6 +297,7 @@ export interface DailyPhotoPost {
 export interface DayContentPackage {
   dayNumber: number; // 1-7
   dayName: string; // e.g. "Monday"
+  episodeTitle?: string; // e.g. "The Forged Will"
   dailyEmotion: string; // e.g. "Monday Hook - Curiosity & Intrigue"
   variations: VideoVariation[];
   selectedVariationId?: string;

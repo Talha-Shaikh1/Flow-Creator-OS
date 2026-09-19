@@ -1,8 +1,9 @@
 import { GoogleGenAI } from '@google/genai';
-import { StorySpec, WeeklyBatchDelivery, DayContentPackage, VideoVariation } from '@/types';
+import { StorySpec, WeeklyBatchDelivery, DayContentPackage, VideoVariation, SEASON_ESCALATION_LADDER } from '@/types';
 import { getWeeklyEmotionArc } from './rules/retention';
 import { evaluatePromptCritique } from './critique';
-import { generateWeeklyBatch } from './generator';
+import { generateWeeklyBatch, resolveSeriesTitle, EPISODE_TITLES } from './generator';
+import { generateDailyPhotoPosts } from './rules/photos';
 import { createTokenReport, estimateTokenCount } from './tokens';
 
 function getApiKey(): string | null {
@@ -93,8 +94,26 @@ Generate a 7-Day arc (Day 1 to Day 7). For each day, create 3 variations:
 
 CRITICAL: For EACH clip, you MUST provide TWO distinct prompts:
 1. "frameImagePrompt": The Reference Image-Anchored Text-to-Image prompt for Midjourney / Flux (composition, character placement screen-left/right, scene-adaptive wardrobe, 4K/8K photorealistic Netflix Noir lighting).
-2. "flowPromptText": Clean, natural, highly effective Google Flow (Veo 2) video motion directive in natural prose (NOT markdown spec sheets). Format:
-   "Cinematic 9:16 vertical video of original fictional character [Name] in [Location]. [Shot & camera movement with 24fps motion blur]. [Name] maintains calm, composed focus. Speaking aloud with natural articulation: \"[Exact Dialogue]\". Precise realistic mouth lip-synchronization matching each spoken word, natural facial expressions and subtle breathing cadence. [Lighting & atmosphere], photorealistic 8K film quality, continuous fluid motion."
+2. "flowPromptText": The Director-Level 10-second Google Flow (Veo 2) Master Video Directive. Must be structured with:
+   - [CLIP X/Y - GOOGLE FLOW VEO MASTER DIRECTIVE]
+   - [CINEMATIC SPEC]: 9:16 vertical composition, 24fps motion blur, 4K Hollywood cinematography.
+   - [LOCATION MASTER ANCHOR]: Specific locked setting and depth.
+   - [CHARACTER REFERENCE ANCHORS & SPATIAL BLOCKING]:
+     • Primary Subject: Original fictional character [Name] [ATTACH REFERENCE IMAGE 1 - [NAME]]. [Wardrobe, position, sharp focus]
+     • Counterpart Subject: Original fictional character [Counterpart Name] [ATTACH REFERENCE IMAGE 2 - [COUNTERPART]]. [Position, 100% silent, listening reaction across desk/room]
+   - [VOCAL CADENCE & DYNAMIC TONAL INFLECTION (SAKHTI & NARMI)]:
+     • Dynamic Modulation: Describe the emotional arc (e.g., voice begins with quiet, calm restraint (narmi), gradually hardening into a sharp, steely edge of authority (sakhti), dropping to a cold whisper on the final name).
+     • Spoken Line: "[Exact Dialogue]"
+     • Lip-Sync Directive: Realistic mouth lip-synchronization matching every syllable.
+   - [SHOT & CAMERA]: Lens, camera movement, and smooth rack-focus drift shifting toward counterpart [ATTACH REFERENCE IMAGE 2] to capture listening reaction.
+   - [SECOND-BY-SECOND CINEMATIC CHOREOGRAPHY (10s)]:
+     • [0:00 - 0:02 | SUSPENSE BEAT]: Camera move, composed posture, 1.5-second measured dramatic pause, ambient SFX.
+     • [0:02 - 0:07 | VOCAL DELIVERY & MODULATION]: Dialogue delivery with sakhti/narmi tonal inflection, lip-sync articulation.
+     • [0:07 - 0:09 | CAMERA SHIFT & COUNTERPART REACTION]: Smooth rack-focus drift to counterpart [ATTACH REFERENCE IMAGE 2], rigid posture, sealed lips.
+     • [0:09 - 0:10 | CONTINUITY HOLD]: Standoff tension hold into next cut.
+   - [LIGHTING & ATMOSPHERE]: Chiaroscuro key lighting and atmospheric depth.
+   - [AUDIO & FOLEY SOUND DESIGN]: Crisp dialogue, room acoustic reverb, subtle tension drone.
+   - [NEGATIVE DIRECTIVES]: morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter, plastic skin, distorted anatomy. (NEVER write blood, weapons, violence, gore, or tobacco).
 Plus character/location reference prompts, dialogue script, and metadata (caption, hashtags).
 Return valid JSON only matching the schema.`;
 
@@ -270,12 +289,24 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
         };
       });
 
+      const dailyPhotos = generateDailyPhotoPosts(
+        spec.cast[0],
+        dayIdx + 1,
+        arc.dayName,
+        arc.dailyEmotion,
+        spec.format,
+        spec.locationSettings[0],
+        spec.cast
+      );
+
       return {
         dayNumber: dayIdx + 1,
+        episodeTitle: EPISODE_TITLES[dayIdx + 1] || `Episode ${dayIdx + 1}`,
         dayName: arc.dayName,
         dailyEmotion: `${arc.dayName} Arc: ${arc.dailyEmotion}`,
         variations: variations.length > 0 ? variations : generateWeeklyBatch(spec).days[dayIdx].variations,
         selectedVariationId: variations[0]?.id,
+        dailyPhotoPosts: dailyPhotos,
       };
     });
 
@@ -286,6 +317,12 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
 
     const finalSpec: StorySpec = {
       ...spec,
+      seriesTitle: resolveSeriesTitle(spec),
+      seasonNumber: spec.seasonNumber || 1,
+      seasonTitle:
+        spec.seasonTitle ||
+        SEASON_ESCALATION_LADDER.find((s) => s.seasonNumber === (spec.seasonNumber || 1))?.seasonTitle ||
+        'The Local Betrayal',
       cast: effectiveCast,
       castCount: effectiveCast.length || spec.castCount,
     };

@@ -29,6 +29,7 @@ export function DailyPhotoPostsView({ photoPosts, dayName, dayNumber }: Props) {
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
   const [copiedCaptionId, setCopiedCaptionId] = useState<string | null>(null);
   const [expandedPromptId, setExpandedPromptId] = useState<string | null>(null);
+  const [copiedAllPrompts, setCopiedAllPrompts] = useState(false);
 
   if (!photoPosts || photoPosts.length === 0) {
     return null;
@@ -45,6 +46,24 @@ export function DailyPhotoPostsView({ photoPosts, dayName, dayNumber }: Props) {
     navigator.clipboard.writeText(text);
     setCopiedCaptionId(post.id);
     setTimeout(() => setCopiedCaptionId(null), 2000);
+  };
+
+  const handleCopyAllPhotoPrompts = () => {
+    let text = `==========================================================\n`;
+    text += `📸 DAY ${dayNumber} (${dayName.toUpperCase()}) REAL-STAR BTS & SOCIAL PHOTO PROMPTS\n`;
+    text += `==========================================================\n\n`;
+
+    photoPosts.forEach((post, idx) => {
+      text += `>>> PHOTO ${idx + 1}: ${post.title.toUpperCase()} (${post.category}) <<<\n`;
+      text += `[CAPTION]: ${post.caption}\n`;
+      text += `[HASHTAGS]: ${post.hashtags.join(' ')}\n`;
+      text += `[MIDJOURNEY / FLUX / FLOW PHOTO PROMPT]:\n${post.imagePrompt}\n\n`;
+      text += `----------------------------------------------------------\n\n`;
+    });
+
+    navigator.clipboard.writeText(text);
+    setCopiedAllPrompts(true);
+    setTimeout(() => setCopiedAllPrompts(false), 2000);
   };
 
   const getCategoryIcon = (category: DailyPhotoPost['category']) => {
@@ -77,7 +96,7 @@ export function DailyPhotoPostsView({ photoPosts, dayName, dayNumber }: Props) {
 
   return (
     <div className="space-y-4 pt-4 border-t border-neutral-800/80">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div
             className={`w-7 h-7 rounded-lg border flex items-center justify-center ${
@@ -89,10 +108,10 @@ export function DailyPhotoPostsView({ photoPosts, dayName, dayNumber }: Props) {
             {isDramaBTS ? <Clapperboard className="w-4 h-4" /> : <Camera className="w-4 h-4" />}
           </div>
           <div>
-            <h3 className="text-sm font-bold text-neutral-100 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-neutral-100 flex flex-wrap items-center gap-2">
               <span>
                 {isDramaBTS
-                  ? `Day ${dayNumber} Hollywood On-Set BTS & Forensic Prop Clues`
+                  ? `Day ${dayNumber} Hollywood On-Set BTS & Actor Stills`
                   : `Day ${dayNumber} Daily Lifestyle Photo Posts`}
               </span>
               <span
@@ -102,16 +121,25 @@ export function DailyPhotoPostsView({ photoPosts, dayName, dayNumber }: Props) {
                     : 'bg-pink-500/10 text-pink-300 border-pink-500/20'
                 }`}
               >
-                {isDramaBTS ? 'In-Universe Production Deck • 4 Authentic Stills' : 'Anti-AI Realism • 4 Posts'}
+                {isDramaBTS ? 'In-Universe Real Star Deck • 4 Authentic Stills' : 'Anti-AI Realism • 4 Posts'}
               </span>
             </h3>
             <p className="text-[11px] text-neutral-400">
               {isDramaBTS
-                ? 'Hollywood soundstage BTS, macro evidence props & mood stills from varying episode set angles.'
+                ? 'Makeup trailer candids, co-star laughing outtakes, ARRI camera slate & late-night soundstage wrap stills.'
                 : 'Photorealistic candid prompts (35mm/iPhone UGC) engineered with natural skin texture, visible pores & cheek mole lock.'}
             </p>
           </div>
         </div>
+
+        <button
+          onClick={handleCopyAllPhotoPrompts}
+          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-neutral-800 hover:bg-neutral-700 text-violet-300 hover:text-violet-200 border border-violet-500/30 transition flex items-center gap-1.5 shrink-0 self-start sm:self-auto shadow-sm"
+          title="Copy all 4 photo prompts to clipboard"
+        >
+          {copiedAllPrompts ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+          <span>{copiedAllPrompts ? 'All 4 BTS Prompts Copied!' : 'Copy All 4 BTS Prompts'}</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">

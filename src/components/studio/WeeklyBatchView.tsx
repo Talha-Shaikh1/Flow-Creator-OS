@@ -36,6 +36,7 @@ import { ContentCalendarModal } from '@/components/calendar/ContentCalendarModal
 import { GenerationHistoryModal } from './GenerationHistoryModal';
 import { getOrCreateClientGuestId } from '@/lib/auth/session';
 import { sanitizeForGoogleFlow } from '@/lib/engine/rules/temporal';
+import { generateDailyPhotoPosts } from '@/lib/engine/rules/photos';
 
 interface Props {
   batch: WeeklyBatchDelivery;
@@ -131,6 +132,19 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
   const activeDay = batch.days[activeDayIndex] || batch.days[0];
   const activeVariation: VideoVariation =
     activeDay.variations[activeVariationIndex] || activeDay.variations[0];
+
+  const activeDayPhotoPosts =
+    activeDay.dailyPhotoPosts && activeDay.dailyPhotoPosts.length > 0
+      ? activeDay.dailyPhotoPosts
+      : generateDailyPhotoPosts(
+          batch.spec.cast?.[0],
+          activeDay.dayNumber,
+          activeDay.dayName,
+          activeDay.dailyEmotion,
+          batch.spec.format,
+          batch.spec.locationSettings?.[0],
+          batch.spec.cast
+        );
 
   const handleProduceVariation = async () => {
     setIsProducing(true);
@@ -290,7 +304,21 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
       });
     }
 
-    bundle += `📱 SOCIAL CAPTION & HASHTAGS:\n${activeVariation.metadata.caption}\n${activeVariation.metadata.hashtags.join(' ')}`;
+    bundle += `📱 SOCIAL CAPTION & HASHTAGS:\n${activeVariation.metadata.caption}\n${activeVariation.metadata.hashtags.join(' ')}\n\n`;
+
+    if (activeDayPhotoPosts && activeDayPhotoPosts.length > 0) {
+      bundle += `==========================================================\n`;
+      bundle += `📸 DAY ${activeDay.dayNumber} REAL-STAR BTS & SOCIAL STILL PROMPTS\n`;
+      bundle += `==========================================================\n\n`;
+
+      activeDayPhotoPosts.forEach((p, idx) => {
+        bundle += `>>> PHOTO ${idx + 1}: ${p.title.toUpperCase()} (${p.category}) <<<\n`;
+        bundle += `[CAPTION]: ${p.caption}\n`;
+        bundle += `[HASHTAGS]: ${p.hashtags.join(' ')}\n`;
+        bundle += `[MIDJOURNEY / FLUX / FLOW PHOTO PROMPT]:\n${p.imagePrompt}\n\n`;
+        bundle += `----------------------------------------------------------\n\n`;
+      });
+    }
 
     navigator.clipboard.writeText(bundle);
     setCopiedFullFlowBundle(true);
@@ -401,20 +429,30 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
       {/* Top Header Navigation */}
       <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-5 backdrop-blur flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
             <span className="px-2.5 py-0.5 text-xs font-bold rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               Batch Ready
             </span>
             <span className="text-xs text-neutral-400">
-              Format: <strong className="text-neutral-200 uppercase">{batch.spec.format.replace('_', ' ')}</strong>
+              Drama: <strong className="text-neutral-100 font-bold">{batch.spec.seriesTitle || 'The Shadow Trust'}</strong>
+            </span>
+            <span className="text-xs text-neutral-500">•</span>
+            <span className="text-xs text-neutral-400">
+              Season {batch.spec.seasonNumber || 1}: <strong className="text-amber-300 font-semibold">{batch.spec.seasonTitle || 'The Local Betrayal'}</strong>
             </span>
             <span className="text-xs text-neutral-500">•</span>
             <span className="text-xs text-neutral-400">
               Style: <strong className="text-neutral-200">{batch.spec.visualStyle}</strong>
             </span>
           </div>
-          <h2 className="text-lg font-bold text-white">
-            7-Day Content Engine & Production Dashboard
+          <h2 className="text-xl font-extrabold text-white flex flex-wrap items-center gap-2">
+            <span className="bg-gradient-to-r from-neutral-100 via-indigo-200 to-neutral-300 bg-clip-text text-transparent">
+              {batch.spec.seriesTitle || 'The Shadow Trust'}
+            </span>
+            <span className="text-neutral-600 font-normal text-sm">/</span>
+            <span className="text-neutral-300 font-semibold text-base">
+              Season {batch.spec.seasonNumber || 1} • Day {activeDay.dayNumber}: {activeDay.episodeTitle || `Episode ${activeDay.dayNumber}`}
+            </span>
           </h2>
         </div>
 
@@ -575,13 +613,15 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[11px] font-bold uppercase tracking-wider">
-                  Day {d.dayNumber}
+                  Ep {d.dayNumber}
                 </span>
                 <Calendar className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-neutral-500'}`} />
               </div>
-              <span className="text-xs font-semibold truncate text-neutral-100">{d.dayName}</span>
+              <span className="text-xs font-semibold truncate text-neutral-100">
+                {d.episodeTitle || d.dayName}
+              </span>
               <span className={`text-[10px] truncate mt-1 ${isActive ? 'text-indigo-100' : 'text-neutral-500'}`}>
-                {d.dailyEmotion.replace(/^[A-Za-z]+ Arc: /, '')}
+                {d.dayName} • {d.dailyEmotion.replace(/^[A-Za-z]+ Arc: /, '')}
               </span>
             </button>
           );
@@ -595,9 +635,13 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
             <Zap className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">
-              {activeDay.dayName} Emotional Dynamic
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">
+                Season {batch.spec.seasonNumber || 1} • Episode {activeDay.dayNumber}: {activeDay.episodeTitle || `Episode ${activeDay.dayNumber}`}
+              </span>
+              <span className="text-neutral-600">•</span>
+              <span className="text-[11px] text-neutral-400">{activeDay.dayName}</span>
+            </div>
             <p className="text-sm font-semibold text-neutral-200">{activeDay.dailyEmotion}</p>
           </div>
         </div>
@@ -910,10 +954,10 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
           </>
         )}
 
-        {/* Daily Lifestyle Photo Posts (Anti-AI Realism) */}
-        {activeDay.dailyPhotoPosts && activeDay.dailyPhotoPosts.length > 0 && (
+        {/* Daily Lifestyle & Real-Star BTS Photo Posts */}
+        {activeDayPhotoPosts && activeDayPhotoPosts.length > 0 && (
           <DailyPhotoPostsView
-            photoPosts={activeDay.dailyPhotoPosts}
+            photoPosts={activeDayPhotoPosts}
             dayName={activeDay.dayName}
             dayNumber={activeDay.dayNumber}
           />

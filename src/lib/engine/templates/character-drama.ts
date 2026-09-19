@@ -339,6 +339,11 @@ export function buildCharacterDramaClips(
     );
 
     const flowPrompt = buildCinematicFlowVeoPrompt({
+      seriesTitle: spec.seriesTitle,
+      seasonNumber: spec.seasonNumber || 1,
+      seasonTitle: spec.seasonTitle,
+      episodeNumber: dayNum,
+      episodeTitle: activePlot.title.replace(/^Ep \d+:\s*/, '').split(' - ')[0],
       clipIndex: idx + 1,
       totalClips: activePlot.clips.length,
       sceneName: cDef.sceneName,
@@ -365,6 +370,10 @@ export function buildCharacterDramaClips(
         : undefined,
       negativePromptDirectives:
         'morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter.',
+      vocalModulation:
+        activeChar.role === 'Hero'
+          ? 'Delivery starts with calm, quiet restraint (narmi), gradually hardening into a sharp, steely edge of legal authority (sakhti), dropping to a cold whisper on the final name.'
+          : 'Voice starts with an icy, dismissive calm (narmi), shifting into an unflinching, steely cadence of executive certainty (sakhti) without raising volume.',
     });
 
     return {

@@ -61,6 +61,7 @@ export const StorySpecSchema = z.object({
   episodeCount: z.number().int().min(1).max(20).optional(),
   locationSettings: z.array(z.string()).min(1, 'At least one location setting is required'),
   customStoryIdea: z.string().optional(),
+  seriesTitle: z.string().optional(),
   workflowPipeline: WorkflowPipelineSchema.optional(),
   seasonNumber: z.number().int().min(1).max(20).optional(),
   seasonTitle: z.string().optional(),

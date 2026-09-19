@@ -4,6 +4,7 @@ import {
   DayContentPackage,
   VideoVariation,
   CastMember,
+  SEASON_ESCALATION_LADDER,
 } from '@/types';
 import { getWeeklyEmotionArc } from './rules/retention';
 import { buildObjectTalkingClips } from './templates/object-talking';
@@ -147,6 +148,36 @@ export function resolveAutonomousCast(spec: StorySpec): CastMember[] {
   ];
 }
 
+export function resolveSeriesTitle(spec: StorySpec): string {
+  if (spec.seriesTitle && spec.seriesTitle.trim().length > 0) {
+    return spec.seriesTitle.trim();
+  }
+  const idea = (spec.customStoryIdea || '').toLowerCase();
+  if (idea.includes('pharma') || idea.includes('patent') || idea.includes('medical') || idea.includes('vaccine') || idea.includes('cure')) {
+    return 'Lethal Dose';
+  }
+  if (idea.includes('cyber') || idea.includes('hacker') || idea.includes('tech') || idea.includes('ai') || idea.includes('tokyo') || idea.includes('code')) {
+    return 'Neon Protocol';
+  }
+  if (idea.includes('detective') || idea.includes('police') || idea.includes('crime') || idea.includes('investigation') || idea.includes('murder')) {
+    return 'The Cold Trail';
+  }
+  if (idea.includes('bank') || idea.includes('heist') || idea.includes('vault')) {
+    return 'The Vault Protocol';
+  }
+  return 'The Shadow Trust';
+}
+
+export const EPISODE_TITLES: Record<number, string> = {
+  1: 'The Forged Will',
+  2: 'The Erased Drive',
+  3: 'The Blackmail Recording',
+  4: 'The Midnight Exchange',
+  5: 'Box 409',
+  6: 'The Wiretapped Standoff',
+  7: 'The Federal Ambush',
+};
+
 export function produceVariationDirectives(
   spec: StorySpec,
   dayNum: number,
@@ -162,6 +193,13 @@ export function produceVariationDirectives(
     spec.cast = resolveAutonomousCast(spec);
     spec.castCount = spec.cast.length;
   }
+  spec.seriesTitle = resolveSeriesTitle(spec);
+  spec.seasonNumber = spec.seasonNumber || 1;
+  spec.seasonTitle =
+    spec.seasonTitle ||
+    SEASON_ESCALATION_LADDER.find((s) => s.seasonNumber === spec.seasonNumber)?.seasonTitle ||
+    'The Local Betrayal';
+
   const arc = getWeeklyEmotionArc(dayNum);
   let builtOutput: ReturnType<typeof buildCharacterDramaClips>;
 
@@ -224,6 +262,12 @@ export function generateWeeklyBatch(
     spec.cast = resolveAutonomousCast(spec);
     spec.castCount = spec.cast.length;
   }
+  spec.seriesTitle = resolveSeriesTitle(spec);
+  spec.seasonNumber = spec.seasonNumber || 1;
+  spec.seasonTitle =
+    spec.seasonTitle ||
+    SEASON_ESCALATION_LADDER.find((s) => s.seasonNumber === spec.seasonNumber)?.seasonTitle ||
+    'The Local Betrayal';
 
   const days: DayContentPackage[] = [];
   const isMindMapOnly = options.mode === 'mind_maps';
@@ -318,6 +362,7 @@ export function generateWeeklyBatch(
 
     days.push({
       dayNumber: dayNum,
+      episodeTitle: EPISODE_TITLES[dayNum] || `Episode ${dayNum}`,
       dayName: arc.dayName,
       dailyEmotion: `${arc.dayName} Arc: ${arc.dailyEmotion}`,
       variations: dayVariations,

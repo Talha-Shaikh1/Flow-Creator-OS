@@ -135,58 +135,61 @@ export function generateDailyPhotoPosts(
   dayName: string,
   dailyEmotion: string,
   format: string = 'character_drama',
-  location: string = 'Penthouse Study at Night'
+  location: string = 'Penthouse Study at Night',
+  allCast?: CastMember[]
 ): DailyPhotoPost[] {
-  const charName = persona?.name || 'Julian Vance';
-  const role = persona?.role || 'Hero';
+  const char1 = persona || allCast?.[0] || { name: 'Julian Vance', role: 'Hero' };
+  const char2 = allCast?.[1] || { name: 'Elena Sterling', role: 'Villain' };
+  const charName = char1.name;
+  const coStarName = char2.name;
 
-  // If Hollywood Noir / Character Drama: Generate Film Set BTS, Forensic Props & Candid Set Lore!
+  // If Hollywood Noir / Character Drama: Generate Authentic Real-Star On-Set BTS Photos
   if (format === 'character_drama') {
     const dramaTheme = DRAMA_DAILY_PHOTO_THEMES[dayNum] || DRAMA_DAILY_PHOTO_THEMES[1];
 
     return [
-      // POST 1: On-Set Film Production Behind-The-Scenes (BTS)
+      // POST 1: Actor Vanity Trailer / Hair & Makeup Check (Real Star Mirror Candid)
       {
-        id: `day-${dayNum}-photo-1-bts`,
+        id: `day-${dayNum}-photo-1-trailer`,
         category: 'Film Set BTS',
-        title: `Day ${dayNum} Set BTS: Rehearsal & Camera Rig`,
-        outfit: 'charcoal bespoke wool suit, slate-gray tie, white crisp collar',
-        caption: `Between takes on today's ${location} scene. The tension in this episode was palpable even when the cameras stopped rolling. What do you think is in that sealed file? 🎬🎬 #BehindTheScenes #NetflixNoir #FlowCreatorOS #FilmMaking #Cinematography`,
-        hashtags: ['#BehindTheScenes', '#OnSet', '#NetflixNoir', '#FilmMaking', '#ShortDrama', '#AIcinema'],
-        imagePrompt: `Film set behind-the-scenes production photograph: Original fictional character ${charName} (distinct non-celebrity digital human actor) ${dramaTheme.btsSetDescription}. Authentic soundstage ambiance, professional cinema production equipment, warm tungsten studio softboxes, subtle atmospheric haze, 35mm motion picture film still, natural candid film crew aesthetic, no real celebrities, no public figures. [IDENTITY]: Lock to master reference character image.`,
+        title: `Day ${dayNum} Actor Trailer: Hair & Makeup Touch-Up`,
+        outfit: 'charcoal tailored trousers, crisp white dress shirt with loosened top button, hair clips holding front parted hair',
+        caption: `Touch-ups before the heavy standoff scenes today. ${charName} isn't ready for what ${coStarName} does in Episode ${dayNum}. Script notes reviewed, iced americano in hand. Let's make cinema. 🎬☕️ #BehindTheScenes #ActorLife #OnSet #TrailerLife #NetflixSeries`,
+        hashtags: ['#BehindTheScenes', '#ActorLife', '#OnSet', '#TrailerVibes', '#NetflixNoir', '#FilmMaking'],
+        imagePrompt: `Ultra-authentic celebrity film actor behind-the-scenes photograph: Original fictional character ${charName} (distinct non-celebrity digital human actor) seated in a brightly lit hair-and-makeup trailer chair in front of a wide mirror lined with warm glowing incandescent Hollywood bulbs. A professional set hairstylist is gently adjusting hair with styling clips. On the vanity counter rests a personalized takeaway coffee cup labeled '${charName}', an open highlighted episode script binder, and makeup brushes in acrylic cups. 35mm film still, warm flattering vanity mirror lighting, authentic candid Instagram star selfie aesthetic, natural skin texture, visible pores, no plastic smoothing, no real celebrities. [IDENTITY]: Lock to master reference character image.`,
       },
 
-      // POST 2: Forensic Prop Evidence & Clue Teaser
+      // POST 2: Breaking Character with Co-Star (Laughing Outtake between Takes)
       {
-        id: `day-${dayNum}-photo-2-prop`,
+        id: `day-${dayNum}-photo-2-costar`,
+        category: 'Film Set BTS',
+        title: `Day ${dayNum} Set Blooper: Breaking Character with ${coStarName}`,
+        outfit: `Bespoke tailored suit / chic designer blazer, holding paper coffee cups`,
+        caption: `We look like mortal enemies on screen, but between takes we cannot stop laughing. Rehearsing the confrontation beat for Episode ${dayNum} before the cameras started rolling. Episode drops tonight! 🥂😂 #Costars #Blooper #OnSetFun #BehindTheScenes #ActorsAtWork`,
+        hashtags: ['#Costars', '#SetLife', '#OnSetHumor', '#BehindTheScenes', '#FilmmakingLife', '#ActorDuo'],
+        imagePrompt: `Candid behind-the-scenes film set photograph: Original fictional character ${charName} and co-star original fictional character ${coStarName} (distinct non-celebrity digital humans) breaking character and laughing genuinely together between intense takes on the ${location} soundstage set. Both hold printed episode screenplay pages with highlighted yellow lines. In the soft-focus background, a matte-black ARRI cinema camera on a dolly track, boom microphone operator, and warm tungsten studio softboxes are visible. Authentic 35mm motion picture film still, candid laugh, genuine joyful expression, natural skin texture, no real celebrities. [IDENTITY]: Lock to master reference character images.`,
+      },
+
+      // POST 3: Director Village, Clapperboard Slate & ARRI Alexa Rig
+      {
+        id: `day-${dayNum}-photo-3-slate`,
         category: 'Forensic Prop Clue',
-        title: `Forensic Clue: ${dramaTheme.propName}`,
-        outfit: 'N/A (Tactile Prop Macro)',
-        caption: `Forensic Evidence File #${dayNum}0${dayNum}: ${dramaTheme.propName}. Look closely at the details... who authorized this? Drop your theories below. 🕵️‍♂️🔍 #ForensicEvidence #CrimeThriller #PlotTwist #MysterySeries #DetectiveVibes`,
-        hashtags: ['#ForensicFiles', '#MysteryClue', '#CrimeThriller', '#PlotTwist', '#DetectiveWork', '#StoryLore'],
-        imagePrompt: `Cinematic macro flat-lay photograph: ${dramaTheme.propDescription}. High tactile texture, crisp 8K macro lens focus, moody chiaroscuro lighting, deep Venetian blind shadows, dramatic mystery film prop still, authentic legal-thriller documentation aesthetic. No violence, no weapons, no gore, clean analytical crime mystery prop.`,
+        title: `Production Slate & Clue: ${dramaTheme.deskClapper}`,
+        outfit: 'N/A (Cinema Camera Village & Prop Evidence)',
+        caption: `Rolling sound... and ACTION. Scene ${dayNum} locked. Also swipe to see the actual document ${charName} drops on the desk today. Notice the timestamp in the corner? 🔍📁 #Filmmaking #DirectorVillage #Cinematography #SetLife #MysteryClue`,
+        hashtags: ['#Cinematography', '#ARRI', '#ProductionSlate', '#DirectorVillage', '#SetProps', '#MovieMagic'],
+        imagePrompt: `Cinematic over-the-shoulder video village photograph: Looking over the shoulder of the camera operator holding an engraved wooden production slate clapperboard reading '${dramaTheme.deskClapper}'. In front of the camera, the professional SmallHD cinema monitor clearly displays a live high-contrast preview of ${charName} on the dark moody ${location} set. Beside the monitor rests the physical prop: ${dramaTheme.propDescription}. Moody chiaroscuro studio lighting, cool blue rim lights, anamorphic flare, authentic Hollywood film production atmosphere.`,
       },
 
-      // POST 3: Candid In-Universe Set Corner Lore
+      // POST 4: 3:30 AM Late-Night Wrap / Soundstage Exit Candid
       {
-        id: `day-${dayNum}-photo-3-candid`,
+        id: `day-${dayNum}-photo-4-wrap`,
         category: 'Candid Set Lore',
-        title: `In-Universe Lore: ${location} Alternate Angle`,
-        outfit: 'tailored bespoke waistcoat, loosened silk tie, crisp spread collar',
-        caption: `In this business, silence is either your greatest weapon or your death sentence. Day ${dayNum} episode is now streaming. 🥃 #CorporateThriller #CharacterLore #CinematicSeries #NoirAesthetic`,
-        hashtags: ['#CharacterLore', '#CorporateNoir', '#NoirVibes', '#DramaticSeries', '#Storytelling'],
-        imagePrompt: `Cinematic in-universe portrait: Original fictional character ${charName} (distinct non-celebrity digital human) ${dramaTheme.candidLocation}. Anamorphic lens flare from nocturnal city lights, moody chiaroscuro rim lighting on cheekbones, cool cyan and warm amber color palette, 4K film still, authentic Netflix Noir aesthetic, no real celebrities, no famous people. [IDENTITY]: Lock to master reference character image.`,
-      },
-
-      // POST 4: Director's Monitor & Clapperboard Flatlay
-      {
-        id: `day-${dayNum}-photo-4-desk`,
-        category: 'Desk / BTS Flatlay',
-        title: `Director's Monitor: ${dramaTheme.deskClapper}`,
-        outfit: 'N/A (Director Village Setup)',
-        caption: `Wrapped scene ${dayNum} at 3:00 AM. The cast delivered something truly chilling today. Get ready for tomorrow's continuation. 🎥✨ #DirectorsCut #ProductionLife #FilmSet #IndieFilm`,
-        hashtags: ['#DirectorsCut', '#FilmmakerLife', '#IndieCreator', '#FilmProduction', '#CinematicArt'],
-        imagePrompt: `High-end film director video village flatlay: A professional SmallHD cinema monitor displaying the last shot of ${charName} on set, an engraved wooden production clapperboard reading '${dramaTheme.deskClapper}' resting next to a highlighted printed screenplay, Sennheiser studio headphones, and a steaming black coffee cup on dark wood table. Warm atmospheric studio practical lights in soft background bokeh. Authentic cinematic filmmaking aesthetic.`,
+        title: `3:30 AM Night Shoot Wrap: Leaving the Soundstage`,
+        outfit: 'dark wool trench coat over comfortable clothing, holding leather script portfolio',
+        caption: `3:30 AM wrap on Day ${dayNum}. Night shoots are brutal on the voice and mind, but watching this story come alive makes every sleepless hour worth it. See you all for tomorrow's continuation. 🌙🎬✨ #NightShoot #SetWrap #FilmmakerLife #ActorJourney #LateNightCinema`,
+        hashtags: ['#NightShoot', '#Wrapped', '#SetLife', '#CinemaNight', '#LateNightVibes', '#ActorLife'],
+        imagePrompt: `Moody candid nighttime photograph: Original fictional character ${charName} (distinct non-celebrity digital human actor) exiting through the heavy steel double doors of a major film studio soundstage into the misty nocturnal studio backlot. Wearing a stylish dark wool trench coat, holding a leather script portfolio and a steaming thermos. Studio red exit indicator lights and wet asphalt reflecting warm amber backlot streetlamps. 35mm candid street film photography, authentic midnight wrap aesthetic, natural skin texture, atmospheric cinematic mist. [IDENTITY]: Lock to master reference character image.`,
       },
     ];
   }

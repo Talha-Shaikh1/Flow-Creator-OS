@@ -9,6 +9,8 @@ import { buildObjectTalkingClips } from '@/lib/engine/templates/object-talking';
 import { buildPodcastStyleClips } from '@/lib/engine/templates/podcast-style';
 import { buildFacelessAmbientClips } from '@/lib/engine/templates/faceless-ambient';
 import { createTokenReport, estimateTokenCount } from '@/lib/engine/tokens';
+import { generateDailyPhotoPosts } from '@/lib/engine/rules/photos';
+import { EPISODE_TITLES } from '@/lib/engine/generator';
 
 function getApiKey(): string | null {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;
@@ -147,14 +149,26 @@ Return JSON with { "dialogue": string, "sceneName": string, "shotType": string, 
         'procedural-engine'
       );
 
+      const dailyPhotos = generateDailyPhotoPosts(
+        spec.cast?.[0],
+        dayNumber,
+        arc.dayName,
+        arc.dailyEmotion,
+        spec.format,
+        spec.locationSettings?.[0],
+        spec.cast
+      );
+
       return NextResponse.json({
         success: true,
         day: {
           dayNumber,
+          episodeTitle: EPISODE_TITLES[dayNumber] || `Episode ${dayNumber}`,
           dayName: arc.dayName,
           dailyEmotion: `${arc.dayName} Arc: ${arc.dailyEmotion}`,
           variations: newVariations,
           selectedVariationId: newVariations[0].id,
+          dailyPhotoPosts: dailyPhotos,
         },
         tokenUsage: dayTokenReport,
       });
