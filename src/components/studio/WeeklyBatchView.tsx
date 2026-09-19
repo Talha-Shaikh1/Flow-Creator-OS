@@ -30,8 +30,10 @@ import {
   Image as ImageIcon,
   Clapperboard,
   CheckCheck,
+  History,
 } from 'lucide-react';
 import { ContentCalendarModal } from '@/components/calendar/ContentCalendarModal';
+import { GenerationHistoryModal } from './GenerationHistoryModal';
 import { getOrCreateClientGuestId } from '@/lib/auth/session';
 
 interface Props {
@@ -51,12 +53,19 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
   const [isGeneratingNextSeason, setIsGeneratingNextSeason] = useState(false);
   const [showSeriesBibleModal, setShowSeriesBibleModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [adoptedDays, setAdoptedDays] = useState<Record<number, boolean>>({});
 
   // Track generated clips: key is `${dayNumber}-${variationId}-clip-${clipIndex}`
   const [generatedClips, setGeneratedClips] = useState<Record<string, boolean>>({});
 
-  // Sync / fetch adoption status on load
+  // Sync / fetch adoption status and generated clips on load
+  React.useEffect(() => {
+    if (batch.generatedClips) {
+      setGeneratedClips(batch.generatedClips);
+    }
+  }, [batch.id]);
+
   React.useEffect(() => {
     try {
       const guestId = getOrCreateClientGuestId();
@@ -187,10 +196,32 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
 
   const toggleClipGenerated = (clipIndex: number) => {
     const key = getClipKey(clipIndex);
-    setGeneratedClips((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+    const nextVal = !generatedClips[key];
+    const updatedMap = {
+      ...generatedClips,
+      [key]: nextVal,
+    };
+    setGeneratedClips(updatedMap);
+
+    const updatedBatch: WeeklyBatchDelivery = {
+      ...batch,
+      generatedClips: updatedMap,
+    };
+    onUpdateBatch(updatedBatch);
+
+    try {
+      localStorage.setItem('flowcreator_latest_batch', JSON.stringify(updatedBatch));
+    } catch {}
+
+    const guestId = getOrCreateClientGuestId();
+    fetch('/api/batches', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-creator-guest-id': guestId,
+      },
+      body: JSON.stringify({ batch: updatedBatch, spec: updatedBatch.spec }),
+    }).catch(() => {});
   };
 
   const completedCount = activeVariation.clips.filter(
@@ -400,15 +431,24 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
           <button
             onClick={() => setShowCalendarModal(true)}
             className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-neutral-800 hover:bg-neutral-700 text-indigo-300 hover:text-indigo-200 transition flex items-center gap-1.5 border border-indigo-500/30 shadow-sm"
-            title="Open Interactive Content Calendar & Production History"
+            title="Open Interactive Content Calendar"
           >
             <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Content Calendar</span>
+            <span>Calendar</span>
             {Object.values(adoptedDays).filter(Boolean).length > 0 && (
               <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                 {Object.values(adoptedDays).filter(Boolean).length}/7 ✅
               </span>
             )}
+          </button>
+
+          <button
+            onClick={() => setShowHistoryModal(true)}
+            className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-neutral-800 hover:bg-neutral-700 text-purple-300 hover:text-purple-200 transition flex items-center gap-1.5 border border-purple-500/30 shadow-sm"
+            title="View Production & Prompt Generation History"
+          >
+            <History className="w-3.5 h-3.5 text-purple-400" />
+            <span>History</span>
           </button>
 
           {batch.seriesBible && (
@@ -1001,6 +1041,12 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
         isOpen={showCalendarModal}
         onClose={() => setShowCalendarModal(false)}
         activeBatch={batch}
+      />
+
+      <GenerationHistoryModal
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+        onSelectBatch={onUpdateBatch}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import { StorySpec, ClipPrompt } from '@/types';
+import { StorySpec, ClipPrompt, InUniversePostBundle } from '@/types';
 import { generateLocationAnchorPrompt, enforceSpatialBlocking } from '../rules/spatial';
 import { generateSecBySecTimeline, buildCinematicFlowVeoPrompt } from '../rules/temporal';
 import { calculateWordCount } from '../rules/retention';
@@ -15,6 +15,7 @@ export function buildCharacterDramaClips(
   characterAnchors: { characterName: string; anchorPrompt: string }[];
   locationAnchors: { locationName: string; anchorPrompt: string }[];
   dialogueScript: { speaker: string; line: string; timing: string }[];
+  inUniversePosts?: InUniversePostBundle;
 } {
   const noirDefaults = [
     {
@@ -22,7 +23,7 @@ export function buildCharacterDramaClips(
       name: 'Julian Vance',
       role: 'Hero' as const,
       description: '32yo high-profile corporate defense attorney fighting betrayal from within.',
-      dnaPrompt: '32-year-old aristocratic man, sharp chiseled jawline, intense deep-set dark obsidian eyes, slicked-back charcoal pompadour hair, light tailored 5 o\'clock shadow, sharp cheekbones. Tailored charcoal bespoke three-piece wool suit, crisp white spread collar, silk slate-gray tie. Master 8K photorealistic keyframe portrait.',
+      dnaPrompt: 'Original fictional character, 32-year-old aristocratic man with distinct non-celebrity digital human facial structure, sharp chiseled jawline, intense deep-set dark obsidian eyes, slicked-back charcoal pompadour hair, light tailored 5 o\'clock shadow, sharp cheekbones. Tailored charcoal bespoke three-piece wool suit, crisp white spread collar, silk slate-gray tie. Master 8K photorealistic keyframe portrait.',
       usesReferenceImage: true,
       personalityVibe: 'Stoic, razor-sharp intellect, fierce restrained anger'
     },
@@ -31,7 +32,7 @@ export function buildCharacterDramaClips(
       name: 'Elena Sterling',
       role: 'Villain' as const,
       description: '30yo ruthless venture partner orchestrating an aggressive hostile takeover.',
-      dnaPrompt: '30-year-old cold and calculating woman, chiseled symmetrical cheekbones, piercing icy-hazel eyes, slicked-back raven hair in an immaculate low chignon, flawless matte porcelain complexion, subtle plum lipstick. Minimalist structured midnight-navy double-breasted designer blazer with platinum cuff buttons. Master 8K photorealistic keyframe portrait.',
+      dnaPrompt: 'Original fictional character, 30-year-old cold and calculating woman with distinct non-celebrity digital human facial structure, chiseled symmetrical cheekbones, piercing icy-hazel eyes, slicked-back raven hair in an immaculate low chignon, flawless matte porcelain complexion, subtle plum lipstick. Minimalist structured midnight-navy double-breasted designer blazer with platinum cuff buttons. Master 8K photorealistic keyframe portrait.',
       usesReferenceImage: true,
       personalityVibe: 'Unflinching, icy composure, dismissive smirk, calculating'
     }
@@ -68,7 +69,7 @@ export function buildCharacterDramaClips(
           speakerName: char1.name,
           silentNames: [char2.name],
           dialogue: `At exactly 2:14 AM, forty percent of our family shares were transferred out of the trust... and the digital vault authorization was in your hands, ${char2.name}.`,
-          action: `Medium close-up on ${char1.name} in ${location}. He slams a sealed black folder containing the forged share transfer onto the dark mahogany desk, eyes locked fiercely on ${char2.name}.`,
+          action: `Medium close-up on ${char1.name} in ${location}. He deliberately places a sealed black folder containing the forged share transfer onto the dark mahogany desk, eyes locked with calm intensity on ${char2.name}.`,
           shotType: 'Shot-Reverse-Shot Close-Up',
           sceneName: `The Forged Will - Accusation`,
         },
@@ -105,10 +106,10 @@ export function buildCharacterDramaClips(
         {
           speakerName: char2.name,
           silentNames: [char1.name],
-          dialogue: `Marcus is a black-market fixer who sells corporate blood to the highest bidder! Who wired fifty million dollars to his offshore account, ${char2.name}?`,
+          dialogue: `Marcus is a confidential fixer who trades classified corporate intelligence to the highest bidder! Who wired fifty million dollars to his offshore account, ${char2.name}?`,
           action: `Tight reverse shot on ${char2.name} in ${location}. She folds her arms calmly over her structured navy blazer, meeting his gaze without a flicker of panic.`,
           shotType: 'Shot-Reverse-Shot Close-Up',
-          sceneName: `The Erased Drive - Interrogation`,
+          sceneName: `The Erased Drive - Strategic Inquiry`,
         },
         {
           speakerName: char1.name,
@@ -151,10 +152,10 @@ export function buildCharacterDramaClips(
         {
           speakerName: char2.name,
           silentNames: [char1.name],
-          dialogue: `Then listen carefully: Judge Morrison gave us forty-eight hours to burn the original trust documents, or we both disappear into a black site forever.`,
+          dialogue: `Then listen carefully: Judge Morrison gave us forty-eight hours to revoke the original trust documents, or we both lose our legal credentials and corporate authority forever.`,
           action: `Over-the-shoulder dramatic composition in ${location}. ${char2.name} backs against the rain-drenched glass window, pale and rigid, delivering the federal countdown.`,
           shotType: 'Over-the-Shoulder',
-          sceneName: `The Blackmail Recording - Cliffhanger Countdown`,
+          sceneName: `The Blackmail Recording - Urgent Countdown`,
         },
       ],
     },
@@ -173,10 +174,10 @@ export function buildCharacterDramaClips(
         {
           speakerName: char2.name,
           silentNames: [char1.name],
-          dialogue: `You hand that drive over, and you sign our death warrants. The chairman himself ordered those wire transfers five years ago to keep us alive.`,
+          dialogue: `You hand that drive over, and you terminate our careers forever. The chairman himself authorized those transactions five years ago to keep us protected.`,
           action: `Tight reverse shot on ${char2.name} in ${location}. She glares at the drive, a sharp intake of breath signaling the realization of total exposure.`,
           shotType: 'Shot-Reverse-Shot Close-Up',
-          sceneName: `The Midnight Exchange - Death Warrant`,
+          sceneName: `The Midnight Exchange - Executive Risk`,
         },
         {
           speakerName: char1.name,
@@ -219,10 +220,10 @@ export function buildCharacterDramaClips(
         {
           speakerName: char1.name,
           silentNames: [char2.name],
-          dialogue: `There are only two people alive registered to that vault... you, and the man you swore was buried in the family plot three years ago!`,
-          action: `Over-the-shoulder shot in ${location}. ${char1.name} leans in, voice dropping to a deadly whisper before turning sharply toward the rain-soaked window.`,
+          dialogue: `There are only two people alive registered to that vault... you, and the founder you swore had permanently resigned three years ago!`,
+          action: `Over-the-shoulder shot in ${location}. ${char1.name} leans in, voice dropping to a tense whisper before turning sharply toward the rain-soaked window.`,
           shotType: 'Over-the-Shoulder',
-          sceneName: `Box 409 - Father Alive Revelation`,
+          sceneName: `Box 409 - Founder Resignation Revelation`,
         },
       ],
     },
@@ -287,7 +288,7 @@ export function buildCharacterDramaClips(
         {
           speakerName: char1.name,
           silentNames: [char2.name],
-          dialogue: `I'm not running without the truth, ${char2.name}. Look me in the eyes and tell me... was my father really the one who ordered the hit?`,
+          dialogue: `I'm not running without the truth, ${char2.name}. Look me in the eyes and tell me... was my father really the one who authorized this hostile operation?`,
           action: `Medium close-up on ${char1.name} in ${location}. He stands firm amid the strobe of police sirens, refusing to grab the emergency bug-out bag.`,
           shotType: 'Shot-Reverse-Shot Close-Up',
           sceneName: `Season Finale - The Truth Demanded`,
@@ -303,7 +304,7 @@ export function buildCharacterDramaClips(
         {
           speakerName: char1.name,
           silentNames: [char2.name],
-          dialogue: `The receiver clicks in my hand... and the voice on the other end speaks: 'Did you really think a plane crash could kill Arthur Vance, son?'`,
+          dialogue: `The receiver clicks in my hand... and the voice on the other end speaks: 'Did you really think an offshore disappearance could silence Arthur Vance, son?'`,
           action: `Dramatic over-the-shoulder close-up in ${location}. ${char1.name} lifts the heavy black receiver to his ear as chilling baritone voice speaks; screen abruptly cuts to pitch black at 0:09.5s!`,
           shotType: 'Over-the-Shoulder',
           sceneName: `Season Finale - Arthur Vance Returns (Cut to Black)`,
@@ -395,6 +396,172 @@ export function buildCharacterDramaClips(
     };
   });
 
+  const inUniverseBundles: Record<number, InUniversePostBundle> = {
+    1: {
+      btsPost: {
+        title: `🎬 Film Set BTS: The Forged Will (Take 4)`,
+        angleDescription: `Director monitor angle with ARRI Alexa LF rig and boom mic in soft focus foreground`,
+        imagePrompt: `[BEHIND-THE-SCENES FILM SET PHOTOGRAPH]: On-set production still of ${char1.name} (original fictional man, distinct non-celebrity digital human, sharp jawline, tailored charcoal suit) seated in the corner of the luxury ${location} set, reviewing a highlighted yellow paper script between takes. In the soft-focus foreground, a professional matte-black ARRI Alexa LF cinema camera on a heavy tripod and sound boom microphone are visible. Cinematic studio stage lighting, C-stands, warm amber practical lights, authentic film crew atmosphere. 35mm film still, Kodak Vision3 500T, subtle film grain, natural depth of field.`,
+        caption: `Take 4 of the 02:14 AM trust transfer standoff. Between scenes, staying locked in ${char1.name}'s headspace. The energy on set tonight is electric. 🎬📁`,
+        hashtags: ['#FilmSetBTS', '#BehindTheScenes', '#IndieCinema', '#Veo2', '#CharacterDrama', '#Filmmaking'],
+      },
+      propPost: {
+        title: `🔍 Tangible Clue: 40% Forged Share Trust Certificates`,
+        clueName: `Embossed Share Transfer Documents & Open Montblanc Pen`,
+        imagePrompt: `[FORENSIC MACRO PROP STILL]: High-end cinematic macro flat-lay photograph of official corporate share transfer trust certificates dated 02:14 AM spread across a dark polished mahogany desk. An open Montblanc Meisterstück fountain pen rests beside the contested signature line. Deep Venetian blind chiaroscuro shadows slice across the embossed legal gold wax seal. Photorealistic 8K, tactile paper grain, rich ink sheen, ARRI Alexa LF 50mm macro lens, moody noir lighting.`,
+        caption: `Evidence Exhibit A: At 02:14 AM, forty percent of the firm's equity moved without board approval. Look closely at the counter-signature. Who authorized it? 🕵️‍♂️📜`,
+        hashtags: ['#ForensicClue', '#StoryClue', '#CorporateNoir', '#Whodunnit', '#PlotTwist'],
+      },
+      candidPost: {
+        title: `🌃 In-Universe Set Lore: Penthouse Rain Balcony`,
+        moodDescription: `Solitary moment on the rainy terrace overlooking nocturnal skyscraper lights`,
+        imagePrompt: `[IN-UNIVERSE CINEMATIC CANDID]: ${char1.name} (original fictional man, distinct non-celebrity digital human, tailored charcoal three-piece suit, slate-gray tie slightly loosened) standing on the wet glass balcony of the ${location} at 2:30 AM. Nocturnal city skyscrapers shrouded in rain fog glow in the background with amber and cyan bokeh. He holds a crystal tumbler of amber drink, staring pensively into the skyline. ARRI Alexa LF, 85mm anamorphic prime lens, high-contrast noir lighting, rain droplets running down glass barrier.`,
+        caption: `Some decisions can't be undone once the sun comes up. 2:30 AM above the skyline. 🌧️🥃`,
+        hashtags: ['#NoirVibes', '#CinematicMood', '#CharacterLore', '#MidnightThoughts', '#InUniverse'],
+      },
+    },
+    2: {
+      btsPost: {
+        title: `🎬 Film Set BTS: The Erased Drive Blocking`,
+        angleDescription: `Blocking rehearsal with director near dark oak archival filing cabinets`,
+        imagePrompt: `[BEHIND-THE-SCENES FILM SET PHOTOGRAPH]: On-set production photograph of ${char2.name} (original fictional woman, distinct non-celebrity digital human, structured midnight-navy blazer) listening attentively to director blocking notes near dark oak archival filing cabinets in ${location}. In the background, C-stand lighting equipment, an amber diffusion panel, and a boom operator are visible in soft focus. Authentic Hollywood soundstage environment, 35mm film still, Kodak Vision3 500T, subtle film grain.`,
+        caption: `Rehearsing the pacing for Scene 2B. Precision blocking is everything when fifty million dollars is on the line. 🎬🎙️`,
+        hashtags: ['#FilmSetBTS', '#DirectorNotes', '#Cinematography', '#ActorsLife', '#Veo2'],
+      },
+      propPost: {
+        title: `🔍 Tangible Clue: Brushed-Metal Encrypted SSD`,
+        clueName: `Brushed-Metal Encrypted SSD & Zurich Bank Wire Routing Sheet`,
+        imagePrompt: `[FORENSIC MACRO PROP STILL]: Cinematic macro flat-lay photograph of a military-grade brushed-metal external SSD drive resting next to a folded Zurich bank wire transfer routing sheet showing a $50,000,000 transaction. A faint pulsing emerald LED indicator glows on the metallic casing. ARRI Alexa LF 50mm macro lens, moody cool-blue sidelighting, crisp tactile textures, 8K resolution.`,
+        caption: `Exhibit B: The erased security drive wasn't erased after all. The Zurich routing numbers don't lie. Who was the real recipient? 💾🔒`,
+        hashtags: ['#ForensicClue', '#CyberMystery', '#CorporateEspionage', '#TheErasedDrive'],
+      },
+      candidPost: {
+        title: `📚 In-Universe Set Lore: The Archival Shelves`,
+        moodDescription: `Quiet inspection of confidential ledgers in the private study library`,
+        imagePrompt: `[IN-UNIVERSE CINEMATIC CANDID]: ${char2.name} (original fictional woman, distinct non-celebrity digital human, structured navy blazer) standing in front of floor-to-ceiling dark oak bookshelves lined with confidential leather-bound ledgers in ${location}. Her fingertips lightly trace the spine of a vintage corporate journal under dramatic chiaroscuro key lighting. Master 8K cinematic portrait, anamorphic lens flare.`,
+        caption: `Every corporate empire has a paper trail it tries to bury. Not this one. 📖🕯️`,
+        hashtags: ['#CharacterLore', '#InUniverse', '#CorporateIntrigue', '#StoryWorld'],
+      },
+    },
+    3: {
+      btsPost: {
+        title: `🎬 Film Set BTS: The Wiretap Playback Rehearsal`,
+        angleDescription: `Cinematographer checking focal depth on the living salon coffee table`,
+        imagePrompt: `[BEHIND-THE-SCENES FILM SET PHOTOGRAPH]: Production still capturing the film crew setting up a low-angle shot in the penthouse salon. ${char1.name} and ${char2.name} (original fictional characters, distinct non-celebrity digital humans) rehearse the dramatic pause across the coffee table while the focus puller measures distance with a laser tape. Soft studio haze, ARRI sky-panels overhead, authentic filmmaking craft. 35mm film still, natural grain.`,
+        caption: `Setting up the 85mm anamorphic frame for the audio tape reveal. Silence speaks louder than words on set. 🎬🎧`,
+        hashtags: ['#FilmSetBTS', '#Cinematographer', '#BehindTheScenes', '#IndieFilm', '#Veo2'],
+      },
+      propPost: {
+        title: `🔍 Tangible Clue: Titanium Audio Recorder with Glowing Waveforms`,
+        clueName: `Titanium Voice Recorder with Illuminated Amber Frequency Bars`,
+        imagePrompt: `[FORENSIC MACRO PROP STILL]: Macro cinematic photograph of a sleek titanium digital voice recorder resting on a smoked glass coffee table. Illuminated amber digital frequency waveform bars pulse on its OLED screen alongside an inserted encrypted micro-SD card. Reflections of city lights in the glass table, moody atmospheric chiaroscuro lighting, tactile brushed aluminum texture, 8K resolution.`,
+        caption: `Exhibit C: 30 minutes of recorded audio from inside this room. The second voice on that tape changes everything. 🎙️⚠️`,
+        hashtags: ['#AudioEvidence', '#ForensicProp', '#BlackmailTape', '#PlotClue'],
+      },
+      candidPost: {
+        title: `🛋️ In-Universe Set Lore: Chesterfield Corner Reflection`,
+        moodDescription: `Solitary contemplation deep in a leather armchair as the tape plays`,
+        imagePrompt: `[IN-UNIVERSE CINEMATIC CANDID]: ${char1.name} (original fictional man, distinct non-celebrity digital human) seated deep in a vintage chesterfield dark leather armchair in the corner of ${location}, head resting on hand, eyes fixed thoughtfully on the rain-drenched floor-to-ceiling glass. Warm amber table lamp glow contrasting with nocturnal blue city bokeh. Cinematic 8K still.`,
+        caption: `When you finally hear the voice of the person who orchestrated the betrayal. 🥃🌧️`,
+        hashtags: ['#NoirVibes', '#Solitude', '#InUniverseLore', '#DramaticMoment'],
+      },
+    },
+    4: {
+      btsPost: {
+        title: `🎬 Film Set BTS: Steel Vault Lighting Setup`,
+        angleDescription: `Gaffer adjusting cool-blue rim lighting near heavy vault security doors`,
+        imagePrompt: `[BEHIND-THE-SCENES FILM SET PHOTOGRAPH]: Production photograph of the lighting crew and gaffer positioning a cool-blue Astera Titan tube light beside the heavy steel vault doors on set. ${char1.name} (original fictional man, non-celebrity digital human) holds the prop flash drive, conferring with the camera operator on the fluid head. Cinematic film set atmosphere, haze, cables on floor, professional production still.`,
+        caption: `Crafting the midnight exchange atmosphere with cool cyan rim lights and theatrical haze. 90 seconds until lockdown. 🎬💡`,
+        hashtags: ['#FilmSetBTS', '#GafferLife', '#Cinematography', '#LightingDesign', '#Veo2'],
+      },
+      propPost: {
+        title: `🔍 Tangible Clue: Cold-Storage Drive & Transaction Register`,
+        clueName: `Brushed-Metal Cold-Storage Flash Drive & Regulatory Transaction Ledger`,
+        imagePrompt: `[FORENSIC MACRO PROP STILL]: High-definition cinematic macro flat-lay of a heavy brushed-metal military-grade flash drive with laser-etched serial numbers resting atop a printed regulatory transaction manifest with unredacted wire entries. Chiaroscuro desk lamp illumination, crisp micro-lettering, tactile paper texture, 8K photorealistic.`,
+        caption: `Exhibit D: Thirty thousand unredacted transactions. The physical key to five years of covered operations. 🔑📑`,
+        hashtags: ['#ForensicClue', '#ClassifiedData', '#Whodunnit', '#EvidenceExhibit'],
+      },
+      candidPost: {
+        title: `🏢 In-Universe Set Lore: Executive Elevator Foyer`,
+        moodDescription: `Leaning against dark granite walls under architectural recessed lights`,
+        imagePrompt: `[IN-UNIVERSE CINEMATIC CANDID]: ${char2.name} (original fictional woman, non-celebrity digital human, structured navy blazer) leaning against a polished black granite elevator foyer wall in the corporate tower at midnight, checking the tactical security display under cool architectural downlights. Cinematic reflection in the polished granite, suspenseful isolation, 8K film portrait.`,
+        caption: `The elevator is coming up. There are no safe exits left in this building. ⏱️🏢`,
+        hashtags: ['#InUniverse', '#HighStakes', '#CorporateNoir', '#MidnightHour'],
+      },
+    },
+    5: {
+      btsPost: {
+        title: `🎬 Film Set BTS: Safe Deposit Vault Dolly Track`,
+        angleDescription: `Camera dolly track setup along the brass safe deposit locker corridor`,
+        imagePrompt: `[BEHIND-THE-SCENES FILM SET PHOTOGRAPH]: On-set production still showing the camera dolly on curved steel tracks in the vaulted safe deposit box corridor set. ${char2.name} (original fictional woman, non-celebrity digital human) stands by locker 409 while the camera operator preps a creeping push-in shot. Director reviewing frame on a portable SmallHD monitor. 35mm film aesthetic, Kodak Vision3, natural film grain.`,
+        caption: `Dolly tracking into Locker 409. The slower the camera moves, the higher the tension climbs. 🎬🎥`,
+        hashtags: ['#FilmSetBTS', '#CameraDolly', '#FilmmakingCraft', '#SetLife', '#Veo2'],
+      },
+      propPost: {
+        title: `🔍 Tangible Clue: Shattered Biometric Card of Box 409`,
+        clueName: `Fractured Biometric Security Card & Retinal Log Printout`,
+        imagePrompt: `[FORENSIC MACRO PROP STILL]: Macro photograph of a shattered translucent biometric security card labeled 'VAULT ACCESS - BOX 409' with hairline glass fractures across an exposed microchip, resting next to a printed optical retinal scan report with official security stamps. Dramatic low-key lighting, reflective broken glass shards, 8K resolution.`,
+        caption: `Exhibit E: Box 409 was breached from the inside. The optical retinal match belongs to a person declared retired three years ago. 🔬🗄️`,
+        hashtags: ['#ForensicEvidence', '#SafetyDepositBox', '#PlotTwist', '#MysteryClue'],
+      },
+      candidPost: {
+        title: `🏦 In-Universe Set Lore: Vault Perspective Corridor`,
+        moodDescription: `Walking down the endless brass safe deposit locker corridor into deep shadow`,
+        imagePrompt: `[IN-UNIVERSE CINEMATIC CANDID]: ${char1.name} (original fictional man, non-celebrity digital human, tailored coat) walking slowly down the endless vaulted safe deposit corridor lined with hundreds of polished brass locker doors receding into deep shadowy perspective. Overhead circular warm lights casting rhythmic golden pools on the floor. 8K cinematic film still.`,
+        caption: `Some vaults were never meant to be opened. 🏦🔐`,
+        hashtags: ['#CinematicMood', '#NoirAtmosphere', '#VaultSecrets', '#InUniverse'],
+      },
+    },
+    6: {
+      btsPost: {
+        title: `🎬 Film Set BTS: Emergency Flashing Light Rig`,
+        angleDescription: `Special effects lighting rig simulating police cruisers reflecting into penthouse`,
+        imagePrompt: `[BEHIND-THE-SCENES FILM SET PHOTOGRAPH]: Production still capturing the lighting technician operating a rotating red and blue emergency beacon rig outside the penthouse studio windows. ${char1.name} and ${char2.name} (original fictional characters, non-celebrity digital humans) confer with the director near the Venetian blinds. Authentic studio soundstage, grip equipment, atmospheric smoke machine haze. 35mm film still.`,
+        caption: `Simulating the sirens closing in for the Ep 6 standoff. The red and blue sweep against the dark blinds sets the entire mood. 🎬🚨`,
+        hashtags: ['#FilmSetBTS', '#SFXLighting', '#PracticalEffects', '#BehindTheScenes', '#Veo2'],
+      },
+      propPost: {
+        title: `🔍 Tangible Clue: Active Wiretapped Smartphone`,
+        clueName: `Luxury Smartphone with Active Federal Prosecutor Call Screen (47:12)`,
+        imagePrompt: `[FORENSIC MACRO PROP STILL]: Macro cinematic photograph of a black luxury smartphone resting on a dark executive desk. The screen displays an active call in glowing emerald green: 'Federal Special Prosecutor - 47:12' with a real-time pulsing audio frequency graph. Emergency red and blue reflections streak across the glass screen. Photorealistic 8K, shallow depth of field.`,
+        caption: `Exhibit F: The line was open for 47 minutes. Every confession, every secret, recorded straight to federal servers. 📱🔴`,
+        hashtags: ['#WiretapEvidence', '#FederalInvestigation', '#ForensicProp', '#Standoff'],
+      },
+      candidPost: {
+        title: `🚨 In-Universe Set Lore: Standoff at the High Window`,
+        moodDescription: `Watching emergency sirens enter the corporate courtyard below`,
+        imagePrompt: `[IN-UNIVERSE CINEMATIC CANDID]: ${char2.name} (original fictional woman, non-celebrity digital human, midnight blazer) standing motionless by the towering executive glass window as rhythmic blue and red emergency light pulses paint the ceiling and dark venetian blinds. Tension-filled silhouette, cinematic film still, 8K resolution.`,
+        caption: `Immunity revoked. The tactical elevator is already on its way up. 🚨⏳`,
+        hashtags: ['#InUniverse', '#NoWayOut', '#Standoff', '#CorporateThriller'],
+      },
+    },
+    7: {
+      btsPost: {
+        title: `🎬 Film Set BTS: Season Finale Cut-to-Black Take`,
+        angleDescription: `Director holding clapperboard for the final confrontation take with rain FX`,
+        imagePrompt: `[BEHIND-THE-SCENES FILM SET PHOTOGRAPH]: On-set production photograph of the director marking the clapperboard 'EPISODE 7 - SEASON FINALE - TAKE 7' right in front of the ARRI Alexa LF camera. In the background, ${char1.name} (original fictional man, non-celebrity digital human) stands by the antique rotary phone under heavy artificial rain mist against the penthouse glass. Production crew in action, authentic film set craft, 35mm grain.`,
+        caption: `The final take of Season 1. When the receiver clicks and the voice speaks... cut to black! What a journey this season has been. 🎬🖤`,
+        hashtags: ['#SeasonFinale', '#FilmSetBTS', '#WrapParty', '#IndieSeries', '#Veo2', '#Filmmaking'],
+      },
+      propPost: {
+        title: `🔍 Tangible Clue: Antique Analog Rotary Phone`,
+        clueName: `Heavy Black Rotary Phone with Coiled Copper Cord`,
+        imagePrompt: `[FORENSIC MACRO PROP STILL]: Macro cinematic still of an antique heavy black bakelite rotary telephone on a polished dark mahogany side table. The heavy receiver is slightly lifted off the cradle, coiled black cord taut. A single warm amber desk lamp casts long dramatic noir shadows across the rotary dial. Atmospheric film haze, rich tactile textures, 8K photorealistic.`,
+        caption: `Exhibit G: An analog line disconnected fifteen years ago. When it rings in an empty room, you don't pick it up unless you're ready to meet an unexpected voice. ☎️⚡`,
+        hashtags: ['#SeasonFinaleClue', '#ArthurVanceReturns', '#Cliffhanger', '#NoirProp'],
+      },
+      candidPost: {
+        title: `🚪 In-Universe Set Lore: The Service Tunnel Stairwell`,
+        moodDescription: `Solitary pause at the emergency escape threshold lit by red exit signs`,
+        imagePrompt: `[IN-UNIVERSE CINEMATIC CANDID]: ${char1.name} (original fictional man, non-celebrity digital human, charcoal coat) standing at the threshold of a dark industrial concrete service tunnel staircase, illuminated only by a glowing red emergency exit sign and rising steam from ventilation pipes. Heavy cinematic shadows, solitary suspense, 8K film portrait.`,
+        caption: `Take the briefcase and disappear, or answer the phone? The choice that ends Season 1. 🚪🔴`,
+        hashtags: ['#InUniverse', '#SeasonFinale', '#TheChoice', '#CliffhangerEnding'],
+      },
+    },
+  };
+
+  const inUniverseBundle = inUniverseBundles[dayNum] || inUniverseBundles[1];
+
   return {
     title,
     hookDescription,
@@ -420,5 +587,6 @@ export function buildCharacterDramaClips(
       line: c.dialogue,
       timing: `0:${idx * 10 < 10 ? '0' : ''}${idx * 10 + 2} - 0:${idx * 10 + 7}`,
     })),
+    inUniversePosts: inUniverseBundle,
   };
 }

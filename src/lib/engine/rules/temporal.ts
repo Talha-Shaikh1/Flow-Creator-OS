@@ -87,21 +87,21 @@ export function generateSecBySecTimeline(
     },
     {
       timeRange: '0:07 - 0:09',
-      visualAction: `${activeSpeaker} closes lips firmly, holding fierce unblinking gaze as line sinks in.`,
+      visualAction: `${activeSpeaker} closes lips calmly, maintaining steady, focused analytical eye contact as the statement settles.`,
       cameraMovement: 'Slow subtle camera drift holding on lingering emotional resonance.',
-      characterPose: 'Jaw set firm, slight exhaled breath, unwavering eye contact.',
-      pauseBeat: '2-second heavy standoff beat; speech ceases, lips sealed completely.',
+      characterPose: 'Composed posture, subtle breath release, unwavering calm eye contact.',
+      pauseBeat: '2-second measured standoff beat; speech ceases, lips sealed completely.',
       activeSpeaker: activeSpeaker,
       silentCharacters: silentCharacters,
       lightingMood: 'Gradual shadow emphasis deepening across background.',
-      sfxCue: 'Heavy silence, faint ominous sub-bass pulse, lingering acoustic resonance.',
+      sfxCue: 'Subtle tension drone, low-frequency atmospheric hum, lingering acoustic resonance.',
     },
     isFinalClip
       ? {
           timeRange: '0:09 - 0:10',
-          visualAction: 'Dramatic micro-expression or sudden revelation leading into immediate episode cliffhanger cut.',
+          visualAction: 'Dramatic micro-expression or sudden quiet revelation leading into immediate episode cliffhanger cut.',
           cameraMovement: 'Sudden slow punch-in before abrupt black cut at 0:09.5s.',
-          characterPose: 'Micro-reaction of shock, realization or defiance.',
+          characterPose: 'Micro-reaction of surprise, realization or quiet defiance.',
           pauseBeat: 'Abrupt audio and visual freeze before cutting to black.',
           silentCharacters: silentCharacters,
           lightingMood: 'High contrast shadow cutoff.',
@@ -128,9 +128,9 @@ export function generateSecBySecTimeline(
 export function buildCinematicFlowVeoPrompt(params: CinematicVeoPromptParams): string {
   const silentList = params.silentCharacters.length > 0
     ? params.silentCharacters
-        .map((s) => `[${s.name.toUpperCase()}: 100% SILENT, LISTENING REACTION ONLY, LIPS SEALED, BACK TO CAMERA / SOFT FOCUS]`)
+        .map((s) => `[ORIGINAL FICTIONAL CHARACTER ${s.name.toUpperCase()}: 100% SILENT, NON-FAMOUS DIGITAL HUMAN, LISTENING REACTION ONLY, LIPS SEALED, BACK TO CAMERA / SOFT FOCUS]`)
         .join(' ')
-    : '[ALL OTHER SUBJECTS: 100% SILENT, NO SPEECH]';
+    : '[ALL OTHER SUBJECTS: 100% SILENT, NO SPEECH, ORIGINAL DIGITAL HUMANS]';
 
   const voiceProfile = params.activeSpeaker.voiceTone || 'Clear resonant cinematic voice, controlled emotional intensity';
 
@@ -155,11 +155,15 @@ export function buildCinematicFlowVeoPrompt(params: CinematicVeoPromptParams): s
     })
     .join('\n');
 
+  const safeNegativeDirectives = params.negativePromptDirectives
+    ? `${params.negativePromptDirectives}, no physical violence, no weapons, no aggression, no shouting, no real-world celebrities, no famous public figures, no blood, no gore, no tobacco`
+    : 'no physical violence, no weapons, no aggression, no shouting, no real-world celebrities, no famous public figures, no blood, no gore, no tobacco, no distorted anatomy';
+
   return `[CLIP ${params.clipIndex}/${params.totalClips} - GOOGLE FLOW VEO DIRECTIVE]
 [CINEMATIC SPEC]: 9:16 vertical composition (Shorts/Reels/TikTok), 24fps motion blur, 4K film composition.
 [LOCATION MASTER ANCHOR]: ${params.locationAnchor}. Locked spatial coordinates and architectural depth.
 
-[ACTIVE CHARACTER]: ${params.activeSpeaker.name} - ${params.activeSpeaker.dnaPrompt} [SHARP FOCUS, LOCKED BLOCKING]
+[ACTIVE SUBJECT]: Original fictional character ${params.activeSpeaker.name} (distinct non-celebrity digital human) - ${params.activeSpeaker.dnaPrompt} [SHARP FOCUS, LOCKED BLOCKING]
 [SILENT CHARACTERS]: ${silentList}
 
 [AUDIO & SPOKEN DIALOGUE]:
@@ -173,5 +177,5 @@ export function buildCinematicFlowVeoPrompt(params: CinematicVeoPromptParams): s
 ${timelineFormatted}
 
 [LIGHTING & ATMOSPHERE]: ${params.lightingTheme}
-${params.cliffhangerNote ? `[CLIFFHANGER NOTE]: ${params.cliffhangerNote}\n` : '[TRANSITION NOTE]: Seamless match-cut to subsequent reverse shot. No black cut. Continuous ambient room acoustic drone.\n'}${params.negativePromptDirectives ? `[NEGATIVE DIRECTIVES]: ${params.negativePromptDirectives}` : ''}`;
+${params.cliffhangerNote ? `[CLIFFHANGER NOTE]: ${params.cliffhangerNote}\n` : '[TRANSITION NOTE]: Seamless match-cut to subsequent reverse shot. No black cut. Continuous ambient room acoustic drone.\n'}[NEGATIVE DIRECTIVES]: ${safeNegativeDirectives}`;
 }

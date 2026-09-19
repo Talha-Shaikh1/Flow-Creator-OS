@@ -75,6 +75,16 @@ PILLAR 3: RETENTION DYNAMICS & PSYCHOLOGICAL HOOKS
 - Dialogue pacing for each 10s clip must be strictly 18-22 words (never more than 25 words).
 - End with a psychological cliffhanger.
 
+PILLAR 4: GOOGLE FLOW SAFETY & FACE GENERATION COMPLIANCE (STRICT)
+- AVOID CELEBRITY LIKENESSES: Automated video safety filters reject photorealistic faces resembling real or famous people in dramatic confrontation scenes ("real person in sensitive situations" policy).
+- All characters MUST be designated as: "Original fictional character with distinct non-celebrity digital human facial structure".
+- PROHIBITED CONTENT: No physical violence, weapons, shouting, blood, gore, murder/hit threats, or tobacco/smoking. Channel high stakes through corporate espionage, legal countdowns, wiretapped audio, cold-storage drives, and icy psychological tension.
+- In every "flowPromptText", append safe directives: "[NEGATIVE DIRECTIVES]: no physical violence, no weapons, no aggression, no shouting, no real-world celebrities, no famous public figures, no blood, no gore, no tobacco, no distorted anatomy".
+
+PILLAR 5: IN-UNIVERSE BTS & FORENSIC FEED CONTENT (ANTI-AI CLICHÉ)
+- Never output generic AI lifestyle tropes (no generic coffee shop, gym mirror selfie, or empty street walks).
+- Output authentic Hollywood Film Set BTS (director monitor, ARRI camera rigs, script reads between takes), Forensic Macro Prop Clues (the exact physical evidence from today's episode), and Candid In-Universe Set Lore (varying set angles, rainy terrace, executive elevator foyer).
+
 OUTPUT SPECIFICATION:
 Generate a 7-Day arc (Day 1 to Day 7). For each day, create 3 variations:
 - Variation A (High Tension)
@@ -94,8 +104,39 @@ Format of "flowPromptText":
   • [0:02 - 0:07 | DIALOGUE DELIVERY & LIP-SYNC]: Camera movement, physical gesture/head tilt, spoken line "[Exact Dialogue]" with precise lip-sync.
   • [0:07 - 0:09 | REACTION & TENSION HOLD]: Camera drift, sealed lips, heavy silent tension.
   • [0:09 - 0:10 | CLIFFHANGER CUT]: Abrupt cutoff, dramatic cliffhanger sound design.
+- [NEGATIVE DIRECTIVES]: no physical violence, no weapons, no aggression, no shouting, no real-world celebrities, no famous public figures, no blood, no gore, no tobacco, no distorted anatomy.
 Plus character/location reference prompts, dialogue script, and metadata (caption, hashtags).
 Return valid JSON only matching the schema.`;
+
+  const isAutonomousCast = !spec.cast || spec.cast.length === 0 || spec.autonomousCast;
+
+  const castInstruction = isAutonomousCast
+    ? `- AUTONOMOUS CASTING DIRECTIVE:
+  The user has NOT provided manual characters.
+  Analyze the story premise ("${spec.customStoryIdea || spec.tone}"), genres (${spec.genres.join(', ')}), and format.
+  Autonomously create the optimal cast:
+  1. Structure the hierarchy:
+     - 2 Core Leads: 1 Protagonist (role: "Hero") and 1 Antagonist (role: "Villain").
+     - 1-2 Recurring Side Characters: (role: "Side") e.g. Fixer, Whistleblower, Informant, Detective, or Confidante as fitting the conflict.
+  2. For EACH character, output:
+     - id: "char-1", "char-2", etc.
+     - name: Original, realistic, non-famous fictional name fitting the world.
+     - role: "Hero" | "Villain" | "Side" | "Narrator"
+     - description: Concise logline of age, profession, and motivation.
+     - dnaPrompt: "Original fictional character, {age}yo {gender} with distinct non-celebrity digital human facial structure, {features}, {wardrobe}. Master 8K photorealistic keyframe portrait."
+     - usesReferenceImage: true
+     - personalityVibe: Distinct psychological/vocal cadence.
+  3. Include this newly crafted cast array in the root of your JSON output as "cast": [...] and strictly use these exact character names in all dialogue scripts and clip descriptions.`
+    : `- Cast Setup: ${spec.cast
+        .map(
+          (c) =>
+            `${c.name} (${c.role}): ${
+              c.usesReferenceImage
+                ? `Uses Reference Image for facial DNA. Personality Vibe: ${c.personalityVibe || 'Dynamic'}`
+                : c.dnaPrompt
+            }`
+        )
+        .join(' | ')}`;
 
   const promptText = `Story Specification:
 - Format: ${spec.format}
@@ -110,16 +151,7 @@ ${spec.workflowPipeline ? `- CUSTOM NICHE PIPELINE: "${spec.workflowPipeline.nam
   * Audio & Foley Mood: "${spec.workflowPipeline.audioFoleyMood || 'Proximity vocal presence, room acoustics'}"
   (CRITICAL: Strictly enforce this camera shooting style, persona anchor, and hook pacing in every clip!)` : ''}
 ${spec.customStoryIdea ? `- CREATOR'S CUSTOM STORY PREMISE / ANCHOR: "${spec.customStoryIdea}" (Incorporate this premise as the core narrative throughout the 7-day arc!)` : ''}
-- Cast Setup: ${spec.cast
-    .map(
-      (c) =>
-        `${c.name} (${c.role}): ${
-          c.usesReferenceImage
-            ? `Uses Reference Image for facial DNA. Personality Vibe: ${c.personalityVibe || 'Dynamic'}`
-            : c.dnaPrompt
-        }`
-    )
-    .join(' | ')}
+${castInstruction}
 - Locations: ${spec.locationSettings.join(', ')}
 
 Generate a complete 7-Day production delivery package with 3 variations per day.`;
@@ -257,9 +289,20 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
       };
     });
 
+    const effectiveCast =
+      Array.isArray(parsedData.cast) && parsedData.cast.length > 0
+        ? parsedData.cast
+        : spec.cast;
+
+    const finalSpec: StorySpec = {
+      ...spec,
+      cast: effectiveCast,
+      castCount: effectiveCast.length || spec.castCount,
+    };
+
     const seriesBible = parsedData.seriesBible || {
       arcOverview: `7-Day Story Arc for ${spec.format.replace('_', ' ').toUpperCase()} in ${spec.visualStyle}. Follows a rising tension progression from initial curiosity to weekend climax.`,
-      characterArcs: spec.cast.map((c) => ({
+      characterArcs: finalSpec.cast.map((c: any) => ({
         name: c.name,
         weekArc: `${c.name} (${c.role}): Undergoes high-tension dynamic shift across the 7 episodes.`,
       })),
@@ -285,7 +328,7 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
 
     return {
       id: `batch-${Date.now()}`,
-      spec,
+      spec: finalSpec,
       createdAt: new Date().toISOString(),
       days,
       seriesBible,

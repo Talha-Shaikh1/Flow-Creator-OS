@@ -89,6 +89,7 @@ export interface StorySpec {
   previousSeasonRecap?: string; // Continuity plot recap carried from previous season Day 7 finale
   unresolvedMysteries?: string[]; // Loose ends / clues carried forward into this season
   clipDurationSeconds?: 30 | 45 | 60; // Desired episode length
+  autonomousCast?: boolean; // True when AI Director dynamically casts characters based on story premise
   createdAt: string;
 }
 
@@ -255,11 +256,36 @@ export interface VideoVariation {
   critique: QualityCritique;
   seriesContinuityRecap?: string; // Episode plot continuity & cliffhanger note
   isProduced?: boolean; // True when full frame prompts and Flow motion directives have been produced
+  inUniversePosts?: InUniversePostBundle; // 3 Hollywood In-Universe & BTS feed posts for this episode
+}
+
+export interface InUniversePostBundle {
+  btsPost: {
+    title: string;
+    imagePrompt: string;
+    caption: string;
+    hashtags: string[];
+    angleDescription: string;
+  };
+  propPost: {
+    title: string;
+    imagePrompt: string;
+    caption: string;
+    hashtags: string[];
+    clueName: string;
+  };
+  candidPost: {
+    title: string;
+    imagePrompt: string;
+    caption: string;
+    hashtags: string[];
+    moodDescription: string;
+  };
 }
 
 export interface DailyPhotoPost {
   id: string;
-  category: 'Cafe Candid' | 'Mirror OOTD' | 'Golden Hour Street' | 'Desk / BTS Flatlay';
+  category: 'Film Set BTS' | 'Forensic Prop Clue' | 'Candid Set Lore' | 'Desk / BTS Flatlay' | 'Cafe Candid' | 'Mirror OOTD' | 'Golden Hour Street';
   title: string;
   caption: string;
   hashtags: string[];
@@ -300,5 +326,6 @@ export interface WeeklyBatchDelivery {
   days: DayContentPackage[];
   seriesBible?: SeriesBibleSummary;
   tokenUsage?: TokenUsageReport;
+  generatedClips?: Record<string, boolean>; // Map of generated clip keys to track video production
 }
 

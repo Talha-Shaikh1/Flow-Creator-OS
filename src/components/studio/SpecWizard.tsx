@@ -319,7 +319,8 @@ export function SpecWizard({ onGenerate, isLoading }: Props) {
     ];
 
     if (autonomousCast) {
-      return dramaCast;
+      // In Autonomous Cast mode, return empty array so AI Director dynamically crafts the cast based on premise
+      return [];
     }
     return dramaCast.slice(0, count);
   };
@@ -349,6 +350,7 @@ export function SpecWizard({ onGenerate, isLoading }: Props) {
       locationSettings: selectedLocations.length > 0 ? selectedLocations : defaultLocations,
       customStoryIdea: customStoryIdea.trim() || undefined,
       workflowPipeline: selectedWorkflow || undefined,
+      autonomousCast: autonomousCast && activeCast.length === 0,
       createdAt: new Date().toISOString(),
     };
 
@@ -669,53 +671,53 @@ export function SpecWizard({ onGenerate, isLoading }: Props) {
 
           {/* Autonomous Cast Intelligence Banner */}
           {autonomousCast ? (
-            <div className="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/30 space-y-3">
+            <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-950/40 via-purple-950/20 to-neutral-900 border border-indigo-500/30 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wider">
-                    Netflix Noir Cast Engine Active
+                    AI Autonomous Cast Director
                   </span>
-                  <span className="text-xs text-neutral-300 font-medium">3 Autonomous Characters Generated</span>
+                  <span className="text-xs text-neutral-300 font-medium">Dynamic Story-Adaptive Casting</span>
                 </div>
                 <span className="text-[11px] text-indigo-300 font-semibold flex items-center gap-1">
                   <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  Consistent Reference Anchors
+                  Cross-Season DNA Locks
                 </span>
               </div>
 
               <p className="text-xs text-neutral-300 leading-relaxed">
-                The AI Director autonomously binds 3 deep Hollywood Noir characters to your story premise. Their Master Prompts are grouped in the <strong className="text-white font-semibold">Master Cast Deck</strong> at the top of your series, and all video frame keyframes use <strong className="text-white font-semibold">Reference Image Anchoring</strong> to guarantee 100% facial consistency without face morphing.
+                The AI Director analyzes your custom story premise, tone, and conflict to dynamically fabricate the ideal cast. It creates distinct <strong className="text-white font-semibold">Primary Leads (Hero vs. Villain)</strong> and deploys <strong className="text-white font-semibold">Recurring Side Characters (Fixers, Informants, Whistleblowers)</strong> as the plot demands, locking their facial geometry with <strong className="text-white font-semibold">Reference Image Anchors</strong> for zero face drift across every episode and future seasons.
               </p>
 
-              {/* Character Preview Badges */}
+              {/* Character Role Archetypes Preview */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-1">
                 <div className="p-2.5 rounded-lg bg-neutral-900/80 border border-neutral-800 flex items-start gap-2">
                   <div className="w-6 h-6 rounded-md bg-blue-500/20 text-blue-400 flex items-center justify-center text-[10px] font-bold shrink-0">
-                    H
+                    👑
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-white truncate">Julian Vance</p>
-                    <p className="text-[10px] text-neutral-400 truncate">Lead Defense Counsel • Charcoal suit</p>
+                    <p className="text-xs font-semibold text-white truncate">Protagonist / Hero</p>
+                    <p className="text-[10px] text-neutral-400 truncate">Story-tailored lead fighting high stakes</p>
                   </div>
                 </div>
 
                 <div className="p-2.5 rounded-lg bg-neutral-900/80 border border-neutral-800 flex items-start gap-2">
                   <div className="w-6 h-6 rounded-md bg-rose-500/20 text-rose-400 flex items-center justify-center text-[10px] font-bold shrink-0">
-                    V
+                    ⚡
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-white truncate">Elena Sterling</p>
-                    <p className="text-[10px] text-neutral-400 truncate">Venture Partner • Raven chignon</p>
+                    <p className="text-xs font-semibold text-white truncate">Antagonist / Villain</p>
+                    <p className="text-[10px] text-neutral-400 truncate">Opposing force with icy composure</p>
                   </div>
                 </div>
 
                 <div className="p-2.5 rounded-lg bg-neutral-900/80 border border-neutral-800 flex items-start gap-2">
                   <div className="w-6 h-6 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center text-[10px] font-bold shrink-0">
-                    S
+                    🎭
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-white truncate">Marcus Kane</p>
-                    <p className="text-[10px] text-neutral-400 truncate">Intelligence Fixer • Leather coat</p>
+                    <p className="text-xs font-semibold text-white truncate">Side & Supporting</p>
+                    <p className="text-[10px] text-neutral-400 truncate">Fixers, Whistleblowers, Informants</p>
                   </div>
                 </div>
               </div>

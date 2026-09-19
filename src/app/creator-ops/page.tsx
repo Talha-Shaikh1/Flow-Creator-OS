@@ -540,24 +540,34 @@ Tags: ${socialMeta.facebook.hashtags.join(' ')}
       {/* Top Header & Ticking PKT Clock */}
       <header className="border-b border-neutral-800/80 bg-[#11131c]/90 sticky top-0 z-40 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          {/* Brand Identity */}
+          {/* VIP Brand Identity */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 via-cyan-500 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
-              <Zap className="w-5 h-5 fill-current" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-extrabold text-sm sm:text-base tracking-tight text-white">
-                  CreatorOps <span className="text-emerald-400">Hub</span>
-                </h1>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  Operations OS
-                </span>
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="relative flex items-center justify-center">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 via-cyan-500 to-indigo-500 rounded-xl blur-[3px] opacity-75 group-hover:opacity-100 transition duration-300" />
+                <div className="relative w-9 h-9 rounded-xl bg-neutral-900 border border-emerald-500/30 flex items-center justify-center overflow-hidden shadow-lg shadow-emerald-500/20">
+                  <img
+                    src="/logo-emblem.png"
+                    alt="Flow Creator Ops"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
               </div>
-              <p className="text-[11px] text-neutral-400 hidden sm:block">
-                Daily 4-Channel Production & WhatsApp Reminder Engine
-              </p>
-            </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="font-extrabold text-sm sm:text-base tracking-tight text-white flex items-center">
+                    <span>CreatorOps</span>
+                    <span className="ml-1 text-emerald-400 font-black">Hub</span>
+                  </h1>
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    VIP OPS
+                  </span>
+                </div>
+                <p className="text-[11px] text-neutral-400 hidden sm:block">
+                  Daily 4-Channel Production & WhatsApp Automation
+                </p>
+              </div>
+            </Link>
           </div>
 
           {/* Center: Live Real-time PKT Clock & Today's Brand Badge */}

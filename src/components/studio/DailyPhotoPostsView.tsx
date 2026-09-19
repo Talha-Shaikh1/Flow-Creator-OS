@@ -14,6 +14,9 @@ import {
   Share2,
   Bookmark,
   Shirt,
+  Clapperboard,
+  Search,
+  Building2,
 } from 'lucide-react';
 
 interface Props {
@@ -46,35 +49,66 @@ export function DailyPhotoPostsView({ photoPosts, dayName, dayNumber }: Props) {
 
   const getCategoryIcon = (category: DailyPhotoPost['category']) => {
     switch (category) {
+      case 'Film Set BTS':
+        return <Clapperboard className="w-4 h-4 text-violet-400" />;
+      case 'Forensic Prop Clue':
+        return <Search className="w-4 h-4 text-amber-400" />;
+      case 'Candid Set Lore':
+        return <Building2 className="w-4 h-4 text-sky-400" />;
+      case 'Desk / BTS Flatlay':
+        return <Laptop className="w-4 h-4 text-emerald-400" />;
       case 'Cafe Candid':
         return <Coffee className="w-4 h-4 text-amber-400" />;
       case 'Mirror OOTD':
         return <Shirt className="w-4 h-4 text-indigo-400" />;
       case 'Golden Hour Street':
         return <Sun className="w-4 h-4 text-orange-400" />;
-      case 'Desk / BTS Flatlay':
-        return <Laptop className="w-4 h-4 text-cyan-400" />;
       default:
         return <Camera className="w-4 h-4 text-emerald-400" />;
     }
   };
 
+  const isDramaBTS = photoPosts.some(
+    (p) =>
+      p.category === 'Film Set BTS' ||
+      p.category === 'Forensic Prop Clue' ||
+      p.category === 'Candid Set Lore'
+  );
+
   return (
     <div className="space-y-4 pt-4 border-t border-neutral-800/80">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400">
-            <Camera className="w-4 h-4" />
+          <div
+            className={`w-7 h-7 rounded-lg border flex items-center justify-center ${
+              isDramaBTS
+                ? 'bg-violet-500/10 border-violet-500/20 text-violet-400'
+                : 'bg-pink-500/10 border-pink-500/20 text-pink-400'
+            }`}
+          >
+            {isDramaBTS ? <Clapperboard className="w-4 h-4" /> : <Camera className="w-4 h-4" />}
           </div>
           <div>
             <h3 className="text-sm font-bold text-neutral-100 flex items-center gap-2">
-              <span>Day {dayNumber} Daily Lifestyle Photo Posts</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-300 border border-pink-500/20 font-medium">
-                Anti-AI Realism • 4 Posts
+              <span>
+                {isDramaBTS
+                  ? `Day ${dayNumber} Hollywood On-Set BTS & Forensic Prop Clues`
+                  : `Day ${dayNumber} Daily Lifestyle Photo Posts`}
+              </span>
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${
+                  isDramaBTS
+                    ? 'bg-violet-500/10 text-violet-300 border-violet-500/20'
+                    : 'bg-pink-500/10 text-pink-300 border-pink-500/20'
+                }`}
+              >
+                {isDramaBTS ? 'In-Universe Production Deck • 4 Authentic Stills' : 'Anti-AI Realism • 4 Posts'}
               </span>
             </h3>
             <p className="text-[11px] text-neutral-400">
-              Photorealistic candid prompts (35mm/iPhone UGC) engineered with natural skin texture, visible pores & cheek mole lock.
+              {isDramaBTS
+                ? 'Hollywood soundstage BTS, macro evidence props & mood stills from varying episode set angles.'
+                : 'Photorealistic candid prompts (35mm/iPhone UGC) engineered with natural skin texture, visible pores & cheek mole lock.'}
             </p>
           </div>
         </div>
@@ -105,16 +139,45 @@ export function DailyPhotoPostsView({ photoPosts, dayName, dayNumber }: Props) {
                     </div>
                   </div>
 
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-neutral-900 text-neutral-400 border border-neutral-800">
-                    Feed Post
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded border ${
+                      post.category === 'Film Set BTS'
+                        ? 'bg-violet-950/60 text-violet-300 border-violet-800/60'
+                        : post.category === 'Forensic Prop Clue'
+                        ? 'bg-amber-950/60 text-amber-300 border-amber-800/60'
+                        : post.category === 'Candid Set Lore'
+                        ? 'bg-sky-950/60 text-sky-300 border-sky-800/60'
+                        : 'bg-neutral-900 text-neutral-400 border-neutral-800'
+                    }`}
+                  >
+                    {post.category === 'Film Set BTS'
+                      ? '🎬 On-Set BTS'
+                      : post.category === 'Forensic Prop Clue'
+                      ? '🔍 Forensic Clue'
+                      : post.category === 'Candid Set Lore'
+                      ? '🌃 In-Universe Lore'
+                      : 'Feed Post'}
                   </span>
                 </div>
 
-                {/* Outfit preview */}
+                {/* Outfit / Subject Focus preview */}
                 <div className="p-2.5 rounded-lg bg-neutral-900/60 border border-neutral-800/80 text-[11px] text-neutral-300 flex items-start gap-2">
-                  <Shirt className="w-3.5 h-3.5 text-neutral-400 shrink-0 mt-0.5" />
+                  {post.category === 'Forensic Prop Clue' ? (
+                    <Search className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                  ) : post.category === 'Film Set BTS' ? (
+                    <Clapperboard className="w-3.5 h-3.5 text-violet-400 shrink-0 mt-0.5" />
+                  ) : (
+                    <Shirt className="w-3.5 h-3.5 text-neutral-400 shrink-0 mt-0.5" />
+                  )}
                   <span className="line-clamp-2">
-                    <strong className="text-neutral-200">Outfit:</strong> {post.outfit}
+                    <strong className="text-neutral-200">
+                      {post.category === 'Forensic Prop Clue'
+                        ? 'Evidence Focus:'
+                        : post.category === 'Film Set BTS'
+                        ? 'On-Set Action:'
+                        : 'Outfit / Style:'}
+                    </strong>{' '}
+                    {post.outfit}
                   </span>
                 </div>
 

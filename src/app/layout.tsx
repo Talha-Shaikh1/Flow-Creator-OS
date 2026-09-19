@@ -15,8 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FlowCreator OS — Autonomous Video Directing System",
+  title: "FlowCreator OS — VIP Autonomous Video Directing System",
   description: "Direct full-week Google Flow Veo video packages with spatial consistency & speaker isolation",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

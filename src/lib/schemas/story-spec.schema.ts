@@ -54,8 +54,8 @@ export const StorySpecSchema = z.object({
   format: ContentFormatSchema,
   genres: z.array(GenreThemeSchema).min(1, 'Select at least one genre'),
   tone: ContentToneSchema,
-  castCount: z.number().int().min(1).max(5),
-  cast: z.array(CastMemberSchema).min(1),
+  castCount: z.number().int().min(0).max(5).default(0),
+  cast: z.array(CastMemberSchema).default([]),
   visualStyle: VisualStylePresetSchema,
   formatLength: z.enum(['single_video', 'multi_episode_series']),
   episodeCount: z.number().int().min(1).max(20).optional(),
@@ -68,6 +68,7 @@ export const StorySpecSchema = z.object({
   previousSeasonRecap: z.string().optional(),
   unresolvedMysteries: z.array(z.string()).optional(),
   clipDurationSeconds: z.union([z.literal(30), z.literal(45), z.literal(60)]).optional(),
+  autonomousCast: z.boolean().optional(),
   createdAt: z.string(),
 });
 

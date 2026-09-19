@@ -6,10 +6,12 @@ import { StorySpec, WeeklyBatchDelivery } from '@/types';
 import { SpecWizard } from '@/components/studio/SpecWizard';
 import { WeeklyBatchView } from '@/components/studio/WeeklyBatchView';
 import { CharacterVaultModal } from '@/components/studio/CharacterVaultModal';
+import { GenerationHistoryModal } from '@/components/studio/GenerationHistoryModal';
 import { generateWeeklyBatch } from '@/lib/engine/generator';
-import { Clapperboard, Sparkles, ShieldCheck, Video, RefreshCw, Database, Users, Calendar as CalendarIcon } from 'lucide-react';
+import { Clapperboard, Sparkles, ShieldCheck, Video, RefreshCw, Database, Users, Calendar as CalendarIcon, History } from 'lucide-react';
 import { ContentCalendarModal } from '@/components/calendar/ContentCalendarModal';
 import { ClerkAuthSync } from '@/components/auth/ClerkAuthSync';
+import { AppNavbar } from '@/components/navigation/AppNavbar';
 import { getOrCreateClientGuestId } from '@/lib/auth/session';
 
 import { TokenBurnBadge } from '@/components/studio/TokenBurnBadge';
@@ -25,6 +27,7 @@ export default function StudioPage() {
   const [dbStatus, setDbStatus] = useState<'connected' | 'checking'>('checking');
   const [showVaultModal, setShowVaultModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [hasSavedBatch, setHasSavedBatch] = useState(false);
 
   // Check storage on mount (do NOT auto-load batch to prevent unwanted token confusion)
@@ -119,109 +122,14 @@ export default function StudioPage() {
 
   return (
     <main className="min-h-screen bg-[#09090b] text-neutral-100 antialiased pb-20">
-      {/* Top Studio Navigation Bar */}
-      <header className="border-b border-neutral-800/80 bg-neutral-950/90 sticky top-0 z-40 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          {/* Left: Brand Identity */}
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
-              <Clapperboard className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-extrabold text-sm sm:text-base tracking-tight text-white">
-                  FlowCreator <span className="text-indigo-400">OS</span>
-                </h1>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                  MVP
-                </span>
-              </div>
-              <p className="text-[11px] text-neutral-400 hidden md:block">
-                Full-Week Google Flow Video Direction Engine
-              </p>
-            </div>
-          </div>
-
-          {/* Center: Clean Studio Navigation Tabs */}
-          <nav className="hidden md:flex items-center bg-neutral-900/90 p-1 rounded-xl border border-neutral-800/80 text-xs">
-            <span className="px-3 py-1.5 rounded-lg bg-neutral-800 text-white font-medium shadow-sm border border-neutral-700/60">
-              General Studio
-            </span>
-            <Link
-              href="/creator-ops"
-              className="px-3 py-1.5 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition flex items-center gap-1.5 font-bold border border-emerald-500/20 shadow-sm"
-              title="Daily Multi-Account Operations Hub & WhatsApp Reminders"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              <span>⚡ CreatorOps Hub</span>
-            </Link>
-            {isSuperAdmin && (
-              <>
-                <Link
-                  href="/influencer"
-                  className="px-3 py-1.5 rounded-lg text-neutral-400 hover:text-pink-300 hover:bg-neutral-800/50 transition flex items-center gap-1.5"
-                  title="Dedicated Elena UK/EU Influencer Studio (Super Admin)"
-                >
-                  <Sparkles className="w-3 h-3 text-pink-400" />
-                  <span>Persona 1 (Elena)</span>
-                </Link>
-                <Link
-                  href="/pet-comedy"
-                  className="px-3 py-1.5 rounded-lg text-neutral-400 hover:text-amber-300 hover:bg-neutral-800/50 transition flex items-center gap-1.5"
-                  title="Dedicated Pet Comedy Studio (Super Admin)"
-                >
-                  <Sparkles className="w-3 h-3 text-amber-400" />
-                  <span>Persona 2 (Pets)</span>
-                </Link>
-                <Link
-                  href="/admin"
-                  className="px-3 py-1.5 rounded-lg text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 transition flex items-center gap-1.5 font-semibold"
-                  title="Flow Creator OS Admin Command Center"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Admin OS</span>
-                </Link>
-              </>
-            )}
-          </nav>
-
-          {/* Right: Studio Actions & Token Tracker */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-            <button
-              onClick={() => setShowCalendarModal(true)}
-              className="px-2.5 sm:px-3 py-1.5 text-xs rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white transition flex items-center gap-1.5 border border-neutral-800 hover:border-neutral-700 shadow-sm"
-              title="Open Content Calendar & History"
-            >
-              <CalendarIcon className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="hidden sm:inline">Calendar</span>
-            </button>
-
-            <button
-              onClick={() => setShowVaultModal(true)}
-              className="px-2.5 sm:px-3 py-1.5 text-xs rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white transition flex items-center gap-1.5 border border-neutral-800 hover:border-neutral-700 shadow-sm"
-              title="Open Persistent Character DNA Vault"
-            >
-              <Users className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="hidden sm:inline">Vault</span>
-            </button>
-
-            <TokenBurnBadge currentReport={batch?.tokenUsage} />
-
-            <ClerkAuthSync />
-
-            {batch && (
-              <button
-                onClick={handleReset}
-                className="px-2.5 sm:px-3 py-1.5 text-xs rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white transition flex items-center gap-1 border border-neutral-800"
-                title="Create New Story Spec"
-              >
-                <RefreshCw className="w-3 h-3" />
-                <span className="hidden sm:inline">New Spec</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
+      {/* VIP Studio Navigation Bar */}
+      <AppNavbar
+        batch={batch}
+        onOpenCalendar={() => setShowCalendarModal(true)}
+        onOpenVault={() => setShowVaultModal(true)}
+        onOpenHistory={() => setShowHistoryModal(true)}
+        onReset={handleReset}
+      />
 
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
@@ -233,14 +141,24 @@ export default function StudioPage() {
                 <span className="text-neutral-300">
                   📁 You have a previously generated batch saved in your browser.
                 </span>
-                <button
-                  type="button"
-                  onClick={handleResumeSaved}
-                  className="px-3.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 transition font-medium flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
-                >
-                  <RefreshCw className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Resume Saved Batch (0 Tokens)</span>
-                </button>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <button
+                    onClick={handleResumeSaved}
+                    className="px-3.5 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition flex items-center gap-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Resume Saved Batch (0 Tokens)</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowHistoryModal(true)}
+                    className="px-3.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 transition flex items-center gap-1.5 shadow-sm"
+                    title="View all past generated batches and produced video stats"
+                  >
+                    <History className="w-3.5 h-3.5 text-purple-400" />
+                    <span>Production History</span>
+                  </button>
+                </div>
               </div>
             )}
 
@@ -282,6 +200,13 @@ export default function StudioPage() {
         isOpen={showCalendarModal}
         onClose={() => setShowCalendarModal(false)}
         activeBatch={batch}
+      />
+
+      {/* Production & Video Generation History Modal */}
+      <GenerationHistoryModal
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+        onSelectBatch={(selectedBatch) => saveBatchLocallyAndCloud(selectedBatch)}
       />
     </main>
   );

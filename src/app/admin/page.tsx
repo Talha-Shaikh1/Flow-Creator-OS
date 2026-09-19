@@ -131,25 +131,37 @@ function AdminDashboardContent() {
       {/* Top Admin Navigation */}
       <header className="border-b border-neutral-800/80 bg-neutral-950/90 sticky top-0 z-40 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          {/* Left: Admin Identity */}
+          {/* Left: VIP Admin Identity */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-600 to-rose-600 flex items-center justify-center text-white shadow-md shadow-amber-500/20">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-extrabold text-sm sm:text-base tracking-tight text-white">
-                  FlowCreator <span className="text-amber-400">Admin OS</span>
-                </h1>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/25 flex items-center gap-1">
-                  <Activity className="w-3 h-3 text-emerald-400 animate-pulse" />
-                  Super Admin
-                </span>
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="relative flex items-center justify-center">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-xl blur-[3px] opacity-75 group-hover:opacity-100 transition duration-300" />
+                <div className="relative w-9 h-9 rounded-xl bg-neutral-900 border border-amber-500/40 flex items-center justify-center overflow-hidden shadow-lg shadow-amber-500/20">
+                  <img
+                    src="/logo-emblem.png"
+                    alt="Flow Creator OS Admin"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
               </div>
-              <p className="text-[11px] text-neutral-400 hidden md:block">
-                Master Governance & Infrastructure Command Center
-              </p>
-            </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="font-extrabold text-sm sm:text-base tracking-tight text-white flex items-center">
+                    <span>FlowCreator</span>
+                    <span className="ml-1.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/40 font-black text-xs">
+                      ADMIN OS
+                    </span>
+                  </h1>
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/25 flex items-center gap-1">
+                    <Activity className="w-3 h-3 text-emerald-400 animate-pulse" />
+                    Super Admin
+                  </span>
+                </div>
+                <p className="text-[11px] text-neutral-400 hidden md:block">
+                  Master Governance & Infrastructure Command Center
+                </p>
+              </div>
+            </Link>
           </div>
 
           {/* Center: System Status Pill */}

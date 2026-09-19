@@ -3,6 +3,7 @@ import {
   WeeklyBatchDelivery,
   DayContentPackage,
   VideoVariation,
+  CastMember,
 } from '@/types';
 import { getWeeklyEmotionArc } from './rules/retention';
 import { buildObjectTalkingClips } from './templates/object-talking';
@@ -15,6 +16,137 @@ import { generateDailyPhotoPosts } from './rules/photos';
 import { WeeklyBatchDeliverySchema } from '../schemas/prompt-output.schema';
 import { createTokenReport, estimateTokenCount } from './tokens';
 
+export function resolveAutonomousCast(spec: StorySpec): CastMember[] {
+  const idea = (spec.customStoryIdea || '').toLowerCase();
+
+  if (idea.includes('cyber') || idea.includes('hacker') || idea.includes('tech') || idea.includes('ai') || idea.includes('tokyo') || idea.includes('code')) {
+    return [
+      {
+        id: 'char-kaelen',
+        name: 'Kaelen Chen',
+        role: 'Hero',
+        description: '30yo lead cybersecurity architect fighting rogue syndicate infiltration.',
+        dnaPrompt: 'Original fictional character, 30-year-old Asian man with distinct non-celebrity digital human facial structure, sharp angular jawline, obsidian eyes, textured undercut charcoal hair. Matte-black tactical turtleneck, carbon-fiber wrist chronometer. Master 8K photorealistic keyframe portrait.',
+        usesReferenceImage: true,
+        personalityVibe: 'Methodical, razor-sharp intellect, quiet intensity',
+      },
+      {
+        id: 'char-vespera',
+        name: 'Vespera Cross',
+        role: 'Villain',
+        description: '32yo rogue AI architect orchestrating unauthorized biometric data exfiltration.',
+        dnaPrompt: 'Original fictional character, 32-year-old woman with distinct non-celebrity digital human facial structure, high symmetrical cheekbones, piercing icy-gray eyes, sleek platinum-blonde bob haircut, minimalist structured slate-gray designer blazer. Master 8K photorealistic keyframe portrait.',
+        usesReferenceImage: true,
+        personalityVibe: 'Chilling composure, calculating, dismissive smirk',
+      },
+      {
+        id: 'char-dax',
+        name: 'Dax Mercer',
+        role: 'Side',
+        description: '42yo back-channel hardware fixer operating out of subterranean data clusters.',
+        dnaPrompt: 'Original fictional character, 42-year-old weathered man with distinct non-celebrity digital human facial structure, tired hazel eyes, rugged short beard, dark olive canvas utility jacket over faded black henley. Master 8K photorealistic keyframe portrait.',
+        usesReferenceImage: true,
+        personalityVibe: 'Cynical, gravelly voice, speaks only when critical',
+      },
+    ];
+  }
+
+  if (idea.includes('doctor') || idea.includes('medical') || idea.includes('hospital') || idea.includes('bio') || idea.includes('pharma') || idea.includes('trial')) {
+    return [
+      {
+        id: 'char-aris',
+        name: 'Dr. Aris Thorne',
+        role: 'Hero',
+        description: '34yo neurosurgeon uncovering falsified clinical trial results.',
+        dnaPrompt: 'Original fictional character, 34-year-old man with distinct non-celebrity digital human facial structure, tired dark brown eyes, short wavy brown hair, navy surgical scrubs under tailored white lab coat with hospital credential badge. Master 8K photorealistic keyframe portrait.',
+        usesReferenceImage: true,
+        personalityVibe: 'Ethical, unwavering resolve, suppressed exhaustion',
+      },
+      {
+        id: 'char-nadia',
+        name: 'Director Nadia Cross',
+        role: 'Villain',
+        description: '45yo pharmaceutical board director protecting multi-billion patent equity.',
+        dnaPrompt: 'Original fictional character, 45-year-old woman with distinct non-celebrity digital human facial structure, sharp sculpted cheekbones, cold hazel eyes, slicked-back auburn chignon, bespoke emerald-green double-breasted blazer. Master 8K photorealistic keyframe portrait.',
+        usesReferenceImage: true,
+        personalityVibe: 'Authoritative, polite yet ruthless, velvet threat',
+      },
+      {
+        id: 'char-sloan',
+        name: 'Nurse Sloan Miller',
+        role: 'Side',
+        description: '28yo clinical research coordinator acting as confidential whistleblower.',
+        dnaPrompt: 'Original fictional character, 28-year-old woman with distinct non-celebrity digital human facial structure, warm hazel eyes, dark hair tied in practical ponytail, dark navy clinical scrubs, lanyard with encrypted flash drive. Master 8K photorealistic keyframe portrait.',
+        usesReferenceImage: true,
+        personalityVibe: 'Anxious, brave, cautious whispering cadence',
+      },
+    ];
+  }
+
+  if (idea.includes('detective') || idea.includes('police') || idea.includes('crime') || idea.includes('investigation') || idea.includes('agent') || idea.includes('fbi')) {
+    return [
+      {
+        id: 'char-marcus-det',
+        name: 'Detective Marcus Hayes',
+        role: 'Hero',
+        description: '38yo senior homicide and financial crimes inspector following dirty ledger trails.',
+        dnaPrompt: 'Original fictional character, 38-year-old man with distinct non-celebrity digital human facial structure, scarred brow, piercing amber-brown eyes, heavy 5 o\'clock shadow, dark charcoal overcoat over rumpled white shirt and loose tie. Master 8K photorealistic keyframe portrait.',
+        usesReferenceImage: true,
+        personalityVibe: 'Relentless, cynical humor, observant detective intuition',
+      },
+      {
+        id: 'char-victor',
+        name: 'Victor Sterling',
+        role: 'Villain',
+        description: '50yo untouchable financial oligarch controlling municipal procurement.',
+        dnaPrompt: 'Original fictional character, 50-year-old man with distinct non-celebrity digital human facial structure, silver-streaked dark hair combed back, piercing steel-blue eyes, tailored midnight-navy pinstripe three-piece suit. Master 8K photorealistic keyframe portrait.',
+        usesReferenceImage: true,
+        personalityVibe: 'Imperial composure, soft-spoken intimidation, absolute control',
+      },
+      {
+        id: 'char-tara',
+        name: 'Tara Lin',
+        role: 'Side',
+        description: '31yo forensic auditor leaking internal wire transfers to the inspector.',
+        dnaPrompt: 'Original fictional character, 31-year-old woman with distinct non-celebrity digital human facial structure, wire-rimmed glasses, alert dark eyes, charcoal trench coat over cream silk blouse. Master 8K photorealistic keyframe portrait.',
+        usesReferenceImage: true,
+        personalityVibe: 'Nervous, high-speed intellectual speech, cautious',
+      },
+    ];
+  }
+
+  // Default High-Stakes Corporate / Legal Noir
+  return [
+    {
+      id: 'char-julian',
+      name: 'Julian Vance',
+      role: 'Hero',
+      description: '32yo high-profile corporate defense attorney fighting betrayal from within.',
+      dnaPrompt: 'Original fictional character, 32-year-old aristocratic man with distinct non-celebrity digital human facial structure, sharp chiseled jawline, intense deep-set dark obsidian eyes, slicked-back charcoal pompadour hair, light tailored 5 o\'clock shadow, sharp cheekbones. Tailored charcoal bespoke three-piece wool suit, crisp white spread collar, silk slate-gray tie. Master 8K photorealistic keyframe portrait.',
+      usesReferenceImage: true,
+      personalityVibe: 'Stoic, razor-sharp intellect, fierce restrained anger',
+    },
+    {
+      id: 'char-elena',
+      name: 'Elena Sterling',
+      role: 'Villain',
+      description: '30yo ruthless venture partner orchestrating an aggressive hostile takeover.',
+      dnaPrompt: 'Original fictional character, 30-year-old cold and calculating woman with distinct non-celebrity digital human facial structure, chiseled symmetrical cheekbones, piercing icy-hazel eyes, slicked-back raven hair in an immaculate low chignon, flawless matte porcelain complexion, subtle plum lipstick. Minimalist structured midnight-navy double-breasted designer blazer with platinum cuff buttons. Master 8K photorealistic keyframe portrait.',
+      usesReferenceImage: true,
+      personalityVibe: 'Unflinching, icy composure, dismissive smirk, calculating',
+    },
+    {
+      id: 'char-marcus',
+      name: 'Marcus Kane',
+      role: 'Side',
+      description: '45yo private intelligence fixer with connections to high-level power brokers.',
+      dnaPrompt: 'Original fictional character, 45-year-old weathered private investigator, silver-streaked hair swept back, scarred left eyebrow, piercing hawk-like hazel eyes, tired hollows under eyes. Worn dark cashmere turtleneck under a distressed black leather trench coat. Master 8K photorealistic keyframe portrait.',
+      usesReferenceImage: true,
+      personalityVibe: 'Cynical, gravelly voice, enigmatic, sees right through lies',
+    },
+  ];
+}
+
 export function produceVariationDirectives(
   spec: StorySpec,
   dayNum: number,
@@ -26,6 +158,10 @@ export function produceVariationDirectives(
   clips: any[];
   tokenUsage?: any;
 } {
+  if (!spec.cast || spec.cast.length === 0 || spec.autonomousCast) {
+    spec.cast = resolveAutonomousCast(spec);
+    spec.castCount = spec.cast.length;
+  }
   const arc = getWeeklyEmotionArc(dayNum);
   let builtOutput: ReturnType<typeof buildCharacterDramaClips>;
 
@@ -84,37 +220,9 @@ export function generateWeeklyBatch(
   spec: StorySpec,
   options: { mode?: 'mind_maps' | 'full' } = { mode: 'mind_maps' }
 ): WeeklyBatchDelivery {
-  // If character drama and cast is empty/unspecified, autonomously generate Hollywood Netflix Noir cast
-  if (spec.format === 'character_drama' && (!spec.cast || spec.cast.length === 0)) {
-    spec.cast = [
-      {
-        id: 'char-julian',
-        name: 'Julian Vance',
-        role: 'Hero',
-        description: '32yo high-profile corporate defense attorney fighting betrayal from within.',
-        dnaPrompt: '32-year-old aristocratic man, sharp chiseled jawline, intense deep-set dark obsidian eyes, slicked-back charcoal pompadour hair, light tailored 5 o\'clock shadow, sharp cheekbones. Tailored charcoal bespoke three-piece wool suit, crisp white spread collar, silk slate-gray tie. Master 8K photorealistic keyframe portrait.',
-        usesReferenceImage: true,
-        personalityVibe: 'Stoic, razor-sharp intellect, fierce restrained anger'
-      },
-      {
-        id: 'char-elena',
-        name: 'Elena Sterling',
-        role: 'Villain',
-        description: '30yo ruthless venture partner orchestrating an aggressive hostile takeover.',
-        dnaPrompt: '30-year-old cold and calculating woman, chiseled symmetrical cheekbones, piercing icy-hazel eyes, slicked-back raven hair in an immaculate low chignon, flawless matte porcelain complexion, subtle plum lipstick. Minimalist structured midnight-navy double-breasted designer blazer with platinum cuff buttons. Master 8K photorealistic keyframe portrait.',
-        usesReferenceImage: true,
-        personalityVibe: 'Unflinching, icy composure, dismissive smirk, calculating'
-      },
-      {
-        id: 'char-marcus',
-        name: 'Marcus Kane',
-        role: 'Side',
-        description: '45yo private intelligence fixer with connections to high-level power brokers.',
-        dnaPrompt: '45-year-old weathered private investigator, silver-streaked hair swept back, scarred left eyebrow, piercing hawk-like hazel eyes, tired hollows under eyes. Worn dark cashmere turtleneck under a distressed black leather trench coat. Master 8K photorealistic keyframe portrait.',
-        usesReferenceImage: true,
-        personalityVibe: 'Cynical, gravelly voice, enigmatic, sees right through lies'
-      }
-    ];
+  if (!spec.cast || spec.cast.length === 0 || spec.autonomousCast) {
+    spec.cast = resolveAutonomousCast(spec);
+    spec.castCount = spec.cast.length;
   }
 
   const days: DayContentPackage[] = [];
@@ -187,6 +295,7 @@ export function generateWeeklyBatch(
           audioVibe: spec.tone,
         },
         isProduced: !isMindMapOnly,
+        inUniversePosts: (builtOutput as any).inUniversePosts,
       };
 
       // Run Quality Gate & Self-Critique
@@ -202,7 +311,9 @@ export function generateWeeklyBatch(
       spec.cast[0],
       dayNum,
       arc.dayName,
-      arc.dailyEmotion
+      arc.dailyEmotion,
+      spec.format,
+      spec.locationSettings[0]
     );
 
     days.push({
