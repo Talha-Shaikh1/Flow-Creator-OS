@@ -1,34 +1,16 @@
-import { GoogleGenAI } from '@google/genai';
 import { StorySpec, WeeklyBatchDelivery, DayContentPackage, VideoVariation, SEASON_ESCALATION_LADDER } from '@/types';
 import { getWeeklyEmotionArc } from './rules/retention';
 import { evaluatePromptCritique } from './critique';
 import { generateWeeklyBatch, resolveSeriesTitle, EPISODE_TITLES } from './generator';
 import { generateDailyPhotoPosts } from './rules/photos';
 import { createTokenReport, estimateTokenCount } from './tokens';
-
-function getApiKey(): string | null {
-  return (
-    process.env.GEMINI_API_KEY ||
-    process.env.GOOGLE_API_KEY ||
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-    process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
-    null
-  );
-}
+import { callUniversalLLM, AIProviderConfig } from './llm-provider';
 
 export async function generateWeeklyBatchWithGemini(
   spec: StorySpec,
-  options: { mode?: 'mind_maps' | 'full' } = { mode: 'mind_maps' }
+  options: { mode?: 'mind_maps' | 'full'; aiConfig?: AIProviderConfig } = { mode: 'mind_maps' }
 ): Promise<WeeklyBatchDelivery> {
-  const apiKey = getApiKey();
   const isMindMapOnly = options.mode === 'mind_maps';
-
-  if (!apiKey) {
-    console.warn('No GEMINI_API_KEY found in environment. Falling back to local procedural engine.');
-    return generateWeeklyBatch(spec, options);
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
 
   const systemInstruction = isMindMapOnly
     ? `You are FlowCreator OS — an Autonomous Directing Engine.
@@ -167,22 +149,18 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
 
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
-      contents: promptText,
-      config: {
-        systemInstruction,
-        responseMimeType: 'application/json',
-        temperature: 0.7,
-      },
+    const llmResponse = await callUniversalLLM({
+      config: options.aiConfig,
+      prompt: promptText,
+      systemInstruction,
+      temperature: 0.7,
+      responseJson: true,
     });
 
-    const responseText = response.text?.trim() || '';
-    if (!responseText) {
-      throw new Error('Empty response from Gemini API');
+    const parsedData = llmResponse.parsed;
+    if (!parsedData) {
+      throw new Error('LLM did not return valid parsed JSON data.');
     }
-
-    const parsedData = JSON.parse(responseText);
 
     // If Gemini returned an array of days or a batch object, standardize it
     const rawDays = Array.isArray(parsedData)
@@ -341,16 +319,11 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
       ],
     };
 
-    const usage = (response as any)?.usageMetadata;
-    const promptTokens =
-      usage?.promptTokenCount || estimateTokenCount(promptText + systemInstruction);
-    const completionTokens =
-      usage?.candidatesTokenCount || estimateTokenCount(responseText);
     const tokenUsage = createTokenReport(
-      promptTokens,
-      completionTokens,
-      'gemini-3.6-flash',
-      'gemini-api'
+      llmResponse.usage.promptTokens,
+      llmResponse.usage.completionTokens,
+      llmResponse.model,
+      llmResponse.provider
     );
 
     return {
@@ -361,9 +334,9 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
       seriesBible,
       tokenUsage,
     };
-  } catch (err) {
-    console.error('Gemini Generation failed, seamlessly using procedural rule engine:', err);
-    return generateWeeklyBatch(spec);
+  } catch (err: any) {
+    console.error('AI Generation error:', err);
+    throw new Error(err?.message || 'AI Generation failed');
   }
 }
 

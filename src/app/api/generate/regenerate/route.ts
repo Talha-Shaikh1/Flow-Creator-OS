@@ -1,69 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
 import { StorySpec, ClipPrompt, VideoVariation } from '@/types';
-import { getWeeklyEmotionArc, validateDialoguePacing, calculateWordCount } from '@/lib/engine/rules/retention';
+import { getWeeklyEmotionArc, calculateWordCount } from '@/lib/engine/rules/retention';
 import { formatSpeakerIsolationPrompt, generateSecBySecTimeline } from '@/lib/engine/rules/temporal';
 import { evaluatePromptCritique } from '@/lib/engine/critique';
-import { buildCharacterDramaClips } from '@/lib/engine/templates/character-drama';
-import { buildObjectTalkingClips } from '@/lib/engine/templates/object-talking';
-import { buildPodcastStyleClips } from '@/lib/engine/templates/podcast-style';
-import { buildFacelessAmbientClips } from '@/lib/engine/templates/faceless-ambient';
 import { createTokenReport, estimateTokenCount } from '@/lib/engine/tokens';
 import { generateDailyPhotoPosts } from '@/lib/engine/rules/photos';
 import { EPISODE_TITLES } from '@/lib/engine/generator';
-
-function getApiKey(): string | null {
-  return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;
-}
+import { callUniversalLLM, AIProviderConfig } from '@/lib/engine/llm-provider';
+import { produceVariationWithLLM } from '@/lib/engine/llm-produce';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { target, spec, dayNumber, variationIndex, clipIndex, existingVariation } = body;
+    const { target, spec, dayNumber, variationIndex, clipIndex, existingVariation, aiConfig } = body;
+    const typedAiConfig = aiConfig as AIProviderConfig | undefined;
 
-    const apiKey = getApiKey();
     const arc = getWeeklyEmotionArc(dayNumber || 1);
 
     if (target === 'clip') {
-      // 1. REGENERATE SINGLE CLIP
-      const activeChar = spec.cast[0]?.name || 'Speaker 1';
+      // 1. REGENERATE SINGLE CLIP VIA LLM
+      const activeChar = spec.cast[0]?.name || 'Julian Vance';
       const silentChars = spec.cast.slice(1).map((c: any) => c.name);
-
-      let newDialogue = `I told you before—nothing changes until you confront the reality of what happened.`;
-      let newPromptText = '';
+      const location = spec.locationSettings[0] || 'Executive Penthouse';
       const cIndex = clipIndex || 1;
 
-      if (apiKey) {
-        const ai = new GoogleGenAI({ apiKey });
-        const res = await ai.models.generateContent({
-          model: 'gemini-3.6-flash',
-          contents: `Regenerate Clip ${cIndex} of 3 for a 10s Google Flow short film.
-Story format: ${spec.format}
-Theme/Tone: ${spec.tone} (${arc.dailyEmotion})
+      const promptText = `Regenerate Clip ${cIndex} of 3 for a 10s Google Flow Veo short film.
+Story Format: ${spec.format}
+Tone & Daily Arc: ${spec.tone} (${arc.dailyEmotion})
 Active Speaker: ${activeChar}
 Silent Characters in background: ${silentChars.join(', ') || 'None'}
-Rules: Strict speaker isolation (silent characters must have [SILENT] directive), optimal dialogue 18-22 words, shot-reverse-shot camera cut.
-Return JSON with { "dialogue": string, "sceneName": string, "shotType": string, "visualAction": string, "flowPrompt": string }`,
-          config: { responseMimeType: 'application/json', temperature: 0.8 },
-        });
+Location: ${location}
+Rules:
+- Strict speaker isolation: The inactive character must have [100% SILENT, LISTENING REACTION ONLY, LIPS SEALED].
+- Spoken dialogue strictly 18-22 words.
+- Detailed vocal cadence with dynamic tonal inflection (sakhti & narmi).
+- Shot-reverse-shot camera cut.
+- Include Google Flow Veo master directive text.
 
-        try {
-          const parsed = JSON.parse(res.text?.trim() || '{}');
-          if (parsed.dialogue) newDialogue = parsed.dialogue;
-          if (parsed.flowPrompt) newPromptText = parsed.flowPrompt;
-        } catch (e) {
-          // fallback to rule template
-        }
-      }
+Return JSON format:
+{
+  "dialogue": "Exact spoken line (18-22 words)",
+  "sceneName": "Descriptive scene name",
+  "shotType": "Camera lens and shot type",
+  "visualAction": "Second by second action description",
+  "flowPrompt": "Master [CLIP ${cIndex}/3 - GOOGLE FLOW VEO MASTER DIRECTIVE]...",
+  "frameImagePrompt": "[VIDEO FRAME IMAGE - KEYFRAME ${cIndex}/3]..."
+}`;
+
+      const llmRes = await callUniversalLLM({
+        config: typedAiConfig,
+        prompt: promptText,
+        systemInstruction: 'You are an autonomous cinematic director for Google Flow Veo. Output strictly valid JSON.',
+        temperature: 0.8,
+        responseJson: true,
+      });
+
+      const parsed = llmRes.parsed || {};
+      const newDialogue = parsed.dialogue || 'I told you before—nothing changes until you confront the reality of what happened.';
+      const newPromptText = parsed.flowPrompt || '';
+      const newFramePrompt = parsed.frameImagePrompt || `[VIDEO FRAME IMAGE - KEYFRAME ${cIndex}/3]: ${location}. ${spec.visualStyle}. 4K keyframe portrait on ${activeChar}.`;
 
       const regeneratedClip: ClipPrompt = {
         clipIndex: cIndex,
         totalClips: 3,
-        sceneName: `Scene ${cIndex} (Re-rolled: ${arc.dayName})`,
-        locationAnchor: spec.locationSettings[0] || 'Main Set',
+        sceneName: parsed.sceneName || `Scene ${cIndex} (Re-rolled: ${arc.dayName})`,
+        locationAnchor: location,
         masterKeyframeLock: `Fixed spatial perspective in ${spec.visualStyle}`,
-        shotType: cIndex === 2 ? 'Shot-Reverse-Shot Close-Up' : 'Master Wide',
-        frameImagePrompt: `[VIDEO FRAME IMAGE - KEYFRAME ${cIndex}/3]: ${spec.locationSettings[0] || 'Main Set'}. ${spec.visualStyle}. ${cIndex === 2 ? 'Tight reverse medium shot' : 'Master wide establishing shot'} on ${activeChar}. 4K photorealistic cinematic composition, key lighting, sharp depth.`,
+        shotType: parsed.shotType || (cIndex === 2 ? 'Shot-Reverse-Shot Close-Up' : 'Master Wide'),
+        frameImagePrompt: newFramePrompt,
         speakerIsolation: {
           activeSpeaker: activeChar,
           speakingDialogue: newDialogue,
@@ -74,20 +78,23 @@ Return JSON with { "dialogue": string, "sceneName": string, "shotType": string, 
           activeChar,
           silentChars,
           newDialogue,
-          `${activeChar} reacts dynamically with intense focal presence.`
+          `${activeChar} delivers line with dynamic vocal cadence and measured gaze.`
         ),
         flowPromptText:
           newPromptText ||
-          `[CLIP ${cIndex}/3 - GOOGLE FLOW VEO DIRECTIVE]\n[LOCATION]: ${spec.locationSettings[0]}\n[SUBJECT]: ${activeChar}\n[SPEAKER ISOLATION]: ${formatSpeakerIsolationPrompt({ activeSpeaker: activeChar, speakingDialogue: newDialogue, silentCharacters: silentChars, requiresMidClipCut: false })}\n[SHOT]: 4K Cinematic Lighting.`,
-        retentionHookReasoning: 'Fresh dynamic angle re-rolled for optimal pacing.',
+          `[CLIP ${cIndex}/3 - GOOGLE FLOW VEO MASTER DIRECTIVE]\n[LOCATION]: ${location}\n[SUBJECT]: ${activeChar}\n[SPEAKER ISOLATION]: ${formatSpeakerIsolationPrompt({ activeSpeaker: activeChar, speakingDialogue: newDialogue, silentCharacters: silentChars, requiresMidClipCut: false })}\n[SHOT]: 4K Cinematic Lighting.`,
+        retentionHookReasoning: 'Fresh dynamic angle re-rolled via LLM for optimal tension.',
         pacingWordCount: calculateWordCount(newDialogue),
+        requiresReferenceImageAttachment: true,
+        foleySoundDesign: 'Cinematic room acoustic ambience, directional dialogue resonance, tension drone, subtle foley accents.',
+        negativePromptDirectives: 'morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter.',
       };
 
       const clipTokenReport = createTokenReport(
-        420,
-        estimateTokenCount(newDialogue + newPromptText) + 180,
-        apiKey ? 'gemini-3.6-flash' : 'flowcreator-procedural',
-        'regenerate-clip'
+        llmRes.usage.promptTokens,
+        llmRes.usage.completionTokens,
+        llmRes.model,
+        llmRes.provider
       );
 
       return NextResponse.json({
@@ -98,55 +105,61 @@ Return JSON with { "dialogue": string, "sceneName": string, "shotType": string, 
     }
 
     if (target === 'day') {
-      // 2. REGENERATE ENTIRE DAY (3 Variations)
+      // 2. REGENERATE ENTIRE DAY (3 Variations) VIA LLM
       const variationTypes: Array<'High Tension' | 'Emotional Core' | 'Fast Hook'> = [
         'High Tension',
         'Emotional Core',
         'Fast Hook',
       ];
 
-      const newVariations: VideoVariation[] = variationTypes.map((vType, vIdx) => {
-        let built: any;
-        switch (spec.format) {
-          case 'object_talking':
-            built = buildObjectTalkingClips(spec, arc.dailyEmotion, vType);
-            break;
-          case 'podcast_style':
-            built = buildPodcastStyleClips(spec, arc.dailyEmotion, vType);
-            break;
-          case 'faceless_ambient':
-            built = buildFacelessAmbientClips(spec, arc.dailyEmotion, vType);
-            break;
-          default:
-            built = buildCharacterDramaClips(spec, arc.dailyEmotion, vType);
-            break;
+      const newVariations: VideoVariation[] = [];
+      let totalPromptTokens = 0;
+      let totalCompTokens = 0;
+      let lastModel = 'gemini-3.6-flash';
+      let lastProvider = 'gemini';
+
+      for (let vIdx = 0; vIdx < variationTypes.length; vIdx++) {
+        const vType = variationTypes[vIdx];
+        const produced = await produceVariationWithLLM({
+          spec: spec as StorySpec,
+          dayNum: dayNumber,
+          variationType: vType,
+          aiConfig: typedAiConfig,
+        });
+
+        if (produced.tokenUsage) {
+          totalPromptTokens += produced.tokenUsage.promptTokens || 0;
+          totalCompTokens += produced.tokenUsage.completionTokens || 0;
+          lastModel = produced.tokenUsage.model || lastModel;
+          lastProvider = produced.tokenUsage.provider || lastProvider;
         }
 
         const unvalidated = {
           id: `day-${dayNumber}-${vType.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
           variationLabel: `Variation ${String.fromCharCode(65 + vIdx)} (${vType})` as any,
-          title: built.title,
-          hookDescription: built.hookDescription,
-          characterAnchors: built.characterAnchors,
-          locationAnchors: built.locationAnchors,
-          clips: built.clips,
-          dialogueScript: built.dialogueScript,
+          title: produced.title,
+          hookDescription: produced.hookDescription,
+          characterAnchors: produced.characterAnchors,
+          locationAnchors: produced.locationAnchors,
+          clips: produced.clips,
+          dialogueScript: produced.dialogueScript,
+          isProduced: true,
           metadata: {
-            caption: `${built.title} 🎬 Generated with FlowCreator OS. #AIcinema #GoogleFlow`,
+            caption: `${produced.title} 🎬 Generated with FlowCreator OS. #AIcinema #GoogleFlow`,
             hashtags: ['#GoogleFlow', '#Veo', '#AIFilmmaking', '#ShortFilm'],
             audioVibe: spec.tone,
           },
         };
 
         const critique = evaluatePromptCritique(unvalidated);
-        return { ...unvalidated, critique };
-      });
+        newVariations.push({ ...unvalidated, critique });
+      }
 
       const dayTokenReport = createTokenReport(
-        950,
-        estimateTokenCount(JSON.stringify(newVariations)),
-        'flowcreator-procedural',
-        'procedural-engine'
+        totalPromptTokens || 950,
+        totalCompTokens || 850,
+        lastModel,
+        lastProvider
       );
 
       const dailyPhotos = generateDailyPhotoPosts(
@@ -176,7 +189,7 @@ Return JSON with { "dialogue": string, "sceneName": string, "shotType": string, 
 
     return NextResponse.json({ error: 'Invalid target' }, { status: 400 });
   } catch (error: any) {
-    console.error('Failed to regenerate target:', error);
-    return NextResponse.json({ success: false, error: error?.message }, { status: 500 });
+    console.error('Failed to regenerate target via LLM:', error);
+    return NextResponse.json({ success: false, error: error?.message || 'Failed to regenerate target via AI' }, { status: 500 });
   }
 }

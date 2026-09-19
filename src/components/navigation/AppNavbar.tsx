@@ -25,6 +25,8 @@ import {
   Tv,
   Wrench,
 } from 'lucide-react';
+import { AISettingsModal } from '@/components/settings/AISettingsModal';
+import { useAISettings } from '@/lib/ai/ai-settings';
 
 interface AppNavbarProps {
   batch?: WeeklyBatchDelivery | null;
@@ -48,6 +50,9 @@ export function AppNavbar({
   const [personasOpen, setPersonasOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+
+  const { config: aiConfig } = useAISettings();
 
   const personasRef = useRef<HTMLDivElement>(null);
   const toolsRef = useRef<HTMLDivElement>(null);
@@ -302,6 +307,20 @@ export function AppNavbar({
             </div>
           )}
 
+          {/* AI Engine BYOK Configuration Button */}
+          <button
+            type="button"
+            onClick={() => setAiModalOpen(true)}
+            className="px-2 sm:px-2.5 py-1.5 text-xs rounded-xl transition flex items-center gap-1.5 border shadow-sm bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border-neutral-800 hover:border-indigo-500/50"
+            title={`AI Engine: ${aiConfig.provider.toUpperCase()} (${aiConfig.model}) - Click to configure keys & models`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="hidden sm:inline font-medium">AI Engine</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 uppercase font-bold tracking-tight">
+              {aiConfig.provider}
+            </span>
+          </button>
+
           {/* Token Burn Badge */}
           <TokenBurnBadge currentReport={batch?.tokenUsage} />
 
@@ -459,8 +478,28 @@ export function AppNavbar({
               )}
             </div>
           )}
+
+          {/* Mobile AI Engine Button */}
+          <button
+            onClick={() => {
+              setAiModalOpen(true);
+              setMobileMenuOpen(false);
+            }}
+            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium bg-neutral-900 border border-neutral-800 text-neutral-200"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-indigo-400" />
+              <span>Configure AI Engine (BYOK)</span>
+            </div>
+            <span className="text-[10px] uppercase font-bold text-indigo-300 px-2 py-0.5 rounded bg-indigo-500/20 border border-indigo-500/30">
+              {aiConfig.provider}
+            </span>
+          </button>
         </div>
       )}
+
+      {/* Bring Your Own Key AI Engine Modal */}
+      <AISettingsModal isOpen={aiModalOpen} onClose={() => setAiModalOpen(false)} />
     </header>
   );
 }

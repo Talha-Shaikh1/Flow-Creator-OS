@@ -317,7 +317,7 @@ export interface TokenUsageReport {
   totalTokens: number;
   estimatedCostUsd: number;
   model: string;
-  source: 'gemini-api' | 'procedural-engine' | 'regenerate-clip';
+  source: 'gemini-api' | 'procedural-engine' | 'regenerate-clip' | string;
   timestamp: string;
 }
 

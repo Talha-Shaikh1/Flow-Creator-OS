@@ -181,8 +181,12 @@ export const EPISODE_TITLES: Record<number, string> = {
 export function produceVariationDirectives(
   spec: StorySpec,
   dayNum: number,
-  variationType: 'High Tension' | 'Emotional Core' | 'Fast Hook'
+  variationType: 'High Tension' | 'Emotional Core' | 'Fast Hook',
+  existingVariation?: any
 ): {
+  title?: string;
+  hookDescription?: string;
+  dialogueScript?: any[];
   masterFrameImagePrompt?: string;
   characterAnchors: { characterName: string; anchorPrompt: string }[];
   locationAnchors: { locationName: string; anchorPrompt: string }[];
@@ -218,7 +222,7 @@ export function produceVariationDirectives(
       break;
     case 'character_drama':
     default:
-      builtOutput = buildCharacterDramaClips(spec, arc.dailyEmotion, variationType, dayNum);
+      builtOutput = buildCharacterDramaClips(spec, arc.dailyEmotion, variationType, dayNum, existingVariation);
       break;
   }
 
@@ -246,6 +250,9 @@ export function produceVariationDirectives(
   );
 
   return {
+    title: builtOutput.title,
+    hookDescription: builtOutput.hookDescription,
+    dialogueScript: builtOutput.dialogueScript,
     masterFrameImagePrompt,
     characterAnchors: builtOutput.characterAnchors,
     locationAnchors: builtOutput.locationAnchors,

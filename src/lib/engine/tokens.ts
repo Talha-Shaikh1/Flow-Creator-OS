@@ -29,7 +29,7 @@ export function createTokenReport(
   promptTokens: number,
   completionTokens: number,
   model: string = 'gemini-2.0-flash',
-  source: 'gemini-api' | 'procedural-engine' | 'regenerate-clip' = 'procedural-engine'
+  source: 'gemini-api' | 'procedural-engine' | 'regenerate-clip' | string = 'procedural-engine'
 ): TokenUsageReport {
   const totalTokens = promptTokens + completionTokens;
   const estimatedCostUsd = calculateTokenCostUsd(promptTokens, completionTokens);

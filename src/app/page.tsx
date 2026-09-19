@@ -8,11 +8,13 @@ import { WeeklyBatchView } from '@/components/studio/WeeklyBatchView';
 import { CharacterVaultModal } from '@/components/studio/CharacterVaultModal';
 import { GenerationHistoryModal } from '@/components/studio/GenerationHistoryModal';
 import { generateWeeklyBatch } from '@/lib/engine/generator';
-import { Clapperboard, Sparkles, ShieldCheck, Video, RefreshCw, Database, Users, Calendar as CalendarIcon, History } from 'lucide-react';
+import { Clapperboard, Sparkles, ShieldCheck, Video, RefreshCw, Database, Users, Calendar as CalendarIcon, History, AlertTriangle, X } from 'lucide-react';
 import { ContentCalendarModal } from '@/components/calendar/ContentCalendarModal';
 import { ClerkAuthSync } from '@/components/auth/ClerkAuthSync';
 import { AppNavbar } from '@/components/navigation/AppNavbar';
 import { getOrCreateClientGuestId } from '@/lib/auth/session';
+import { AISettingsModal } from '@/components/settings/AISettingsModal';
+import { getStoredAIConfig } from '@/lib/ai/ai-settings';
 
 import { TokenBurnBadge } from '@/components/studio/TokenBurnBadge';
 import { recordTokenBurn } from '@/lib/engine/tokens';
@@ -28,7 +30,9 @@ export default function StudioPage() {
   const [showVaultModal, setShowVaultModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showAISettingsModal, setShowAISettingsModal] = useState(false);
   const [hasSavedBatch, setHasSavedBatch] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   // Check storage on mount (do NOT auto-load batch to prevent unwanted token confusion)
   useEffect(() => {
@@ -87,26 +91,32 @@ export default function StudioPage() {
 
   const handleGenerate = async (spec: StorySpec) => {
     setIsLoading(true);
+    setGenerationError(null);
     try {
-      // Direct fast engine generation with Gemini API & server schema validation
+      const aiConfig = getStoredAIConfig();
+      // Direct Live LLM generation with multi-provider config
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(spec),
+        body: JSON.stringify({ spec, aiConfig }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      const data = await res.json();
+      if (res.ok && data.success && data.batch) {
         saveBatchLocallyAndCloud(data.batch);
       } else {
-        // Fallback to local procedural rule engine if API route has network issues
-        const fallbackBatch = generateWeeklyBatch(spec);
-        saveBatchLocallyAndCloud(fallbackBatch);
+        const errorMsg =
+          data?.message ||
+          data?.error ||
+          'Failed to generate weekly batch via AI. Please check your API key and AI Engine settings.';
+        console.error('LLM Generation Error:', errorMsg);
+        setGenerationError(errorMsg);
       }
-    } catch (err) {
-      console.warn('Falling back to direct engine generation:', err);
-      const fallbackBatch = generateWeeklyBatch(spec);
-      saveBatchLocallyAndCloud(fallbackBatch);
+    } catch (err: any) {
+      console.error('Network/Generation error:', err);
+      setGenerationError(
+        err?.message || 'Network error occurred while connecting to the AI Engine. Please check your settings.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -133,6 +143,51 @@ export default function StudioPage() {
 
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        {/* Live LLM Generation Error Alert Banner */}
+        {generationError && (
+          <div className="mb-8 max-w-3xl mx-auto animate-in fade-in slide-in-from-top-3 duration-200">
+            <div className="p-4 rounded-2xl bg-rose-950/60 border border-rose-500/50 text-rose-200 shadow-2xl flex flex-col sm:flex-row items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-xl bg-rose-500/20 text-rose-400 shrink-0 mt-0.5">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-sm font-bold text-rose-100 flex items-center gap-2">
+                    AI Generation Alert: LLM Required
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                      Live AI Mode
+                    </span>
+                  </h4>
+                  <p className="text-xs text-rose-300/90 font-mono bg-neutral-950/80 p-2.5 rounded-xl border border-rose-900/60 break-words">
+                    {generationError}
+                  </p>
+                  <p className="text-xs text-rose-300/70 pt-0.5">
+                    FlowCreator OS runs strictly on live LLMs and will not silently fall back to mock templates. Please configure or verify your API key.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 self-end sm:self-start shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowAISettingsModal(true)}
+                  className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-md transition flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  AI Settings
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGenerationError(null)}
+                  className="p-1.5 rounded-lg text-rose-400 hover:text-white transition"
+                  title="Dismiss error"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {!batch ? (
           <div className="space-y-8">
             {/* Resume Saved Batch Bar if available */}
@@ -207,6 +262,12 @@ export default function StudioPage() {
         isOpen={showHistoryModal}
         onClose={() => setShowHistoryModal(false)}
         onSelectBatch={(selectedBatch) => saveBatchLocallyAndCloud(selectedBatch)}
+      />
+
+      {/* Bring Your Own Key AI Engine Modal */}
+      <AISettingsModal
+        isOpen={showAISettingsModal}
+        onClose={() => setShowAISettingsModal(false)}
       />
     </main>
   );

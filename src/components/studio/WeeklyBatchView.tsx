@@ -37,6 +37,7 @@ import { GenerationHistoryModal } from './GenerationHistoryModal';
 import { getOrCreateClientGuestId } from '@/lib/auth/session';
 import { sanitizeForGoogleFlow } from '@/lib/engine/rules/temporal';
 import { generateDailyPhotoPosts } from '@/lib/engine/rules/photos';
+import { getStoredAIConfig } from '@/lib/ai/ai-settings';
 
 interface Props {
   batch: WeeklyBatchDelivery;
@@ -156,6 +157,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
         varType = 'Fast Hook';
       }
 
+      const aiConfig = getStoredAIConfig();
       const res = await fetch('/api/generate/produce', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -164,19 +166,33 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
           dayNumber: activeDay.dayNumber,
           variationType: varType,
           variationId: activeVariation.id,
+          existingVariation: activeVariation,
+          aiConfig,
         }),
       });
 
       const data = await res.json();
-      if (data.success && data.produced) {
-        const { masterFrameImagePrompt, characterAnchors, locationAnchors, clips, tokenUsage } = data.produced;
+      if (res.ok && data.success && data.produced) {
+        const {
+          title,
+          hookDescription,
+          dialogueScript,
+          masterFrameImagePrompt,
+          characterAnchors,
+          locationAnchors,
+          clips,
+          tokenUsage,
+        } = data.produced;
 
         if (tokenUsage) {
-          recordTokenBurn(tokenUsage, `Produced: ${activeVariation.title}`);
+          recordTokenBurn(tokenUsage, `Produced: ${title || activeVariation.title}`);
         }
 
         const updatedVariation: VideoVariation = {
           ...activeVariation,
+          title: title || activeVariation.title,
+          hookDescription: hookDescription || activeVariation.hookDescription,
+          dialogueScript: dialogueScript || activeVariation.dialogueScript,
           masterFrameImagePrompt,
           characterAnchors,
           locationAnchors,
@@ -198,9 +214,12 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
         };
 
         onUpdateBatch(newBatch);
+      } else {
+        alert(`AI Directing Engine Error: ${data.error || 'Failed to produce variation directives via AI.'}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to produce variation:', err);
+      alert(`Network error: ${err.message || 'Failed to connect to AI engine'}`);
     } finally {
       setIsProducing(false);
     }
@@ -354,6 +373,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
   const handleRegenerateActiveDay = async () => {
     setIsRegeneratingDay(true);
     try {
+      const aiConfig = getStoredAIConfig();
       const res = await fetch('/api/generate/regenerate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -361,11 +381,12 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
           target: 'day',
           spec: batch.spec,
           dayNumber: activeDay.dayNumber,
+          aiConfig,
         }),
       });
 
       const data = await res.json();
-      if (data.success && data.day) {
+      if (res.ok && data.success && data.day) {
         const updatedDays = [...batch.days];
         updatedDays[activeDayIndex] = data.day;
         const newBatch: WeeklyBatchDelivery = {
@@ -373,9 +394,12 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
           days: updatedDays,
         };
         onUpdateBatch(newBatch);
+      } else {
+        alert(`AI Day Regeneration Error: ${data.error || 'Failed to regenerate day via AI'}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to regenerate day:', err);
+      alert(`Network error: ${err.message || 'Failed to connect to AI engine'}`);
     } finally {
       setIsRegeneratingDay(false);
     }

@@ -21,6 +21,7 @@ import {
   Sliders,
   Layers,
 } from 'lucide-react';
+import { getStoredAIConfig } from '@/lib/ai/ai-settings';
 
 interface Props {
   clip: ClipPrompt;
@@ -125,6 +126,7 @@ export function ClipCard({
     if (!spec || !onClipRegenerated) return;
     setIsRegenerating(true);
     try {
+      const aiConfig = getStoredAIConfig();
       const res = await fetch('/api/generate/regenerate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -133,14 +135,18 @@ export function ClipCard({
           spec,
           dayNumber: dayNumber || 1,
           clipIndex: clip.clipIndex,
+          aiConfig,
         }),
       });
       const data = await res.json();
-      if (data.success && data.clip) {
+      if (res.ok && data.success && data.clip) {
         onClipRegenerated(data.clip);
+      } else {
+        alert(`AI Error: ${data.error || 'Failed to regenerate clip with AI'}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to regenerate single clip:', err);
+      alert(`Network error: ${err.message || 'Failed to connect to AI'}`);
     } finally {
       setIsRegenerating(false);
     }

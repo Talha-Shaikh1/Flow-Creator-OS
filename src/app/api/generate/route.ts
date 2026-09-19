@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { StorySpecSchema } from '@/lib/schemas/story-spec.schema';
 import { generateWeeklyBatchWithGemini } from '@/lib/engine/gemini';
+import { AIProviderConfig } from '@/lib/engine/llm-provider';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const parseResult = StorySpecSchema.safeParse(body);
+    const rawSpec = body?.spec ? body.spec : body;
+    const aiConfig: AIProviderConfig | undefined = body?.aiConfig;
+
+    const parseResult = StorySpecSchema.safeParse(rawSpec);
 
     if (!parseResult.success) {
       return NextResponse.json(
@@ -18,17 +22,20 @@ export async function POST(req: NextRequest) {
     }
 
     const spec = parseResult.data;
-    const batch = await generateWeeklyBatchWithGemini(spec, { mode: 'mind_maps' });
+    const batch = await generateWeeklyBatchWithGemini(spec, {
+      mode: 'mind_maps',
+      aiConfig,
+    });
 
     return NextResponse.json({
       success: true,
       batch,
     });
   } catch (error: any) {
-    console.error('Error generating weekly batch:', error);
+    console.error('Error generating weekly batch with LLM:', error);
     return NextResponse.json(
       {
-        error: 'Failed to generate weekly batch',
+        error: 'Failed to generate weekly batch via AI',
         message: error?.message || 'Internal Server Error',
       },
       { status: 500 }

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { produceVariationDirectives } from '@/lib/engine/generator';
+import { produceVariationWithLLM } from '@/lib/engine/llm-produce';
 import { StorySpec } from '@/types';
+import { AIProviderConfig } from '@/lib/engine/llm-provider';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { spec, dayNumber, variationType, variationId } = body;
+    const { spec, dayNumber, variationType, variationId, existingVariation, aiConfig } = body;
 
     if (!spec || !dayNumber || !variationType) {
       return NextResponse.json(
@@ -14,11 +15,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const produced = produceVariationDirectives(
-      spec as StorySpec,
-      dayNumber,
-      variationType as 'High Tension' | 'Emotional Core' | 'Fast Hook'
-    );
+    const produced = await produceVariationWithLLM({
+      spec: spec as StorySpec,
+      dayNum: dayNumber,
+      variationType: variationType as 'High Tension' | 'Emotional Core' | 'Fast Hook',
+      existingVariation,
+      aiConfig: aiConfig as AIProviderConfig | undefined,
+    });
 
     return NextResponse.json({
       success: true,
@@ -26,9 +29,9 @@ export async function POST(req: NextRequest) {
       produced,
     });
   } catch (err: any) {
-    console.error('Error producing variation directives:', err);
+    console.error('Error producing variation directives via LLM:', err);
     return NextResponse.json(
-      { error: err.message || 'Failed to produce variation directives' },
+      { error: err.message || 'Failed to produce variation directives via AI' },
       { status: 500 }
     );
   }
