@@ -31,10 +31,12 @@ import {
   Tv,
   Film,
   Zap,
+  History,
 } from 'lucide-react';
 import { YouTubeIcon, InstagramIcon, TikTokIcon, FacebookIcon } from '@/components/creator-ops/SocialIcons';
 import { getScheduledTasksForDay, ScheduledTask, getWeeklyTargetBreakdown } from '@/lib/creator-ops/schedule';
 import { SocialMetaPack } from '@/lib/creator-ops/meta-manager';
+import { PersonaHistoryModal } from '@/components/creator-ops/PersonaHistoryModal';
 
 interface Persona {
   id: string;
@@ -128,6 +130,7 @@ export default function CreatorOpsPage() {
   const [isGeneratingMeta, setIsGeneratingMeta] = useState<boolean>(false);
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
   const [metaActivePlatform, setMetaActivePlatform] = useState<'youtube' | 'instagram' | 'tiktok' | 'facebook'>('youtube');
+  const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
 
   // Live PKT Clock
   useEffect(() => {
@@ -468,7 +471,26 @@ Tags: ${socialMeta.facebook.hashtags.join(' ')}
       const data = await res.json();
       if (data.plan) {
         setContentPlan(data.plan);
-        setActionNotice({ type: 'success', message: `✨ Complete daily pack generated for ${targetPersona.displayName || targetPersona.name}!` });
+
+        // Automatically archive generated plan to PostgreSQL database history
+        try {
+          await fetch('/api/creator-ops/plans', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              personaId: targetPersona.id,
+              date: todayDateStr,
+              ...data.plan,
+            }),
+          });
+        } catch (saveErr) {
+          console.warn('Auto-save plan to database failed:', saveErr);
+        }
+
+        setActionNotice({
+          type: 'success',
+          message: `✨ Complete daily pack generated & saved to history for ${targetPersona.displayName || targetPersona.name}!`,
+        });
         setTimeout(() => setActionNotice(null), 4000);
       }
     } catch (e) {
@@ -1583,6 +1605,16 @@ Tags: ${socialMeta.facebook.hashtags.join(' ')}
 
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
+                  onClick={() => setShowHistoryModal(true)}
+                  className="px-4 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-cyan-400 hover:text-cyan-300 border border-neutral-800 hover:border-cyan-500/40 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  title="View past generated plans, scripts, and prompts for this persona"
+                >
+                  <History className="w-4 h-4" />
+                  <span>Persona History</span>
+                </button>
+
+                <button
                   onClick={handleGeneratePack}
                   disabled={isGenerating}
                   className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/30 flex items-center gap-2 cursor-pointer"
@@ -2013,6 +2045,29 @@ Tags: ${socialMeta.facebook.hashtags.join(' ')}
                 ))}
               </div>
             </div>
+
+            {/* Persona Content Generations Cloud Archive */}
+            <div className="p-6 rounded-2xl bg-[#11131c] border border-cyan-500/20 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <History className="w-5 h-5 text-cyan-400" />
+                    <span>Persona Generated Content Archive</span>
+                  </h3>
+                  <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
+                    Access all historical AI generations, 60s reel scripts, Midjourney/Flux frame prompts, and carousel slides across all your personas.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowHistoryModal(true)}
+                  className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-cyan-600/20 cursor-pointer self-start sm:self-auto"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Open Persona History Archive</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -2217,6 +2272,28 @@ Tags: ${socialMeta.facebook.hashtags.join(' ')}
           </div>
         )}
       </div>
+
+      {/* Persona Historical Generations Archive Modal */}
+      <PersonaHistoryModal
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+        personas={personas}
+        activePersonaId={studioPersonaId || activePersona?.id}
+        onSelectPlan={(plan) => {
+          setContentPlan(plan);
+          if (plan.personaId) {
+            setStudioPersonaId(plan.personaId);
+            const target = personas.find((p) => p.id === plan.personaId);
+            if (target) setActivePersona(target);
+          }
+          setActiveTab('studio');
+          setActionNotice({
+            type: 'success',
+            message: `Restored plan for "${plan.trendingTopic || 'Selected Date'}" into Studio!`,
+          });
+          setTimeout(() => setActionNotice(null), 4000);
+        }}
+      />
     </div>
   );
 }

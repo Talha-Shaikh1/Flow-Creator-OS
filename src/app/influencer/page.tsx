@@ -20,11 +20,13 @@ import {
   ArrowLeft,
   Calendar,
   Eye,
+  History,
 } from 'lucide-react';
 
 import { TokenBurnBadge } from '@/components/studio/TokenBurnBadge';
 import { recordTokenBurn } from '@/lib/engine/tokens';
 import { ContentCalendarModal } from '@/components/calendar/ContentCalendarModal';
+import { GenerationHistoryModal } from '@/components/studio/GenerationHistoryModal';
 import { ClerkAuthSync } from '@/components/auth/ClerkAuthSync';
 import { getOrCreateClientGuestId } from '@/lib/auth/session';
 import { AdminAccessGuard } from '@/components/auth/AdminAccessGuard';
@@ -70,6 +72,7 @@ function InfluencerStudioContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [topicPillar, setTopicPillar] = useState<'relationship' | 'mindset' | 'hybrid'>('relationship');
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [hasSavedBatch, setHasSavedBatch] = useState(false);
 
   // Check if a previously generated batch exists in LocalStorage (do NOT auto-load to prevent accidental token confusion)
@@ -105,6 +108,19 @@ function InfluencerStudioContent() {
       setHasSavedBatch(true);
       try {
         localStorage.setItem(INFLUENCER_LOCAL_STORAGE_KEY, JSON.stringify(newBatch));
+      } catch (e) {}
+
+      // Auto-save batch into database history archive
+      try {
+        const guestId = getOrCreateClientGuestId();
+        fetch('/api/batches', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-creator-guest-id': guestId,
+          },
+          body: JSON.stringify({ batch: newBatch, spec: specToUse }),
+        }).catch((e) => console.warn('Failed to sync batch to database:', e));
       } catch (e) {}
     } catch (err) {
       console.error('Failed to generate batch:', err);
@@ -199,9 +215,18 @@ function InfluencerStudioContent() {
           {/* Right: Studio Actions & Token Tracker */}
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             <button
+              onClick={() => setShowHistoryModal(true)}
+              className="px-2.5 sm:px-3 py-1.5 text-xs rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white transition flex items-center gap-1.5 border border-neutral-800 hover:border-neutral-700 shadow-sm"
+              title="Open Generation History & Saved Batches"
+            >
+              <History className="w-3.5 h-3.5 text-pink-400" />
+              <span className="hidden sm:inline">History</span>
+            </button>
+
+            <button
               onClick={() => setShowCalendarModal(true)}
               className="px-2.5 sm:px-3 py-1.5 text-xs rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white transition flex items-center gap-1.5 border border-neutral-800 hover:border-neutral-700 shadow-sm"
-              title="Open Content Calendar & History"
+              title="Open Content Calendar & Schedule"
             >
               <Calendar className="w-3.5 h-3.5 text-pink-400" />
               <span className="hidden sm:inline">Calendar</span>
@@ -338,11 +363,22 @@ function InfluencerStudioContent() {
         )}
       </div>
 
-      {/* Interactive Content Calendar & History Modal */}
+      {/* Interactive Content Calendar Modal */}
       <ContentCalendarModal
         isOpen={showCalendarModal}
         onClose={() => setShowCalendarModal(false)}
         activeBatch={batch}
+      />
+
+      {/* Cloud Generation History Archive Modal */}
+      <GenerationHistoryModal
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+        onSelectBatch={(selected) => {
+          setBatch(selected);
+          setHasSavedBatch(true);
+          setShowHistoryModal(false);
+        }}
       />
     </main>
   );

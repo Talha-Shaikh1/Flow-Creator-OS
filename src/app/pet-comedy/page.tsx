@@ -30,8 +30,10 @@ import {
   Camera,
   Calendar as CalendarIcon,
   ShieldCheck,
+  History,
 } from 'lucide-react';
 import { ContentCalendarModal } from '@/components/calendar/ContentCalendarModal';
+import { GenerationHistoryModal } from '@/components/studio/GenerationHistoryModal';
 import { ClerkAuthSync } from '@/components/auth/ClerkAuthSync';
 import { getOrCreateClientGuestId } from '@/lib/auth/session';
 import { AdminAccessGuard } from '@/components/auth/AdminAccessGuard';
@@ -95,6 +97,7 @@ function PetComedyStudioContent() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showRefDrawer, setShowRefDrawer] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   const [hasSavedBatch, setHasSavedBatch] = useState(false);
 
@@ -121,6 +124,19 @@ function PetComedyStudioContent() {
       setHasSavedBatch(true);
       try {
         localStorage.setItem(PET_COMEDY_LOCAL_STORAGE_KEY, JSON.stringify(newBatch));
+      } catch (e) {}
+
+      // Auto-save batch into database history archive
+      try {
+        const guestId = getOrCreateClientGuestId();
+        fetch('/api/batches', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-creator-guest-id': guestId,
+          },
+          body: JSON.stringify({ batch: newBatch, spec: MASTER_PET_COMEDY_SPEC }),
+        }).catch((e) => console.warn('Failed to sync batch to database:', e));
       } catch (e) {}
     } catch (err) {
       console.error('Failed to generate batch:', err);
@@ -234,9 +250,18 @@ function PetComedyStudioContent() {
             </button>
 
             <button
+              onClick={() => setShowHistoryModal(true)}
+              className="px-2.5 sm:px-3 py-1.5 text-xs rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white transition flex items-center gap-1.5 border border-neutral-800 hover:border-neutral-700 shadow-sm"
+              title="Open Generation History & Saved Batches"
+            >
+              <History className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">History</span>
+            </button>
+
+            <button
               onClick={() => setShowCalendarModal(true)}
               className="px-2.5 sm:px-3 py-1.5 text-xs rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white transition flex items-center gap-1.5 border border-neutral-800 hover:border-neutral-700 shadow-sm"
-              title="Open Content Calendar & History"
+              title="Open Content Calendar & Schedule"
             >
               <CalendarIcon className="w-3.5 h-3.5 text-amber-400" />
               <span className="hidden sm:inline">Calendar</span>
@@ -463,11 +488,22 @@ function PetComedyStudioContent() {
         )}
       </div>
 
-      {/* Interactive Content Calendar & History Modal */}
+      {/* Interactive Content Calendar Modal */}
       <ContentCalendarModal
         isOpen={showCalendarModal}
         onClose={() => setShowCalendarModal(false)}
         activeBatch={batch}
+      />
+
+      {/* Cloud Generation History Archive Modal */}
+      <GenerationHistoryModal
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+        onSelectBatch={(selected) => {
+          setBatch(selected);
+          setHasSavedBatch(true);
+          setShowHistoryModal(false);
+        }}
       />
     </main>
   );

@@ -9,7 +9,26 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const date = searchParams.get('date') || getPKTDateString();
     const personaId = searchParams.get('personaId');
+    const isHistory = searchParams.get('history') === 'true';
 
+    // 1. Fetch History of Generated Plans
+    if (isHistory) {
+      const whereClause: any = {};
+      if (personaId && personaId !== 'all') {
+        whereClause.personaId = personaId;
+      }
+
+      const history = await prisma.dailyContentPlan.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        include: { persona: true },
+      });
+
+      return NextResponse.json({ success: true, history });
+    }
+
+    // 2. Fetch Single Date Plan for Active Persona
     if (!personaId) {
       return NextResponse.json({ error: 'personaId is required' }, { status: 400 });
     }
@@ -72,13 +91,13 @@ export async function POST(req: NextRequest) {
         storiesPlan: typeof storiesPlan === 'object' ? JSON.stringify(storiesPlan) : storiesPlan,
         ytTitle,
         ytDescription,
-        ytTags,
+        ytTags: Array.isArray(ytTags) ? ytTags.join(', ') : ytTags,
         tiktokCaption,
-        tiktokHashtags,
+        tiktokHashtags: Array.isArray(tiktokHashtags) ? tiktokHashtags.join(' ') : tiktokHashtags,
         instaCaption,
-        instaHashtags,
+        instaHashtags: Array.isArray(instaHashtags) ? instaHashtags.join(' ') : instaHashtags,
         facebookCaption,
-        facebookHashtags,
+        facebookHashtags: Array.isArray(facebookHashtags) ? facebookHashtags.join(' ') : facebookHashtags,
       },
       create: {
         date,
@@ -93,13 +112,13 @@ export async function POST(req: NextRequest) {
         storiesPlan: typeof storiesPlan === 'object' ? JSON.stringify(storiesPlan) : storiesPlan,
         ytTitle,
         ytDescription,
-        ytTags,
+        ytTags: Array.isArray(ytTags) ? ytTags.join(', ') : ytTags,
         tiktokCaption,
-        tiktokHashtags,
+        tiktokHashtags: Array.isArray(tiktokHashtags) ? tiktokHashtags.join(' ') : tiktokHashtags,
         instaCaption,
-        instaHashtags,
+        instaHashtags: Array.isArray(instaHashtags) ? instaHashtags.join(' ') : instaHashtags,
         facebookCaption,
-        facebookHashtags,
+        facebookHashtags: Array.isArray(facebookHashtags) ? facebookHashtags.join(' ') : facebookHashtags,
       },
       include: { persona: true },
     });
@@ -107,6 +126,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ plan, success: true });
   } catch (error: any) {
     console.error('Error saving content plan:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'id is required' }, { status: 400 });
+    }
+
+    await prisma.dailyContentPlan.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('Error deleting content plan:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
