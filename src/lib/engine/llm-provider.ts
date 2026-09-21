@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 
-export type AIProvider = 'gemini' | 'openai' | 'groq' | 'anthropic' | 'openrouter' | 'omniroute';
+export type AIProvider = 'gemini' | 'openai' | 'groq' | 'anthropic' | 'openrouter' | 'omniroute' | 'mistral';
 
 export interface AIProviderConfig {
   provider: AIProvider;
@@ -22,6 +22,7 @@ export interface UniversalLLMResponse {
 }
 
 export const DEFAULT_MODELS: Record<AIProvider, string> = {
+  mistral: 'mistral-large-latest',
   omniroute: 'auto',
   gemini: 'gemini-3.6-flash',
   openai: 'gpt-4o-mini',
@@ -41,12 +42,20 @@ export const PROVIDER_OPTIONS: Array<{
   badge?: string;
 }> = [
   {
+    id: 'mistral',
+    name: 'Mistral AI (1B Free Tokens)',
+    description: 'Official Mistral Free Experiment Tier with 1 Billion free monthly tokens on flagship models.',
+    defaultModel: 'mistral-large-latest',
+    popularModels: ['mistral-large-latest', 'mistral-small-latest', 'codestral-latest', 'pixtral-12b'],
+    badge: '1 BILLION TOKENS / MO',
+  },
+  {
     id: 'omniroute',
     name: 'OmniRoute Gateway',
     description: 'Open-source self-hosted AI gateway pooling 90+ free tiers (Mistral 1B tokens, Cerebras, Groq).',
     defaultModel: 'auto',
     popularModels: ['auto', 'mistral-large-latest', 'llama-3.3-70b-versatile', 'gemini-2.5-flash', 'deepseek-chat'],
-    badge: '1B FREE TOKENS POOL',
+    badge: 'POOLED GATEWAY',
   },
   {
     id: 'groq',
@@ -111,6 +120,8 @@ export function resolveServerKey(provider: AIProvider): string | null {
       return process.env.OPENROUTER_API_KEY || null;
     case 'omniroute':
       return process.env.OMNIROUTE_API_KEY || null;
+    case 'mistral':
+      return process.env.MISTRAL_API_KEY || null;
   }
 }
 
@@ -302,8 +313,8 @@ export async function callUniversalLLM({
     }
   }
 
-  // 3. OpenAI / Groq / OpenRouter (Standard OpenAI-compatible Chat Completions API)
-  if (provider === 'openai' || provider === 'groq' || provider === 'openrouter') {
+  // 3. OpenAI / Groq / OpenRouter / Mistral (Standard OpenAI-compatible Chat Completions API)
+  if (provider === 'openai' || provider === 'groq' || provider === 'openrouter' || provider === 'mistral') {
     let endpoint = 'https://api.openai.com/v1/chat/completions';
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -316,6 +327,8 @@ export async function callUniversalLLM({
       endpoint = 'https://openrouter.ai/api/v1/chat/completions';
       headers['HTTP-Referer'] = 'https://flowcreator.ai';
       headers['X-Title'] = 'FlowCreator OS';
+    } else if (provider === 'mistral') {
+      endpoint = 'https://api.mistral.ai/v1/chat/completions';
     }
 
     const messages: Array<{ role: string; content: string }> = [];

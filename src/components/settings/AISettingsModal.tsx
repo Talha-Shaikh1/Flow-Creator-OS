@@ -285,6 +285,36 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
             </div>
           )}
 
+          {/* Mistral AI Direct 1B Tokens Helper */}
+          {selectedProvider === 'mistral' && (
+            <div className="p-4 rounded-xl bg-orange-950/30 border border-orange-500/30 space-y-2.5 animate-in fade-in duration-150">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-orange-400" />
+                  <span className="text-xs font-bold text-orange-200">
+                    Mistral AI Official — 1 Billion Free Monthly Tokens
+                  </span>
+                </div>
+                <a
+                  href="https://console.mistral.ai"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] text-orange-400 hover:text-orange-300 flex items-center gap-1 hover:underline font-semibold"
+                >
+                  Get Free API Key <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+
+              <p className="text-[11px] text-neutral-300 leading-relaxed">
+                Mistral AI provides up to <strong className="text-orange-300">1,000,000,000 free tokens/month</strong> on their &quot;Free Experiment Tier&quot; with zero credit card required! Ideal for short-form video scripts and deep prompt packages.
+              </p>
+
+              <div className="text-[10px] text-neutral-400 flex items-center gap-1.5">
+                <span>📍 Sign up at <strong className="text-neutral-300">console.mistral.ai</strong>, create a key under &quot;API Keys&quot;, and paste it below.</span>
+              </div>
+            </div>
+          )}
+
           {/* Base URL (For OmniRoute or Custom Proxies) */}
           {selectedProvider === 'omniroute' && (
             <div className="space-y-2">
