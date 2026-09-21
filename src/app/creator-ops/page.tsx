@@ -32,12 +32,16 @@ import {
   Film,
   Zap,
   History,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { YouTubeIcon, InstagramIcon, TikTokIcon, FacebookIcon } from '@/components/creator-ops/SocialIcons';
 import { getScheduledTasksForDay, ScheduledTask, getWeeklyTargetBreakdown } from '@/lib/creator-ops/schedule';
 import { SocialMetaPack } from '@/lib/creator-ops/meta-manager';
 import { PersonaHistoryModal } from '@/components/creator-ops/PersonaHistoryModal';
 import { getStoredAIConfig } from '@/lib/ai/ai-settings';
+import { AISettingsModal } from '@/components/settings/AISettingsModal';
+import { GenerationProgressModal } from '@/components/studio/GenerationProgressModal';
+import { AIProviderConfig } from '@/lib/engine/llm-provider';
 
 interface Persona {
   id: string;
@@ -132,9 +136,15 @@ export default function CreatorOpsPage() {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
   const [metaActivePlatform, setMetaActivePlatform] = useState<'youtube' | 'instagram' | 'tiktok' | 'facebook'>('youtube');
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
+  const [showAISettingsModal, setShowAISettingsModal] = useState<boolean>(false);
+  const [currentAIConfig, setCurrentAIConfig] = useState<AIProviderConfig>({ provider: 'mistral' });
+  const [packError, setPackError] = useState<string | null>(null);
 
   // Live PKT Clock
   useEffect(() => {
+    try {
+      setCurrentAIConfig(getStoredAIConfig());
+    } catch (e) {}
     const updateTime = () => {
       const now = new Date();
       const timeString = now.toLocaleTimeString('en-US', {
@@ -458,8 +468,10 @@ Tags: ${socialMeta.facebook.hashtags.join(' ')}
     if (!targetPersona) return;
 
     setIsGenerating(true);
+    setPackError(null);
     try {
       const aiConfig = getStoredAIConfig();
+      setCurrentAIConfig(aiConfig);
       const res = await fetch('/api/creator-ops/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -471,7 +483,15 @@ Tags: ${socialMeta.facebook.hashtags.join(' ')}
         }),
       });
 
-      const data = await res.json();
+      const rawText = await res.text();
+      let data: any = null;
+      try {
+        data = JSON.parse(rawText);
+      } catch (parseErr) {
+        const cleanSnippet = rawText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180);
+        throw new Error(`Server returned HTTP ${res.status}: ${cleanSnippet || 'Failed to parse JSON response'}`);
+      }
+
       if (!res.ok || data.error) {
         throw new Error(data.error || 'Content pack generation failed via AI.');
       }
@@ -501,6 +521,7 @@ Tags: ${socialMeta.facebook.hashtags.join(' ')}
         setTimeout(() => setActionNotice(null), 4000);
       }
     } catch (e: any) {
+      setPackError(e?.message || 'Generation failed. Please verify your AI settings.');
       setActionNotice({ type: 'error', message: e?.message || 'Generation failed. Please verify your AI settings.' });
     } finally {
       setIsGenerating(false);
@@ -623,6 +644,15 @@ Tags: ${socialMeta.facebook.hashtags.join(' ')}
               <Flame className="w-4 h-4 text-orange-400 animate-bounce" />
               <span>{streak} Day Streak</span>
             </div>
+
+            <button
+              onClick={() => setShowAISettingsModal(true)}
+              className="px-2.5 sm:px-3 py-1.5 text-xs rounded-xl bg-neutral-900 hover:bg-neutral-800 text-cyan-400 hover:text-cyan-300 transition flex items-center gap-1.5 border border-neutral-800 hover:border-cyan-500/30 shadow-sm"
+              title="Configure AI Engine Provider & API Key"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="hidden sm:inline font-semibold">AI Engine</span>
+            </button>
 
             <Link
               href="/"
@@ -2299,6 +2329,30 @@ Tags: ${socialMeta.facebook.hashtags.join(' ')}
             message: `Restored plan for "${plan.trendingTopic || 'Selected Date'}" into Studio!`,
           });
           setTimeout(() => setActionNotice(null), 4000);
+        }}
+      />
+
+      {/* Real-time AI Directing Progress Modal */}
+      <GenerationProgressModal
+        isOpen={isGenerating || Boolean(packError)}
+        title="Generating CreatorOps Daily Pack"
+        subtitle="Crafting multi-channel scripts, voiceovers, video prompts, and photo carousel concepts..."
+        aiConfig={currentAIConfig}
+        error={packError}
+        onRetry={handleGeneratePack}
+        onClose={() => {
+          setIsGenerating(false);
+          setPackError(null);
+        }}
+        onOpenSettings={() => setShowAISettingsModal(true)}
+      />
+
+      {/* AI Settings Modal */}
+      <AISettingsModal
+        isOpen={showAISettingsModal}
+        onClose={() => {
+          setShowAISettingsModal(false);
+          setCurrentAIConfig(getStoredAIConfig());
         }}
       />
     </div>

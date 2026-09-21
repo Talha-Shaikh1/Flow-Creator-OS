@@ -10,8 +10,8 @@ export async function POST(req: NextRequest) {
     // Only migrate if user is truly signed in (not a guest)
     if (effectiveUserId.startsWith('guest_')) {
       return NextResponse.json(
-        { error: 'User must be signed in with an authenticated account to claim guest data' },
-        { status: 401 }
+        { success: true, skipped: true, message: 'User is in guest mode; migration skipped.' },
+        { status: 200 }
       );
     }
 

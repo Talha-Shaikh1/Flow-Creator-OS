@@ -28,6 +28,9 @@ import { TokenBurnBadge } from '@/components/studio/TokenBurnBadge';
 import { recordTokenBurn } from '@/lib/engine/tokens';
 import { ContentCalendarModal } from '@/components/calendar/ContentCalendarModal';
 import { GenerationHistoryModal } from '@/components/studio/GenerationHistoryModal';
+import { GenerationProgressModal } from '@/components/studio/GenerationProgressModal';
+import { AISettingsModal } from '@/components/settings/AISettingsModal';
+import { AIProviderConfig } from '@/lib/engine/llm-provider';
 import { ClerkAuthSync } from '@/components/auth/ClerkAuthSync';
 import { getOrCreateClientGuestId } from '@/lib/auth/session';
 import { AdminAccessGuard } from '@/components/auth/AdminAccessGuard';
@@ -76,10 +79,13 @@ function InfluencerStudioContent() {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [hasSavedBatch, setHasSavedBatch] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [showAISettingsModal, setShowAISettingsModal] = useState(false);
+  const [currentAIConfig, setCurrentAIConfig] = useState<AIProviderConfig>({ provider: 'mistral' });
 
   // Check if a previously generated batch exists in LocalStorage (do NOT auto-load to prevent accidental token confusion)
   useEffect(() => {
     try {
+      setCurrentAIConfig(getStoredAIConfig());
       const cached = localStorage.getItem(INFLUENCER_LOCAL_STORAGE_KEY);
       if (cached) {
         setHasSavedBatch(true);
@@ -106,15 +112,25 @@ function InfluencerStudioContent() {
       };
 
       const aiConfig = getStoredAIConfig();
+      setCurrentAIConfig(aiConfig);
+
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ spec: specToUse, aiConfig }),
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.success || !data.batch) {
-        throw new Error(data.message || data.error || 'Failed to generate weekly batch via AI. Please check your API key and AI settings.');
+      const rawText = await res.text();
+      let data: any = null;
+      try {
+        data = JSON.parse(rawText);
+      } catch (parseErr) {
+        const cleanSnippet = rawText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180);
+        throw new Error(`Server returned HTTP ${res.status}: ${cleanSnippet || 'Failed to parse JSON response'}`);
+      }
+
+      if (!res.ok || !data?.success || !data?.batch) {
+        throw new Error(data?.message || data?.error || `Generation failed via AI Engine (HTTP ${res.status}). Please verify API key in settings.`);
       }
 
       const newBatch: WeeklyBatchDelivery = data.batch;
@@ -248,6 +264,15 @@ function InfluencerStudioContent() {
             >
               <Calendar className="w-3.5 h-3.5 text-pink-400" />
               <span className="hidden sm:inline">Calendar</span>
+            </button>
+
+            <button
+              onClick={() => setShowAISettingsModal(true)}
+              className="px-2.5 sm:px-3 py-1.5 text-xs rounded-xl bg-neutral-900 hover:bg-neutral-800 text-cyan-400 hover:text-cyan-300 transition flex items-center gap-1.5 border border-neutral-800 hover:border-cyan-500/30 shadow-sm"
+              title="Configure AI Engine Provider & API Key"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="hidden sm:inline font-semibold">AI Engine</span>
             </button>
 
             <TokenBurnBadge currentReport={batch?.tokenUsage} />
@@ -413,6 +438,30 @@ function InfluencerStudioContent() {
           setBatch(selected);
           setHasSavedBatch(true);
           setShowHistoryModal(false);
+        }}
+      />
+
+      {/* Real-time AI Directing Progress Modal */}
+      <GenerationProgressModal
+        isOpen={isLoading || Boolean(generationError)}
+        title="Directing Elena (UK/EU Influencer) Batch"
+        subtitle="Generating 7-Day Mind Maps, dialogues, 4K keyframe prompts & authentic lifestyle photo posts..."
+        aiConfig={currentAIConfig}
+        error={generationError}
+        onRetry={() => handleGenerate(topicPillar)}
+        onClose={() => {
+          setIsLoading(false);
+          setGenerationError(null);
+        }}
+        onOpenSettings={() => setShowAISettingsModal(true)}
+      />
+
+      {/* AI Settings Modal */}
+      <AISettingsModal
+        isOpen={showAISettingsModal}
+        onClose={() => {
+          setShowAISettingsModal(false);
+          setCurrentAIConfig(getStoredAIConfig());
         }}
       />
     </main>
