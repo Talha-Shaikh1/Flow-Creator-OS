@@ -7,7 +7,7 @@ import { createTokenReport, estimateTokenCount } from '@/lib/engine/tokens';
 import { generateDailyPhotoPosts } from '@/lib/engine/rules/photos';
 import { EPISODE_TITLES } from '@/lib/engine/generator';
 import { callUniversalLLM, AIProviderConfig } from '@/lib/engine/llm-provider';
-import { produceVariationWithLLM } from '@/lib/engine/llm-produce';
+import { produceVariationWithLLM, buildCinematicFrameImagePrompt, buildCinematicFlowPrompt } from '@/lib/engine/llm-produce';
 
 export async function POST(req: NextRequest) {
   try {
@@ -57,16 +57,42 @@ Return JSON format:
 
       const parsed = llmRes.parsed || {};
       const newDialogue = parsed.dialogue || 'I told you before—nothing changes until you confront the reality of what happened.';
-      const newPromptText = parsed.flowPrompt || '';
-      const newFramePrompt = parsed.frameImagePrompt || `[VIDEO FRAME IMAGE - KEYFRAME ${cIndex}/3]: ${location}. ${spec.visualStyle}. 4K keyframe portrait on ${activeChar}.`;
+      const counterpartChar = silentChars[0] || 'counterpart';
+      const shot = parsed.shotType || (cIndex === 2 ? 'Shot-Reverse-Shot Close-Up' : 'Master Wide');
+      const scName = parsed.sceneName || `Scene ${cIndex} (Re-rolled: ${arc.dayName})`;
+
+      const newFramePrompt = buildCinematicFrameImagePrompt({
+        rawPrompt: parsed.frameImagePrompt,
+        clipIndex: cIndex,
+        totalClips: 3,
+        characterName: activeChar,
+        counterpartName: counterpartChar,
+        location,
+        visualStyle: spec.visualStyle,
+        sceneName: scName,
+        dialogue: newDialogue,
+      });
+
+      const newPromptText = buildCinematicFlowPrompt({
+        rawFlow: parsed.flowPrompt,
+        clipIndex: cIndex,
+        totalClips: 3,
+        activeSpeaker: activeChar,
+        counterpart: counterpartChar,
+        location,
+        dialogue: newDialogue,
+        sceneName: scName,
+        visualStyle: spec.visualStyle,
+        shotType: shot,
+      });
 
       const regeneratedClip: ClipPrompt = {
         clipIndex: cIndex,
         totalClips: 3,
-        sceneName: parsed.sceneName || `Scene ${cIndex} (Re-rolled: ${arc.dayName})`,
+        sceneName: scName,
         locationAnchor: location,
         masterKeyframeLock: `Fixed spatial perspective in ${spec.visualStyle}`,
-        shotType: parsed.shotType || (cIndex === 2 ? 'Shot-Reverse-Shot Close-Up' : 'Master Wide'),
+        shotType: shot,
         frameImagePrompt: newFramePrompt,
         speakerIsolation: {
           activeSpeaker: activeChar,
@@ -80,9 +106,7 @@ Return JSON format:
           newDialogue,
           `${activeChar} delivers line with dynamic vocal cadence and measured gaze.`
         ),
-        flowPromptText:
-          newPromptText ||
-          `[CLIP ${cIndex}/3 - GOOGLE FLOW VEO MASTER DIRECTIVE]\n[LOCATION]: ${location}\n[SUBJECT]: ${activeChar}\n[SPEAKER ISOLATION]: ${formatSpeakerIsolationPrompt({ activeSpeaker: activeChar, speakingDialogue: newDialogue, silentCharacters: silentChars, requiresMidClipCut: false })}\n[SHOT]: 4K Cinematic Lighting.`,
+        flowPromptText: newPromptText,
         retentionHookReasoning: 'Fresh dynamic angle re-rolled via LLM for optimal tension.',
         pacingWordCount: calculateWordCount(newDialogue),
         requiresReferenceImageAttachment: true,

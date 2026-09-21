@@ -147,7 +147,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
           batch.spec.cast
         );
 
-  const handleProduceVariation = async () => {
+  const handleProduceVariation = async (forceFresh = false) => {
     setIsProducing(true);
     try {
       let varType: 'High Tension' | 'Emotional Core' | 'Fast Hook' = 'High Tension';
@@ -166,7 +166,8 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
           dayNumber: activeDay.dayNumber,
           variationType: varType,
           variationId: activeVariation.id,
-          existingVariation: activeVariation,
+          existingVariation: forceFresh ? null : activeVariation,
+          forceFresh,
           aiConfig,
         }),
       });
@@ -181,6 +182,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
           characterAnchors,
           locationAnchors,
           clips,
+          critique,
           tokenUsage,
         } = data.produced;
 
@@ -197,6 +199,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
           characterAnchors,
           locationAnchors,
           clips,
+          critique: critique || activeVariation.critique,
           isProduced: true,
         };
 
@@ -214,6 +217,9 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
         };
 
         onUpdateBatch(newBatch);
+        try {
+          localStorage.setItem('flowcreator_latest_batch', JSON.stringify(newBatch));
+        } catch {}
       } else {
         alert(`AI Directing Engine Error: ${data.error || 'Failed to produce variation directives via AI.'}`);
       }
@@ -797,28 +803,43 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
             </span>
           </div>
 
-          {/* Adopt for Calendar & History Toggle */}
-          <button
-            onClick={() => handleToggleAdoptDay(activeDay.dayNumber)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer ${
-              adoptedDays[activeDay.dayNumber]
-                ? 'bg-emerald-500 text-white shadow-emerald-500/25 ring-1 ring-emerald-400/40'
-                : 'bg-neutral-900 hover:bg-emerald-950/40 text-neutral-300 hover:text-emerald-300 border border-neutral-800 hover:border-emerald-500/40'
-            }`}
-            title="Mark this episode as Adopted / Filmed in your Content Calendar"
-          >
-            {adoptedDays[activeDay.dayNumber] ? (
-              <>
-                <CheckCheck className="w-3.5 h-3.5 text-white" />
-                <span>Adopted for Day {activeDay.dayNumber} ✅</span>
-              </>
-            ) : (
-              <>
-                <Check className="w-3.5 h-3.5 text-neutral-400" />
-                <span>Mark Day {activeDay.dayNumber} as Filmed ✅</span>
-              </>
+          <div className="flex items-center gap-2">
+            {activeVariation.isProduced && (
+              <button
+                type="button"
+                onClick={() => handleProduceVariation(true)}
+                disabled={isProducing}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 hover:border-neutral-600 disabled:opacity-50"
+                title="Re-generate all frame prompts, video directives, and dialogue for this variation from scratch using AI"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-blue-400 ${isProducing ? 'animate-spin' : ''}`} />
+                <span>{isProducing ? 'Re-Generating Episode...' : 'Re-Produce Entire Episode (AI Re-Roll)'}</span>
+              </button>
             )}
-          </button>
+
+            {/* Adopt for Calendar & History Toggle */}
+            <button
+              onClick={() => handleToggleAdoptDay(activeDay.dayNumber)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer ${
+                adoptedDays[activeDay.dayNumber]
+                  ? 'bg-emerald-500 text-white shadow-emerald-500/25 ring-1 ring-emerald-400/40'
+                  : 'bg-neutral-900 hover:bg-emerald-950/40 text-neutral-300 hover:text-emerald-300 border border-neutral-800 hover:border-emerald-500/40'
+              }`}
+              title="Mark this episode as Adopted / Filmed in your Content Calendar"
+            >
+              {adoptedDays[activeDay.dayNumber] ? (
+                <>
+                  <CheckCheck className="w-3.5 h-3.5 text-white" />
+                  <span>Adopted for Day {activeDay.dayNumber} ✅</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-3.5 h-3.5 text-neutral-400" />
+                  <span>Mark Day {activeDay.dayNumber} as Filmed ✅</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Global Story & Dialogue Mind Map Card */}
@@ -843,7 +864,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
             </div>
             <button
               type="button"
-              onClick={handleProduceVariation}
+              onClick={() => handleProduceVariation(false)}
               disabled={isProducing}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-blue-500/25 transition cursor-pointer disabled:opacity-50"
             >
@@ -857,16 +878,28 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
         ) : (
           /* FULL PRODUCED PROMPTS VIEW (Stage 2 Complete) */
           <>
-            <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-3 flex items-center justify-between gap-3 text-xs">
+            <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span className="font-semibold text-emerald-300">
-                  Variation Fully Produced! All 4 Google Flow 10s Motion Prompts & Master Frame are unlocked below.
+                  Variation Fully Produced! All {activeVariation.clips.length} Google Flow 10s Motion Prompts & Master Frame are unlocked below.
                 </span>
               </div>
-              <span className="text-[10px] text-emerald-400 font-mono px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
-                Ready to Film
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleProduceVariation(true)}
+                  disabled={isProducing}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-200 border border-emerald-500/40 flex items-center gap-1.5 font-medium transition cursor-pointer disabled:opacity-50 shadow-sm"
+                  title="Re-generate all frame prompts, video directives, and dialogue for this variation from scratch using AI"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isProducing ? 'animate-spin' : ''}`} />
+                  <span>{isProducing ? 'Re-Rolling All Prompts...' : 'Re-Produce All Prompts (Full AI Re-Roll)'}</span>
+                </button>
+                <span className="text-[10px] text-emerald-400 font-mono px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 shrink-0">
+                  Ready to Film
+                </span>
+              </div>
             </div>
 
             {/* Quality Gate Inspector */}

@@ -1,20 +1,123 @@
 import { StorySpec, ClipPrompt } from '@/types';
 import { getWeeklyEmotionArc, calculateWordCount } from './rules/retention';
-import { createTokenReport, estimateTokenCount } from './tokens';
+import { createTokenReport } from './tokens';
 import { callUniversalLLM, AIProviderConfig } from './llm-provider';
 import { resolveAutonomousCast, resolveSeriesTitle, EPISODE_TITLES } from './generator';
+
+export function buildCinematicFrameImagePrompt({
+  rawPrompt,
+  clipIndex,
+  totalClips,
+  characterName,
+  counterpartName,
+  location,
+  visualStyle,
+  sceneName,
+  dialogue,
+}: {
+  rawPrompt?: string;
+  clipIndex: number;
+  totalClips: number;
+  characterName: string;
+  counterpartName: string;
+  location: string;
+  visualStyle: string;
+  sceneName: string;
+  dialogue?: string;
+}): string {
+  // If the prompt is already comprehensive (> 220 characters with key anchors), preserve it
+  if (
+    rawPrompt &&
+    rawPrompt.length > 220 &&
+    (rawPrompt.includes('[IMAGE REFERENCE ANCHOR]') || rawPrompt.includes('REFERENCE IMAGE')) &&
+    (rawPrompt.includes('[CINEMATOGRAPHY') || rawPrompt.includes('Anamorphic') || rawPrompt.includes('Alexa'))
+  ) {
+    return rawPrompt;
+  }
+
+  // Clean raw prompt to use as scene action context
+  const cleanSnippet = (rawPrompt || '')
+    .replace(/\[VIDEO FRAME IMAGE.*?\]:?/gi, '')
+    .replace(/\[KEYFRAME.*?\]:?/gi, '')
+    .trim();
+
+  const actionText =
+    cleanSnippet ||
+    `${characterName} positioned in high-tension dramatic standoff. Delivering narrative beat: "${dialogue || 'calculated emotional revelation'}"`;
+
+  return `[VIDEO FRAME IMAGE - KEYFRAME ${clipIndex}/${totalClips} (FLUX / MIDJOURNEY)]
+[IMAGE REFERENCE ANCHOR]: Attach Master Reference Image of ${characterName}. Strict facial geometry lock, exact cheekbones, jawline, skin texture, and hair styling without alteration. Zero facial distortion or morphing.
+[SCENE BLOCKING & SPATIAL DEPTH]: ${characterName} positioned in dynamic foreground at ${location}. ${sceneName}. ${actionText}. ${counterpartName} positioned over-shoulder in soft optical depth-of-field blur.
+[CINEMATOGRAPHY & LIGHTING]: Shot on ARRI Alexa LF, 85mm Panavision Anamorphic T1.5 prime lens, f/1.8 shallow depth of field, dramatic cinematic chiaroscuro key lighting, moody volumetric rim light, subtle atmospheric haze, deep rich shadows.
+[FILM EMULATION & PALETTE]: 8K UHD photorealistic film still, ${visualStyle}, Kodak Vision3 500T 5219 texture, natural skin pore detail, balanced film grain, high dynamic range, master graded color palette.`;
+}
+
+export function buildCinematicFlowPrompt({
+  rawFlow,
+  clipIndex,
+  totalClips,
+  activeSpeaker,
+  counterpart,
+  location,
+  dialogue,
+  sceneName,
+  visualStyle,
+  shotType,
+}: {
+  rawFlow?: string;
+  clipIndex: number;
+  totalClips: number;
+  activeSpeaker: string;
+  counterpart: string;
+  location: string;
+  dialogue: string;
+  sceneName: string;
+  visualStyle: string;
+  shotType?: string;
+}): string {
+  // If already substantial (> 250 characters with timeline cues), keep it
+  if (
+    rawFlow &&
+    rawFlow.length > 250 &&
+    (rawFlow.includes('SECOND-BY-SECOND') || rawFlow.includes('0:00 - 0:02') || rawFlow.includes('[TIMELINE]'))
+  ) {
+    return rawFlow;
+  }
+
+  return `[CLIP ${clipIndex}/${totalClips} - GOOGLE FLOW VEO MASTER DIRECTIVE]
+[CINEMATIC SPEC]: 9:16 vertical composition (Shorts/Reels), 24fps motion blur, 4K Hollywood composition.
+[LOCATION MASTER ANCHOR]: ${location}. Master visual lock in ${visualStyle}.
+[CHARACTER REFERENCE ANCHORS & SPATIAL BLOCKING]:
+- Active: Original fictional character ${activeSpeaker} [ATTACH REFERENCE IMAGE 1 - ${activeSpeaker.toUpperCase()}].
+- Counterpart: Original fictional character ${counterpart} [ATTACH REFERENCE IMAGE 2 - ${counterpart.toUpperCase()}]. [100% SILENT, LISTENING REACTION ONLY, LIPS SEALED, EYE CONTACT LOCKED].
+[VOCAL CADENCE & DYNAMIC TONAL INFLECTION (SAKHTI & NARMI)]:
+- Dynamic Modulation: Delivery begins with calm, quiet restraint (narmi), gradually hardening into sharp steely authority (sakhti).
+- Spoken Line: "${dialogue}"
+- Lip-Sync Directive: Realistic mouth lip-synchronization. Syllables, jaw, and facial muscles move naturally matching each spoken word. Lips seal completely after line ends.
+[SHOT & CAMERA]: ${shotType || (clipIndex === 2 ? 'Shot-Reverse-Shot Close-Up' : 'Medium Cinematic Shot')}, slow tracking drift with rack-focus transition to counterpart.
+[SECOND-BY-SECOND CINEMATIC CHOREOGRAPHY (10s)]:
+- [0:00 - 0:02 | SUSPENSE BEAT]: 1.5s dramatic pause, composed posture, steady breathing, eye contact locked across the room.
+- [0:02 - 0:07 | VOCAL DELIVERY & MODULATION]: ${activeSpeaker} delivers spoken line with clear syllable sync and controlled tonal inflection.
+- [0:07 - 0:09 | CAMERA SHIFT & COUNTERPART REACTION]: Rack-focus drift to ${counterpart} [ATTACH REFERENCE IMAGE 2], rigid posture, lips sealed, silent reaction.
+- [0:09 - 0:10 | CONTINUITY HOLD]: Cliffhanger standoff hold, suspense beat into next clip cut.
+[LIGHTING & ATMOSPHERE]: Dramatic chiaroscuro key lighting, atmospheric volumetric haze, moody shadows.
+[AUDIO & FOLEY SOUND DESIGN]: Room acoustic resonance, directional vocal warmth, subtle tension sub-drone.
+[NEGATIVE DIRECTIVES]: morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter. (NEVER write blood, weapons, violence, gore, or tobacco).`;
+}
 
 export async function produceVariationWithLLM({
   spec,
   dayNum,
   variationType,
   existingVariation,
+  forceFresh,
   aiConfig,
 }: {
   spec: StorySpec;
   dayNum: number;
   variationType: 'High Tension' | 'Emotional Core' | 'Fast Hook';
   existingVariation?: any;
+  forceFresh?: boolean;
   aiConfig?: AIProviderConfig;
 }): Promise<{
   title: string;
@@ -34,9 +137,9 @@ export async function produceVariationWithLLM({
 
   const arc = getWeeklyEmotionArc(dayNum);
   const episodeName = EPISODE_TITLES[dayNum] || `Episode ${dayNum}`;
-  const baseTitle = existingVariation?.title || `${episodeName} - ${variationType}`;
-  const baseHook = existingVariation?.hookDescription || `${spec.format} story for ${arc.dailyEmotion}`;
-  const baseScript = existingVariation?.dialogueScript || [];
+  const baseTitle = (!forceFresh && existingVariation?.title) || `${episodeName} - ${variationType}`;
+  const baseHook = (!forceFresh && existingVariation?.hookDescription) || `${spec.format} story for ${arc.dailyEmotion}`;
+  const baseScript = (!forceFresh && existingVariation?.dialogueScript) || [];
 
   const char1 = spec.cast[0]?.name || 'Julian Vance';
   const char2 = spec.cast[1]?.name || 'Elena Sterling';
@@ -62,7 +165,7 @@ Each clip's "flowPromptText" must be fully formatted as:
 - Active: Original fictional character [Name] [ATTACH REFERENCE IMAGE 1 - [NAME]].
 - Counterpart: Original fictional character [Counterpart Name] [ATTACH REFERENCE IMAGE 2 - [COUNTERPART]].
 [VOCAL CADENCE & DYNAMIC TONAL INFLECTION (SAKHTI & NARMI)]:
-- Dynamic Modulation: ...
+- Dynamic Modulation: Delivery begins with calm restraint (narmi) hardening into steely authority (sakhti)...
 - Spoken Line: "..."
 - Lip-Sync Directive: Realistic mouth synchronization matching syllables.
 [SHOT & CAMERA]: Camera angle, lens, and rack-focus shift to counterpart.
@@ -75,11 +178,14 @@ Each clip's "flowPromptText" must be fully formatted as:
 [AUDIO & FOLEY SOUND DESIGN]: Room acoustics, directional vocal warmth, subtle tension drone.
 [NEGATIVE DIRECTIVES]: morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter. (NEVER write blood, weapons, violence, gore, or tobacco).
 
-4. REFERENCE IMAGE ANCHOR (Flux / Midjourney frameImagePrompt):
-[VIDEO FRAME IMAGE - KEYFRAME X/3 (FLUX / MIDJOURNEY)]:
-[IMAGE REFERENCE ANCHOR]: Attach Master Reference Image of [Character]. Maintain 100% exact facial geometry, cheekbone structure, eyes, and hair styling without alteration.
-[SCENE BLOCKING & ACTION]: ...
-[CINEMATOGRAPHY & LIGHTING]: ARRI Alexa LF, 85mm Panavision Anamorphic T1.5 prime lens, f/1.8 shallow depth of field. 8K photorealistic film still.
+4. REFERENCE IMAGE ANCHOR (Flux / Midjourney frameImagePrompt) — STRICT 6-10 LINE FORMAT:
+CRITICAL REQUIREMENT: Every single clip's "frameImagePrompt" MUST BE A COMPREHENSIVE 6 TO 10 LINE MASTER PHOTOREALISTIC PROMPT!
+NEVER PROVIDE A SHORT 1 OR 2 LINE PROMPT! You MUST include all 4 tagged sections:
+[VIDEO FRAME IMAGE - KEYFRAME X/3 (FLUX / MIDJOURNEY)]
+[IMAGE REFERENCE ANCHOR]: Attach Master Reference Image of [Character]. Maintain 100% exact facial geometry, high cheekbones, distinct jawline, eyes, and hair styling without alteration. Zero facial distortion or morphing.
+[SCENE BLOCKING & SPATIAL DEPTH]: [Character] positioned in dynamic foreground at ${location}. Detailed pose, posture, props, and micro-expression. Counterpart visible over-shoulder in soft optical depth-of-field blur.
+[CINEMATOGRAPHY & LIGHTING]: Shot on ARRI Alexa LF, 85mm Panavision Anamorphic T1.5 prime lens, f/1.8 shallow depth of field, dramatic cinematic chiaroscuro key lighting, moody volumetric rim light, subtle atmospheric haze.
+[FILM EMULATION & PALETTE]: 8K UHD photorealistic film still, ${spec.visualStyle}, Kodak Vision3 500T 5219 texture, natural skin pore detail, balanced film grain, high dynamic range, master graded color palette.
 
 Return strictly valid JSON with this schema:
 {
@@ -132,7 +238,7 @@ Return strictly valid JSON with this schema:
 - Variation Type: "${variationType}"
 - Working Episode Title: "${baseTitle}"
 - Working Hook: "${baseHook}"
-${baseScript.length > 0 ? `- Existing Dialogue Context:\n${baseScript.map((s: any) => `  * ${s.speaker}: "${s.line}"`).join('\n')}` : ''}
+${forceFresh ? `- FORCE FRESH GENERATION: Ignore prior dialogue lines. Craft completely new, high-stakes dialogue lines, fresh dramatic visual blocking, and new plot suspense from scratch.` : (baseScript.length > 0 ? `- Existing Dialogue Context:\n${baseScript.map((s: any) => `  * ${s.speaker}: "${s.line}"`).join('\n')}` : '')}
 - Story Premise: "${spec.customStoryIdea || spec.tone}"
 - Format: ${spec.format}
 - Visual Style: ${spec.visualStyle}
@@ -141,13 +247,13 @@ ${baseScript.length > 0 ? `- Existing Dialogue Context:\n${baseScript.map((s: an
   * Lead 2 (Villain/Rival): ${char2}
 - Location: ${location}
 
-Generate the complete 3-clip production package now.`;
+Generate the complete 3-clip production package now. Ensure all "frameImagePrompt" fields are full 6-10 line cinematic master prompts.`;
 
   const llmRes = await callUniversalLLM({
     config: aiConfig,
     prompt: promptText,
     systemInstruction,
-    temperature: 0.7,
+    temperature: forceFresh ? 0.85 : 0.7,
     responseJson: true,
   });
 
@@ -158,17 +264,47 @@ Generate the complete 3-clip production package now.`;
 
   const clips: ClipPrompt[] = parsed.clips.slice(0, 3).map((c: any, idx: number) => {
     const dialogue = c.speakerIsolation?.speakingDialogue || c.dialogue || '';
+    const activeSpk = c.speakerIsolation?.activeSpeaker || (idx === 1 ? char2 : char1);
+    const counterpartSpk = activeSpk === char1 ? char2 : char1;
+    const shot = c.shotType || (idx === 1 ? 'Shot-Reverse-Shot Close-Up' : 'Master Wide');
+    const scName = c.sceneName || `Scene ${idx + 1}`;
+
+    const enrichedFrame = buildCinematicFrameImagePrompt({
+      rawPrompt: c.frameImagePrompt,
+      clipIndex: idx + 1,
+      totalClips: 3,
+      characterName: activeSpk,
+      counterpartName: counterpartSpk,
+      location,
+      visualStyle: spec.visualStyle,
+      sceneName: scName,
+      dialogue,
+    });
+
+    const enrichedFlow = buildCinematicFlowPrompt({
+      rawFlow: c.flowPromptText,
+      clipIndex: idx + 1,
+      totalClips: 3,
+      activeSpeaker: activeSpk,
+      counterpart: counterpartSpk,
+      location,
+      dialogue,
+      sceneName: scName,
+      visualStyle: spec.visualStyle,
+      shotType: shot,
+    });
+
     return {
       clipIndex: idx + 1,
       totalClips: 3,
-      sceneName: c.sceneName || `Scene ${idx + 1}`,
+      sceneName: scName,
       locationAnchor: c.locationAnchor || location,
       masterKeyframeLock: c.masterKeyframeLock || `Spatial perspective in ${spec.visualStyle}`,
-      shotType: c.shotType || (idx === 1 ? 'Shot-Reverse-Shot Close-Up' : 'Master Wide'),
+      shotType: shot,
       speakerIsolation: {
-        activeSpeaker: c.speakerIsolation?.activeSpeaker || (idx === 1 ? char2 : char1),
+        activeSpeaker: activeSpk,
         speakingDialogue: dialogue,
-        silentCharacters: c.speakerIsolation?.silentCharacters || [idx === 1 ? char1 : char2],
+        silentCharacters: c.speakerIsolation?.silentCharacters || [counterpartSpk],
         cameraCutApplied: true,
       },
       timeline: (c.timeline || [
@@ -179,8 +315,8 @@ Generate the complete 3-clip production package now.`;
         ...t,
         sfxCue: t.sfxCue || 'Cinematic room acoustics and tension drone.',
       })),
-      frameImagePrompt: c.frameImagePrompt || `[VIDEO FRAME IMAGE - KEYFRAME ${idx + 1}/3]: ${location}. ${spec.visualStyle}. 4K keyframe portrait.`,
-      flowPromptText: c.flowPromptText || `[CLIP ${idx + 1}/3 - GOOGLE FLOW VEO MASTER DIRECTIVE]\n[LOCATION]: ${location}\n[ACTIVE SPEAKER]: ${idx === 1 ? char2 : char1}`,
+      frameImagePrompt: enrichedFrame,
+      flowPromptText: enrichedFlow,
       retentionHookReasoning: c.retentionHookReasoning || '0-3s hook captures algorithmic retention.',
       pacingWordCount: calculateWordCount(dialogue) || 18,
       sceneWardrobe: c.sceneWardrobe || 'Adaptive scene-appropriate styling',
