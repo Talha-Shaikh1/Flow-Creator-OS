@@ -35,9 +35,17 @@ export function DailyPhotoPostsView({ photoPosts, dayName, dayNumber }: Props) {
     return null;
   }
 
-  const handleCopyPrompt = (prompt: string, id: string) => {
-    navigator.clipboard.writeText(prompt);
-    setCopiedPromptId(id);
+  const handleCopyPrompt = (post: DailyPhotoPost) => {
+    let finalPrompt = post.imagePrompt || '';
+    if (
+      post.outfit &&
+      post.outfit !== 'N/A' &&
+      !finalPrompt.toLowerCase().includes(post.outfit.toLowerCase().slice(0, 15))
+    ) {
+      finalPrompt = `${finalPrompt} [OUTFIT & STYLING]: ${post.outfit}.`;
+    }
+    navigator.clipboard.writeText(finalPrompt);
+    setCopiedPromptId(post.id);
     setTimeout(() => setCopiedPromptId(null), 2000);
   };
 
@@ -54,10 +62,19 @@ export function DailyPhotoPostsView({ photoPosts, dayName, dayNumber }: Props) {
     text += `==========================================================\n\n`;
 
     photoPosts.forEach((post, idx) => {
+      let finalPrompt = post.imagePrompt || '';
+      if (
+        post.outfit &&
+        post.outfit !== 'N/A' &&
+        !finalPrompt.toLowerCase().includes(post.outfit.toLowerCase().slice(0, 15))
+      ) {
+        finalPrompt = `${finalPrompt} [OUTFIT & STYLING]: ${post.outfit}.`;
+      }
       text += `>>> PHOTO ${idx + 1}: ${post.title.toUpperCase()} (${post.category}) <<<\n`;
+      text += `[OUTFIT & STYLING]: ${post.outfit}\n`;
       text += `[CAPTION]: ${post.caption}\n`;
       text += `[HASHTAGS]: ${post.hashtags.join(' ')}\n`;
-      text += `[MIDJOURNEY / FLUX / FLOW PHOTO PROMPT]:\n${post.imagePrompt}\n\n`;
+      text += `[MIDJOURNEY / FLUX / FLOW PHOTO PROMPT]:\n${finalPrompt}\n\n`;
       text += `----------------------------------------------------------\n\n`;
     });
 
@@ -262,9 +279,9 @@ export function DailyPhotoPostsView({ photoPosts, dayName, dayNumber }: Props) {
 
                 <button
                   type="button"
-                  onClick={() => handleCopyPrompt(post.imagePrompt, post.id)}
+                  onClick={() => handleCopyPrompt(post)}
                   className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm"
-                  title="Copy photorealistic image prompt for Midjourney / Flux / Flow"
+                  title="Copy photorealistic image prompt (includes outfit) for Midjourney / Flux / Flow"
                 >
                   {copiedPromptId === post.id ? (
                     <Check className="w-3.5 h-3.5 text-white" />

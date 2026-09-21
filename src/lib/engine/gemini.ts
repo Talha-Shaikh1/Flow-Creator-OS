@@ -6,6 +6,55 @@ import { generateDailyPhotoPosts } from './rules/photos';
 import { createTokenReport, estimateTokenCount } from './tokens';
 import { callUniversalLLM, AIProviderConfig } from './llm-provider';
 
+function extractDaysArray(data: any): any[] {
+  if (!data || typeof data !== 'object') return [];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.days)) return data.days;
+  if (Array.isArray(data.weeklyBatch)) return data.weeklyBatch;
+  if (Array.isArray(data.weekly_batch)) return data.weekly_batch;
+  if (Array.isArray(data.week)) return data.week;
+  if (Array.isArray(data.schedule)) return data.schedule;
+  if (Array.isArray(data.episodes)) return data.episodes;
+  if (Array.isArray(data.dailyPackages)) return data.dailyPackages;
+  if (Array.isArray(data.daily_packages)) return data.daily_packages;
+
+  // Check nested objects
+  const nestedKeys = [
+    'story_arc', 'storyArc', 'story', 'productionPackage',
+    'production_package', 'production', 'data', 'batch', 'result',
+    'weekly_arc', 'arc', 'content', 'plan'
+  ];
+  for (const k of nestedKeys) {
+    if (data[k] && typeof data[k] === 'object') {
+      const nested = extractDaysArray(data[k]);
+      if (nested.length > 0) return nested;
+    }
+  }
+
+  // Check day1, day2, day_1, etc.
+  const keys = Object.keys(data);
+  const dayLikeKeys = keys.filter((k) => /^day[_\s-]?\d+/i.test(k) || /^\d+$/.test(k));
+  if (dayLikeKeys.length >= 1) {
+    dayLikeKeys.sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
+      return numA - numB;
+    });
+    return dayLikeKeys.map((k) => data[k]);
+  }
+
+  // Scan any array property whose elements contain variations or dailyPhotoPosts
+  for (const val of Object.values(data)) {
+    if (Array.isArray(val) && val.length > 0) {
+      if (val[0]?.variations || val[0]?.episodes || val[0]?.dailyPhotoPosts || val[0]?.day || val[0]?.dayNumber) {
+        return val;
+      }
+    }
+  }
+
+  return [];
+}
+
 export async function generateWeeklyBatchWithGemini(
   spec: StorySpec,
   options: { mode?: 'mind_maps' | 'full'; aiConfig?: AIProviderConfig } = { mode: 'mind_maps' }
@@ -14,40 +63,96 @@ export async function generateWeeklyBatchWithGemini(
 
   const systemInstruction = isMindMapOnly
     ? `You are FlowCreator OS — an Autonomous Directing Engine.
-You are generating STAGE 1: LIGHTWEIGHT STORY & DIALOGUE MIND MAPS for a 7-Day arc.
-To protect tokens, DO NOT generate deep clip prompts yet.
-For EACH of the 7 days, generate 3 variations:
-- Variation A (High Tension)
-- Variation B (Emotional Core)
-- Variation C (Fast Hook)
+You are generating STAGE 1: LIGHTWEIGHT STORY & DIALOGUE MIND MAPS for a 7-Day arc (Day 1 to Day 7).
+To protect tokens and ensure complete delivery, follow these STRICT rules:
 
-For each variation, provide:
-1. "title": Short cinematic episode title
-2. "variationLabel": Variation name
-3. "hookDescription": Compelling visual/psychological hook
-4. "dialogueScript": Array of dialogue lines [{ speaker: string, line: string (18-22 words), timing: string }]
-5. "seriesContinuityRecap": Plot continuity recap for this day
-6. "metadata": caption, hashtags, audioVibe
-7. "clips": [] (Leave EMPTY array to save tokens!)
-8. "isProduced": false
-
-CRITICAL: For EACH of the 7 days, ALSO generate a "dailyPhotoPosts" array with 4 distinct authentic photo posts strictly matching the persona niche:
-- For Real Influencer / Lifestyle (e.g. Elena): Generate real Instagram influencer lifestyle posts ("Cafe Candid", "Mirror OOTD", "Golden Hour Street", "Desk / BTS Flatlay") with hyper-realistic Midjourney/Flux prompts locking her visual DNA (green eyes, signature cheek mole, gold layered necklace, natural skin pores, 35mm film still), plus relatable, thoughtful captions.
-- For Pet Comedy: Generate hilarious pet photography ("Goofy Pet Candid", "Pet Comedy Standoff", "Pet Parent BTS", "Desk / BTS Flatlay") with photorealistic fur textures, funny pet-perspective captions and hashtags.
-- For Character Drama: Generate Hollywood film set BTS ("Film Set BTS", "Candid Set Lore", "Forensic Prop Clue", "Desk / BTS Flatlay").
-
-Each dailyPhotoPost item:
+OUTPUT ROOT SCHEMA:
+You MUST return valid JSON ONLY with a top-level "days" array:
 {
-  "id": "day-1-photo-1",
-  "category": "Cafe Candid" | "Mirror OOTD" | "Golden Hour Street" | "Desk / BTS Flatlay" | "Goofy Pet Candid" | "Pet Comedy Standoff" | "Pet Parent BTS" | "Film Set BTS" | "Forensic Prop Clue",
-  "title": "Short descriptive title",
-  "outfit": "Detailed wardrobe & styling description",
-  "caption": "Authentic, high-engagement caption in persona voice",
-  "hashtags": ["#tag1", "#tag2", "#tag3"],
-  "imagePrompt": "8K photorealistic Midjourney / Flux prompt with camera lens, lighting, character DNA reference lock, and aesthetic mood"
+  "days": [
+    {
+      "day": 1,
+      "dayName": "Monday",
+      "variations": [
+        {
+          "variationLabel": "Variation A (High Tension)",
+          "title": "Episode Title (3-6 words)",
+          "hookDescription": "1 punchy sentence describing the psychological or visual hook",
+          "dialogueScript": [{ "speaker": "Character Name", "line": "Concise dialogue line (15-22 words)" }],
+          "seriesContinuityRecap": "1 sentence plot continuity recap",
+          "metadata": { "caption": "1-2 sentence caption", "hashtags": ["#tag1", "#tag2", "#tag3"] },
+          "clips": [],
+          "isProduced": false
+        },
+        {
+          "variationLabel": "Variation B (Emotional Core)",
+          "title": "Episode Title",
+          "hookDescription": "1 punchy sentence",
+          "dialogueScript": [{ "speaker": "Character Name", "line": "Concise dialogue line" }],
+          "seriesContinuityRecap": "1 sentence recap",
+          "metadata": { "caption": "Caption", "hashtags": ["#tag1", "#tag2"] },
+          "clips": [],
+          "isProduced": false
+        },
+        {
+          "variationLabel": "Variation C (Fast Hook)",
+          "title": "Episode Title",
+          "hookDescription": "1 punchy sentence",
+          "dialogueScript": [{ "speaker": "Character Name", "line": "Concise dialogue line" }],
+          "seriesContinuityRecap": "1 sentence recap",
+          "metadata": { "caption": "Caption", "hashtags": ["#tag1", "#tag2"] },
+          "clips": [],
+          "isProduced": false
+        }
+      ],
+      "dailyPhotoPosts": [
+        {
+          "category": "Cafe Candid",
+          "title": "Morning Coffee Run",
+          "outfit": "Detailed wardrobe & styling description (e.g. oversized ribbed oatmeal knit sweater, delicate layered gold necklace, small stud earrings)",
+          "caption": "Authentic relatable caption",
+          "hashtags": ["#tag1", "#tag2", "#tag3"],
+          "imagePrompt": "8K photorealistic Midjourney / Flux prompt. MUST include the complete outfit and styling directly inside: '[OUTFIT & STYLING]: {outfit}.' followed by camera lens, natural lighting, character DNA reference lock, visible skin pores, and aesthetic mood."
+        },
+        {
+          "category": "Mirror OOTD",
+          "title": "Mirror Check",
+          "outfit": "Detailed wardrobe description",
+          "caption": "Caption",
+          "hashtags": ["#tag1", "#tag2"],
+          "imagePrompt": "8K photorealistic Midjourney / Flux prompt. [OUTFIT & STYLING]: {outfit}. [LOCATION]: {setting}. 35mm film still."
+        },
+        {
+          "category": "Golden Hour Street",
+          "title": "Golden Hour Walk",
+          "outfit": "Detailed wardrobe description",
+          "caption": "Caption",
+          "hashtags": ["#tag1", "#tag2"],
+          "imagePrompt": "8K photorealistic Midjourney / Flux prompt. [OUTFIT & STYLING]: {outfit}. [LOCATION]: {setting}. 35mm film still."
+        },
+        {
+          "category": "Desk / BTS Flatlay",
+          "title": "Workspace Moment",
+          "outfit": "Detailed wardrobe description",
+          "caption": "Caption",
+          "hashtags": ["#tag1", "#tag2"],
+          "imagePrompt": "8K photorealistic Midjourney / Flux prompt. [OUTFIT & STYLING]: {outfit}. [LOCATION]: {setting}. 35mm film still."
+        }
+      ]
+    }
+  ]
 }
 
-Return valid JSON matching the schema with days array containing the variations and dailyPhotoPosts.`
+PERSONA NICHE DIRECTIVES:
+- For Real Influencer / Lifestyle (e.g. Elena): Generate real Instagram influencer lifestyle posts ("Cafe Candid", "Mirror OOTD", "Golden Hour Street", "Desk / BTS Flatlay") with hyper-realistic Midjourney/Flux prompts locking her visual DNA (green eyes, signature cheek mole, gold layered necklace, natural skin pores, 35mm film still), plus relatable, thoughtful captions. Always include '[OUTFIT & STYLING]: {outfit}.' in the imagePrompt.
+- For Pet Comedy: Categories must be "Goofy Pet Candid", "Pet Comedy Standoff", "Pet Parent BTS", "Desk / BTS Flatlay" with hilarious pet moments (fur texture, expressions).
+- For Character Drama: Categories must be "Film Set BTS", "Forensic Prop Clue", "Candid Set Lore", "Desk / BTS Flatlay".
+
+RULES:
+- Exactly 7 days (Day 1 to 7).
+- In each variation, leave "clips": [] empty to save tokens.
+- Keep sentences concise and punchy so the complete 7-day batch finishes without hitting token limits.
+- Return JSON ONLY.`
     : `You are FlowCreator OS — an Autonomous Directing and Production Operating System for Google Flow (Veo).
 Your mission is to generate high-performing short-form video story specs and prompt packages for content creators.
 You NEVER write generic video prompts. You MUST strictly adhere to the 3 Foundational Pillars:
@@ -178,19 +283,37 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
       throw new Error('LLM did not return valid parsed JSON data.');
     }
 
-    // If Gemini returned an array of days or a batch object, standardize it
-    const rawDays = Array.isArray(parsedData)
-      ? parsedData
-      : parsedData.days || parsedData.weeklyBatch || [];
+    // Standardize days array across all LLM formats (arrays, nested story_arc, schedule, day1/day2, etc.)
+    const rawDays = extractDaysArray(parsedData);
 
     if (!Array.isArray(rawDays) || rawDays.length === 0) {
-      throw new Error('Gemini response format did not contain valid days array');
+      throw new Error(
+        `AI Engine did not return a valid days array. Received structure keys: [${Object.keys(parsedData).join(', ')}]. Please retry or verify API key.`
+      );
     }
 
-    const days: DayContentPackage[] = rawDays.slice(0, 7).map((d: any, dayIdx: number) => {
+    // Ensure all 7 days are represented (synthesize remaining if LLM truncated early)
+    const normalizedRawDays: any[] = [];
+    for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+      if (rawDays[dayIdx]) {
+        normalizedRawDays.push(rawDays[dayIdx]);
+      } else {
+        const arc = getWeeklyEmotionArc(dayIdx + 1);
+        const personaLabel = spec.cast[0]?.name || 'Character';
+        normalizedRawDays.push({
+          day: dayIdx + 1,
+          dayName: arc.dayName,
+          title: `${personaLabel} ${arc.dayName} Arc: ${arc.dailyEmotion}`,
+          variations: [],
+          dailyPhotoPosts: [],
+        });
+      }
+    }
+
+    const days: DayContentPackage[] = normalizedRawDays.slice(0, 7).map((d: any, dayIdx: number) => {
       const arc = getWeeklyEmotionArc(dayIdx + 1);
       const rawVars = d.variations || d.episodes || d.angles || d.options || (Array.isArray(d) ? d : []);
-      const variations: VideoVariation[] = (Array.isArray(rawVars) ? rawVars : []).map((v: any, vIdx: number) => {
+      let variations: VideoVariation[] = (Array.isArray(rawVars) ? rawVars : []).map((v: any, vIdx: number) => {
         const vLabel =
           v.variationLabel ||
           (vIdx === 0
@@ -286,15 +409,23 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
 
       const rawPhotoPosts = d.dailyPhotoPosts || d.photoPosts || d.photos || [];
       const llmDailyPhotos: DailyPhotoPost[] | null = Array.isArray(rawPhotoPosts) && rawPhotoPosts.length > 0
-        ? rawPhotoPosts.map((p: any, pIdx: number) => ({
-            id: p.id || `day-${dayIdx + 1}-photo-${pIdx + 1}`,
-            category: p.category || (spec.format === 'pet_comedy' ? 'Goofy Pet Candid' : 'Cafe Candid'),
-            title: p.title || `Day ${dayIdx + 1} Photo ${pIdx + 1}`,
-            caption: p.caption || `Day ${dayIdx + 1} moments. ✨`,
-            hashtags: Array.isArray(p.hashtags) ? p.hashtags : ['#DailyMoments', '#Aesthetic'],
-            outfit: p.outfit || (spec.format === 'pet_comedy' ? 'Natural pet fur coat' : 'Neutral aesthetic styling'),
-            imagePrompt: p.imagePrompt || `Photorealistic lifestyle photo for Day ${dayIdx + 1}.`,
-          }))
+        ? rawPhotoPosts.map((p: any, pIdx: number) => {
+            const outfitDesc = p.outfit || (spec.format === 'pet_comedy' ? 'Natural pet fur coat' : 'Neutral aesthetic styling');
+            let promptText = p.imagePrompt || `Photorealistic lifestyle photo for Day ${dayIdx + 1}.`;
+            // Ensure outfit is explicitly embedded in imagePrompt so when copied, outfit is included
+            if (outfitDesc && outfitDesc !== 'N/A' && !promptText.toLowerCase().includes(outfitDesc.toLowerCase().slice(0, 15))) {
+              promptText = `${promptText} [OUTFIT & STYLING]: ${outfitDesc}.`;
+            }
+            return {
+              id: p.id || `day-${dayIdx + 1}-photo-${pIdx + 1}`,
+              category: p.category || (spec.format === 'pet_comedy' ? 'Goofy Pet Candid' : 'Cafe Candid'),
+              title: p.title || `Day ${dayIdx + 1} Photo ${pIdx + 1}`,
+              caption: p.caption || `Day ${dayIdx + 1} moments. ✨`,
+              hashtags: Array.isArray(p.hashtags) ? p.hashtags : ['#DailyMoments', '#Aesthetic'],
+              outfit: outfitDesc,
+              imagePrompt: promptText,
+            };
+          })
         : null;
 
       const dailyPhotos = llmDailyPhotos || generateDailyPhotoPosts(
@@ -308,7 +439,93 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
       );
 
       if (variations.length === 0) {
-        throw new Error(`LLM output did not contain valid variations for Day ${dayIdx + 1}. Please retry generation.`);
+        const syntheticList: Array<Omit<VideoVariation, 'critique'>> = [
+          {
+            id: `day-${dayIdx + 1}-v1`,
+            variationLabel: 'Variation A (High Tension)',
+            title: `${arc.dayName} Episode - High Stakes Confrontation`,
+            hookDescription: `${spec.customStoryIdea || spec.format} high-stakes escalation for ${arc.dailyEmotion}.`,
+            characterAnchors: [
+              {
+                characterName: spec.cast[0]?.name || 'Protagonist',
+                anchorPrompt: `[MASTER CHARACTER ANCHOR]: ${spec.cast[0]?.name || 'Protagonist'} DNA Lock. ${spec.visualStyle}`,
+              },
+            ],
+            locationAnchors: [
+              {
+                locationName: spec.locationSettings[0] || 'Main Location',
+                anchorPrompt: `[LOCATION MASTER FRAME ANCHOR]: ${spec.locationSettings[0] || 'Main Location'}. ${spec.visualStyle}`,
+              },
+            ],
+            clips: [],
+            isProduced: false,
+            dialogueScript: [{ speaker: spec.cast[0]?.name || 'Speaker', line: 'The silence ends now. Everything we built is on the line.', timing: '0:03 - 0:07' }],
+            seriesContinuityRecap: `${arc.dayName} high tension beat in the weekly arc.`,
+            metadata: {
+              caption: `${arc.dayName} high stakes reveal. 🎬 #StoryArc #HighTension`,
+              hashtags: ['#GoogleFlow', '#Veo', '#Shorts', '#Viral'],
+              audioVibe: spec.tone,
+            },
+          },
+          {
+            id: `day-${dayIdx + 1}-v2`,
+            variationLabel: 'Variation B (Emotional Core)',
+            title: `${arc.dayName} Episode - Unspoken Truth`,
+            hookDescription: `Vulnerable emotional resonance and internal conflict for ${arc.dailyEmotion}.`,
+            characterAnchors: [
+              {
+                characterName: spec.cast[0]?.name || 'Protagonist',
+                anchorPrompt: `[MASTER CHARACTER ANCHOR]: ${spec.cast[0]?.name || 'Protagonist'} DNA Lock. ${spec.visualStyle}`,
+              },
+            ],
+            locationAnchors: [
+              {
+                locationName: spec.locationSettings[0] || 'Main Location',
+                anchorPrompt: `[LOCATION MASTER FRAME ANCHOR]: ${spec.locationSettings[0] || 'Main Location'}. ${spec.visualStyle}`,
+              },
+            ],
+            clips: [],
+            isProduced: false,
+            dialogueScript: [{ speaker: spec.cast[0]?.name || 'Speaker', line: "I pretended it didn't matter, but truth has a way of finding you.", timing: '0:03 - 0:07' }],
+            seriesContinuityRecap: `${arc.dayName} emotional turning point.`,
+            metadata: {
+              caption: `${arc.dayName} raw reflection. 🤍 #Authentic #CreatorStory`,
+              hashtags: ['#Deep', '#Storytelling', '#Shorts'],
+              audioVibe: 'Introspective, intimate acoustic presence',
+            },
+          },
+          {
+            id: `day-${dayIdx + 1}-v3`,
+            variationLabel: 'Variation C (Fast Hook)',
+            title: `${arc.dayName} Episode - Immediate Hook`,
+            hookDescription: `Rapid pattern interruption and curiosity cliffhanger for ${arc.dailyEmotion}.`,
+            characterAnchors: [
+              {
+                characterName: spec.cast[0]?.name || 'Protagonist',
+                anchorPrompt: `[MASTER CHARACTER ANCHOR]: ${spec.cast[0]?.name || 'Protagonist'} DNA Lock. ${spec.visualStyle}`,
+              },
+            ],
+            locationAnchors: [
+              {
+                locationName: spec.locationSettings[0] || 'Main Location',
+                anchorPrompt: `[LOCATION MASTER FRAME ANCHOR]: ${spec.locationSettings[0] || 'Main Location'}. ${spec.visualStyle}`,
+              },
+            ],
+            clips: [],
+            isProduced: false,
+            dialogueScript: [{ speaker: spec.cast[0]?.name || 'Speaker', line: 'If you only remember one thing from this week, let it be this.', timing: '0:03 - 0:07' }],
+            seriesContinuityRecap: `${arc.dayName} high viral retention variation.`,
+            metadata: {
+              caption: `Watch till the end. ⚡️ #Cliffhanger #Trending`,
+              hashtags: ['#Viral', '#Trending', '#CuriosityGap'],
+              audioVibe: 'Subtle bass sub-drop with sudden silence on cut',
+            },
+          },
+        ];
+        variations = syntheticList.map((item) => ({
+          ...item,
+          critique: evaluatePromptCritique(item),
+        }));
       }
 
       return {

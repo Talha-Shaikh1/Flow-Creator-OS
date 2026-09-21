@@ -133,6 +133,65 @@ export function cleanJsonText(raw: string): string {
   return cleaned.trim();
 }
 
+export function repairTruncatedJson<T = any>(raw: string): T | null {
+  let str = raw.trim();
+  if (str.startsWith('```')) {
+    str = str.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  }
+
+  try {
+    return JSON.parse(str);
+  } catch (e) {}
+
+  const cutChars = [',', '}', ']'];
+  const maxScan = Math.max(0, str.length - 8000);
+  for (let i = str.length - 1; i >= maxScan; i--) {
+    const ch = str[i];
+    if (!cutChars.includes(ch)) continue;
+
+    const candidate = str.slice(0, ch === ',' ? i : i + 1).trim();
+
+    let openBraces = 0;
+    let openBrackets = 0;
+    let inString = false;
+    let escape = false;
+
+    for (let j = 0; j < candidate.length; j++) {
+      const c = candidate[j];
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (c === '\\') {
+        escape = true;
+        continue;
+      }
+      if (c === '"') {
+        inString = !inString;
+        continue;
+      }
+      if (!inString) {
+        if (c === '{') openBraces++;
+        else if (c === '}') openBraces--;
+        else if (c === '[') openBrackets++;
+        else if (c === ']') openBrackets--;
+      }
+    }
+
+    if (!inString && openBraces >= 0 && openBrackets >= 0) {
+      let closing = '';
+      for (let b = 0; b < openBrackets; b++) closing += ']';
+      for (let b = 0; b < openBraces; b++) closing += '}';
+      try {
+        const parsed = JSON.parse(candidate + closing);
+        return parsed;
+      } catch (err) {}
+    }
+  }
+
+  return null;
+}
+
 export function parseFlexibleJson<T = any>(raw: string): T {
   const cleaned = cleanJsonText(raw);
   try {
@@ -143,14 +202,25 @@ export function parseFlexibleJson<T = any>(raw: string): T {
     const lastBrace = cleaned.lastIndexOf('}');
     if (firstBrace !== -1 && lastBrace > firstBrace) {
       const candidate = cleaned.slice(firstBrace, lastBrace + 1);
-      return JSON.parse(candidate);
+      try {
+        return JSON.parse(candidate);
+      } catch (e) {}
     }
     const firstBracket = cleaned.indexOf('[');
     const lastBracket = cleaned.lastIndexOf(']');
     if (firstBracket !== -1 && lastBracket > firstBracket) {
       const candidate = cleaned.slice(firstBracket, lastBracket + 1);
-      return JSON.parse(candidate);
+      try {
+        return JSON.parse(candidate);
+      } catch (e) {}
     }
+
+    // Try auto-repairing truncated JSON
+    const repaired = repairTruncatedJson<T>(cleaned);
+    if (repaired) {
+      return repaired;
+    }
+
     throw new Error(`LLM output was not valid JSON: ${raw.slice(0, 200)}...`);
   }
 }
@@ -341,6 +411,7 @@ export async function callUniversalLLM({
       model,
       messages,
       temperature,
+      max_tokens: 8192,
     };
 
     if (responseJson) {
