@@ -1,11 +1,12 @@
 import { GoogleGenAI } from '@google/genai';
 
-export type AIProvider = 'gemini' | 'openai' | 'groq' | 'anthropic' | 'openrouter';
+export type AIProvider = 'gemini' | 'openai' | 'groq' | 'anthropic' | 'openrouter' | 'omniroute';
 
 export interface AIProviderConfig {
   provider: AIProvider;
   apiKey?: string;
   model?: string;
+  baseUrl?: string;
 }
 
 export interface UniversalLLMResponse {
@@ -21,6 +22,7 @@ export interface UniversalLLMResponse {
 }
 
 export const DEFAULT_MODELS: Record<AIProvider, string> = {
+  omniroute: 'auto',
   gemini: 'gemini-3.6-flash',
   openai: 'gpt-4o-mini',
   groq: 'llama-3.3-70b-versatile',
@@ -28,17 +30,36 @@ export const DEFAULT_MODELS: Record<AIProvider, string> = {
   openrouter: 'google/gemini-2.0-flash-001',
 };
 
+export const DEFAULT_OMNIROUTE_BASE_URL = 'http://localhost:20128/v1';
+
 export const PROVIDER_OPTIONS: Array<{
   id: AIProvider;
   name: string;
   description: string;
   defaultModel: string;
   popularModels: string[];
+  badge?: string;
 }> = [
+  {
+    id: 'omniroute',
+    name: 'OmniRoute Gateway',
+    description: 'Open-source self-hosted AI gateway pooling 90+ free tiers (Mistral 1B tokens, Cerebras, Groq).',
+    defaultModel: 'auto',
+    popularModels: ['auto', 'mistral-large-latest', 'llama-3.3-70b-versatile', 'gemini-2.5-flash', 'deepseek-chat'],
+    badge: '1B FREE TOKENS POOL',
+  },
+  {
+    id: 'groq',
+    name: 'Groq (Ultra-Fast LPU)',
+    description: 'Sub-second real-time inference on open-source weights (Llama 3.3 70B).',
+    defaultModel: 'llama-3.3-70b-versatile',
+    popularModels: ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768', 'llama-3.1-8b-instant'],
+    badge: 'FREE & LIGHTNING FAST',
+  },
   {
     id: 'gemini',
     name: 'Google Gemini',
-    description: 'Fast, high-fidelity multimodal intelligence via Gemini 3.6 Flash.',
+    description: 'Multimodal intelligence via Gemini 3.6 Flash & 1.5 Pro.',
     defaultModel: 'gemini-3.6-flash',
     popularModels: ['gemini-3.6-flash', 'gemini-1.5-pro'],
   },
@@ -48,13 +69,6 @@ export const PROVIDER_OPTIONS: Array<{
     description: 'State-of-the-art GPT-4o and o3 reasoning models.',
     defaultModel: 'gpt-4o-mini',
     popularModels: ['gpt-4o-mini', 'gpt-4o', 'o3-mini'],
-  },
-  {
-    id: 'groq',
-    name: 'Groq (Ultra-Fast LPU)',
-    description: 'Sub-second real-time inference on open-source weights.',
-    defaultModel: 'llama-3.3-70b-versatile',
-    popularModels: ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768', 'llama-3.1-8b-instant'],
   },
   {
     id: 'anthropic',
@@ -95,6 +109,8 @@ export function resolveServerKey(provider: AIProvider): string | null {
       return process.env.ANTHROPIC_API_KEY || null;
     case 'openrouter':
       return process.env.OPENROUTER_API_KEY || null;
+    case 'omniroute':
+      return process.env.OMNIROUTE_API_KEY || null;
   }
 }
 
@@ -148,7 +164,8 @@ export async function callUniversalLLM({
 
   const model = config?.model?.trim() || DEFAULT_MODELS[provider];
 
-  if (!apiKey) {
+  // For OmniRoute, apiKey is optional if running local instance without auth
+  if (!apiKey && provider !== 'omniroute') {
     throw new Error(
       `No API key configured for provider "${provider}". Please add your API key in the AI Engine Settings modal (top navbar) or configure environment variables.`
     );
@@ -157,7 +174,7 @@ export async function callUniversalLLM({
   // 1. Google Gemini
   if (provider === 'gemini') {
     try {
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = new GoogleGenAI({ apiKey: apiKey! });
       const response = await ai.models.generateContent({
         model,
         contents: prompt,
@@ -198,7 +215,94 @@ export async function callUniversalLLM({
     }
   }
 
-  // 2. OpenAI / Groq / OpenRouter (Standard OpenAI-compatible Chat Completions API)
+  // 2. OmniRoute AI Gateway (Self-hosted 1B+ Free Tokens Pool)
+  if (provider === 'omniroute') {
+    const rawBaseUrl = config?.baseUrl || process.env.OMNIROUTE_BASE_URL || DEFAULT_OMNIROUTE_BASE_URL;
+    const cleanBase = rawBaseUrl.trim().replace(/\/+$/, '');
+    const endpoint = cleanBase.endsWith('/chat/completions')
+      ? cleanBase
+      : `${cleanBase}/chat/completions`;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (apiKey && apiKey.trim().length > 0) {
+      headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+    }
+
+    const messages: Array<{ role: string; content: string }> = [];
+    if (systemInstruction) {
+      messages.push({ role: 'system', content: systemInstruction });
+    }
+    messages.push({ role: 'user', content: prompt });
+
+    const payload: any = {
+      model: model || 'auto',
+      messages,
+      temperature,
+    };
+
+    if (responseJson) {
+      payload.response_format = { type: 'json_object' };
+    }
+
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        let parsedErr = errBody;
+        try {
+          const j = JSON.parse(errBody);
+          parsedErr = j.error?.message || errBody;
+        } catch (e) {}
+        throw new Error(`[OmniRoute Error HTTP ${res.status} (${model})]: ${parsedErr}`);
+      }
+
+      const data = await res.json();
+      const text = data.choices?.[0]?.message?.content?.trim() || '';
+      if (!text) {
+        throw new Error('OmniRoute returned an empty message candidate.');
+      }
+
+      let parsed: any;
+      if (responseJson) {
+        parsed = parseFlexibleJson(text);
+      }
+
+      const promptTokens = data.usage?.prompt_tokens || Math.ceil((prompt.length + (systemInstruction?.length || 0)) / 4);
+      const completionTokens = data.usage?.completion_tokens || Math.ceil(text.length / 4);
+
+      return {
+        text,
+        parsed,
+        usage: {
+          promptTokens,
+          completionTokens,
+          totalTokens: promptTokens + completionTokens,
+        },
+        model,
+        provider,
+      };
+    } catch (err: any) {
+      if (
+        err.message?.includes('fetch failed') ||
+        err.message?.includes('ECONNREFUSED') ||
+        err.message?.includes('ENOTFOUND')
+      ) {
+        throw new Error(
+          `[OmniRoute Not Reachable]: Could not connect to OmniRoute gateway at "${cleanBase}". Make sure OmniRoute is running locally (Run: "npx omniroute" or "docker run -p 20128:20128 diegosouzapw/omniroute").`
+        );
+      }
+      throw err;
+    }
+  }
+
+  // 3. OpenAI / Groq / OpenRouter (Standard OpenAI-compatible Chat Completions API)
   if (provider === 'openai' || provider === 'groq' || provider === 'openrouter') {
     let endpoint = 'https://api.openai.com/v1/chat/completions';
     const headers: Record<string, string> = {
@@ -273,12 +377,12 @@ export async function callUniversalLLM({
     };
   }
 
-  // 3. Anthropic Claude
+  // 4. Anthropic Claude
   if (provider === 'anthropic') {
     const endpoint = 'https://api.anthropic.com/v1/messages';
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
+      'x-api-key': apiKey!,
       'anthropic-version': '2023-06-01',
     };
 

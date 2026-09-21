@@ -21,6 +21,7 @@ export function getStoredAIConfig(): AIProviderConfig {
       provider: parsed.provider || 'gemini',
       apiKey: parsed.apiKey || undefined,
       model: parsed.model || DEFAULT_MODELS[parsed.provider as AIProvider] || DEFAULT_MODELS.gemini,
+      baseUrl: parsed.baseUrl || undefined,
     };
   } catch (e) {
     return { provider: 'gemini', model: DEFAULT_MODELS.gemini };

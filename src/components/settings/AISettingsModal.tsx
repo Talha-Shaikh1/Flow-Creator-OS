@@ -14,12 +14,17 @@ import {
   RefreshCw,
   ExternalLink,
   ShieldAlert,
+  Server,
+  Terminal,
+  Copy,
+  Check,
 } from 'lucide-react';
 import {
   AIProvider,
   AIProviderConfig,
   PROVIDER_OPTIONS,
   DEFAULT_MODELS,
+  DEFAULT_OMNIROUTE_BASE_URL,
 } from '@/lib/engine/llm-provider';
 import {
   getStoredAIConfig,
@@ -33,12 +38,14 @@ interface AISettingsModalProps {
 }
 
 export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
-  const [selectedProvider, setSelectedProvider] = useState<AIProvider>('gemini');
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>('omniroute');
   const [apiKey, setApiKey] = useState('');
-  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODELS.gemini);
+  const [baseUrl, setBaseUrl] = useState(DEFAULT_OMNIROUTE_BASE_URL);
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODELS.omniroute);
   const [customModel, setCustomModel] = useState('');
   const [isCustomModelActive, setIsCustomModelActive] = useState(false);
   const [showKey, setShowKey] = useState(false);
+  const [copiedCmd, setCopiedCmd] = useState(false);
 
   // Test Connection State
   const [testing, setTesting] = useState(false);
@@ -55,12 +62,13 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
   useEffect(() => {
     if (isOpen) {
       const stored = getStoredAIConfig();
-      setSelectedProvider(stored.provider || 'gemini');
+      setSelectedProvider(stored.provider || 'omniroute');
       setApiKey(stored.apiKey || '');
-      const defaultMod = DEFAULT_MODELS[stored.provider || 'gemini'];
+      setBaseUrl(stored.baseUrl || DEFAULT_OMNIROUTE_BASE_URL);
+      const defaultMod = DEFAULT_MODELS[stored.provider || 'omniroute'];
       const currentModel = stored.model || defaultMod;
 
-      const providerOpt = PROVIDER_OPTIONS.find((p) => p.id === (stored.provider || 'gemini'));
+      const providerOpt = PROVIDER_OPTIONS.find((p) => p.id === (stored.provider || 'omniroute'));
       const isPreset = providerOpt?.popularModels.includes(currentModel);
 
       if (isPreset) {
@@ -91,6 +99,12 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
     setTestResult(null);
   };
 
+  const handleCopyCmd = (cmd: string) => {
+    navigator.clipboard.writeText(cmd);
+    setCopiedCmd(true);
+    setTimeout(() => setCopiedCmd(false), 2000);
+  };
+
   const handleTestConnection = async () => {
     setTesting(true);
     setTestResult(null);
@@ -103,6 +117,7 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
           provider: selectedProvider,
           apiKey: apiKey.trim() || undefined,
           model: modelToUse,
+          baseUrl: selectedProvider === 'omniroute' ? baseUrl.trim() : undefined,
         }),
       });
 
@@ -135,6 +150,7 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
       provider: selectedProvider,
       apiKey: apiKey.trim() || undefined,
       model: modelToUse,
+      baseUrl: selectedProvider === 'omniroute' ? baseUrl.trim() || DEFAULT_OMNIROUTE_BASE_URL : undefined,
     };
     saveStoredAIConfig(configToSave);
     setSavedSuccess(true);
@@ -148,6 +164,7 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
     clearStoredAIConfig();
     setSelectedProvider('gemini');
     setApiKey('');
+    setBaseUrl(DEFAULT_OMNIROUTE_BASE_URL);
     setSelectedModel(DEFAULT_MODELS.gemini);
     setIsCustomModelActive(false);
     setCustomModel('');
@@ -174,7 +191,7 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
                 </span>
               </h2>
               <p className="text-xs text-neutral-400">
-                Choose your AI brain or bring your own API key (Gemini, OpenAI, Groq, Anthropic, OpenRouter).
+                Choose OmniRoute (1B+ Free Tokens), Groq, Gemini, OpenAI, Claude, or OpenRouter.
               </p>
             </div>
           </div>
@@ -201,15 +218,20 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
                     key={prov.id}
                     type="button"
                     onClick={() => handleProviderChange(prov.id)}
-                    className={`p-3 rounded-xl border text-left transition flex flex-col justify-between gap-1.5 ${
+                    className={`p-3 rounded-xl border text-left transition flex flex-col justify-between gap-1.5 relative overflow-hidden ${
                       isSelected
                         ? 'bg-indigo-600/15 border-indigo-500 text-white shadow-sm shadow-indigo-500/10 ring-1 ring-indigo-500/40'
                         : 'bg-neutral-900/80 border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-850'
                     }`}
                   >
+                    {prov.badge && (
+                      <span className="inline-block text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 self-start mb-0.5">
+                        {prov.badge}
+                      </span>
+                    )}
                     <div className="flex items-center justify-between w-full">
                       <span className="text-xs font-bold text-neutral-200">{prov.name}</span>
-                      {isSelected && <span className="w-2 h-2 rounded-full bg-indigo-400" />}
+                      {isSelected && <span className="w-2 h-2 rounded-full bg-indigo-400 shrink-0" />}
                     </div>
                     <span className="text-[10px] text-neutral-400 line-clamp-2">
                       {prov.description}
@@ -219,6 +241,69 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
               })}
             </div>
           </div>
+
+          {/* OmniRoute Quick Setup Helper (If OmniRoute Selected) */}
+          {selectedProvider === 'omniroute' && (
+            <div className="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/30 space-y-3 animate-in fade-in duration-150">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Server className="w-4 h-4 text-indigo-400" />
+                  <span className="text-xs font-bold text-indigo-200">
+                    OmniRoute Gateway — 1 Billion Free Monthly Tokens
+                  </span>
+                </div>
+                <a
+                  href="http://localhost:20128"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 hover:underline"
+                >
+                  Open Dashboard <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+
+              <p className="text-[11px] text-neutral-300 leading-relaxed">
+                OmniRoute runs locally on your PC and pools 90+ free AI tiers (Mistral 1B, Cerebras, Groq, Cohere) with automatic rate-limit failover and RTK token compression.
+              </p>
+
+              <div className="space-y-1.5">
+                <div className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider flex items-center gap-1.5">
+                  <Terminal className="w-3 h-3 text-emerald-400" /> Run in your terminal to start OmniRoute:
+                </div>
+                <div className="flex items-center justify-between p-2 rounded-lg bg-neutral-900 border border-neutral-800 font-mono text-xs text-emerald-300">
+                  <code>npx omniroute</code>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyCmd('npx omniroute')}
+                    className="p-1 rounded text-neutral-400 hover:text-white transition"
+                    title="Copy command"
+                  >
+                    {copiedCmd ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Base URL (For OmniRoute or Custom Proxies) */}
+          {selectedProvider === 'omniroute' && (
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-neutral-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Server className="w-3.5 h-3.5 text-neutral-400" />
+                OmniRoute Base URL
+              </label>
+              <input
+                type="text"
+                value={baseUrl}
+                onChange={(e) => setBaseUrl(e.target.value)}
+                placeholder="http://localhost:20128/v1"
+                className="w-full px-3.5 py-2 rounded-xl bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+              <span className="text-[10px] text-neutral-400">
+                Default local endpoint is <code className="text-indigo-300">http://localhost:20128/v1</code>.
+              </span>
+            </div>
+          )}
 
           {/* Model Selection */}
           <div className="space-y-2">
@@ -270,6 +355,11 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
                 <Key className="w-3.5 h-3.5 text-neutral-400" />
                 3. Custom API Key (BYOK)
               </label>
+              {selectedProvider === 'omniroute' && (
+                <span className="text-[10px] text-neutral-400">
+                  Optional (Leave blank if local OmniRoute has no password)
+                </span>
+              )}
               {selectedProvider === 'gemini' && (
                 <span className="text-[10px] text-neutral-400">
                   Optional (Leave blank to use server environment key)
@@ -283,7 +373,9 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder={
-                  selectedProvider === 'gemini'
+                  selectedProvider === 'omniroute'
+                    ? 'Optional auth token (Leave blank if none)...'
+                    : selectedProvider === 'gemini'
                     ? 'AIzaSy... (Leave empty to use server default key)'
                     : `Enter your ${currentProviderConfig.name} API Key...`
                 }

@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
       provider: body.provider || 'gemini',
       apiKey: body.apiKey,
       model: body.model,
+      baseUrl: body.baseUrl,
     };
 
     const response = await callUniversalLLM({
