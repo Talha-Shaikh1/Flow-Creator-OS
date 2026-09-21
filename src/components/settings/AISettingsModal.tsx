@@ -450,7 +450,7 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
               >
                 {currentProviderConfig.popularModels.map((m) => (
                   <option key={m} value={m}>
-                    {m} {m === currentProviderConfig.defaultModel ? '(Recommended)' : ''}
+                    {m} {m === currentProviderConfig.defaultModel ? '(100% Free - 1B Tokens)' : m === 'mistral-large-latest' ? '(Paid Tier Only)' : ''}
                   </option>
                 ))}
               </select>

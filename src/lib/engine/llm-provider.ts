@@ -22,7 +22,7 @@ export interface UniversalLLMResponse {
 }
 
 export const DEFAULT_MODELS: Record<AIProvider, string> = {
-  mistral: 'mistral-large-latest',
+  mistral: 'open-mistral-nemo',
   omniroute: 'auto',
   gemini: 'gemini-3.6-flash',
   openai: 'gpt-4o-mini',
@@ -44,9 +44,9 @@ export const PROVIDER_OPTIONS: Array<{
   {
     id: 'mistral',
     name: 'Mistral AI (1B Free Tokens)',
-    description: 'Official Mistral Free Experiment Tier with 1 Billion free monthly tokens on flagship models.',
-    defaultModel: 'mistral-large-latest',
-    popularModels: ['mistral-large-latest', 'mistral-small-latest', 'codestral-latest', 'pixtral-12b'],
+    description: 'Official Mistral Free Tier with 1 Billion tokens/month via Open-Mistral-Nemo.',
+    defaultModel: 'open-mistral-nemo',
+    popularModels: ['open-mistral-nemo', 'codestral-latest', 'ministral-8b-latest', 'open-mistral-7b', 'mistral-large-latest'],
     badge: '1 BILLION TOKENS / MO',
   },
   {
