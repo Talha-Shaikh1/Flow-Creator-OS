@@ -1,7 +1,7 @@
-import { StorySpec, WeeklyBatchDelivery, DayContentPackage, VideoVariation, SEASON_ESCALATION_LADDER } from '@/types';
+import { StorySpec, WeeklyBatchDelivery, DayContentPackage, VideoVariation, SEASON_ESCALATION_LADDER, DailyPhotoPost } from '@/types';
 import { getWeeklyEmotionArc } from './rules/retention';
 import { evaluatePromptCritique } from './critique';
-import { generateWeeklyBatch, resolveSeriesTitle, EPISODE_TITLES } from './generator';
+import { resolveSeriesTitle, EPISODE_TITLES } from './generator';
 import { generateDailyPhotoPosts } from './rules/photos';
 import { createTokenReport, estimateTokenCount } from './tokens';
 import { callUniversalLLM, AIProviderConfig } from './llm-provider';
@@ -31,7 +31,23 @@ For each variation, provide:
 7. "clips": [] (Leave EMPTY array to save tokens!)
 8. "isProduced": false
 
-Return valid JSON matching the schema with days array containing the variations.`
+CRITICAL: For EACH of the 7 days, ALSO generate a "dailyPhotoPosts" array with 4 distinct authentic photo posts strictly matching the persona niche:
+- For Real Influencer / Lifestyle (e.g. Elena): Generate real Instagram influencer lifestyle posts ("Cafe Candid", "Mirror OOTD", "Golden Hour Street", "Desk / BTS Flatlay") with hyper-realistic Midjourney/Flux prompts locking her visual DNA (green eyes, signature cheek mole, gold layered necklace, natural skin pores, 35mm film still), plus relatable, thoughtful captions.
+- For Pet Comedy: Generate hilarious pet photography ("Goofy Pet Candid", "Pet Comedy Standoff", "Pet Parent BTS", "Desk / BTS Flatlay") with photorealistic fur textures, funny pet-perspective captions and hashtags.
+- For Character Drama: Generate Hollywood film set BTS ("Film Set BTS", "Candid Set Lore", "Forensic Prop Clue", "Desk / BTS Flatlay").
+
+Each dailyPhotoPost item:
+{
+  "id": "day-1-photo-1",
+  "category": "Cafe Candid" | "Mirror OOTD" | "Golden Hour Street" | "Desk / BTS Flatlay" | "Goofy Pet Candid" | "Pet Comedy Standoff" | "Pet Parent BTS" | "Film Set BTS" | "Forensic Prop Clue",
+  "title": "Short descriptive title",
+  "outfit": "Detailed wardrobe & styling description",
+  "caption": "Authentic, high-engagement caption in persona voice",
+  "hashtags": ["#tag1", "#tag2", "#tag3"],
+  "imagePrompt": "8K photorealistic Midjourney / Flux prompt with camera lens, lighting, character DNA reference lock, and aesthetic mood"
+}
+
+Return valid JSON matching the schema with days array containing the variations and dailyPhotoPosts.`
     : `You are FlowCreator OS — an Autonomous Directing and Production Operating System for Google Flow (Veo).
 Your mission is to generate high-performing short-form video story specs and prompt packages for content creators.
 You NEVER write generic video prompts. You MUST strictly adhere to the 3 Foundational Pillars:
@@ -173,7 +189,8 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
 
     const days: DayContentPackage[] = rawDays.slice(0, 7).map((d: any, dayIdx: number) => {
       const arc = getWeeklyEmotionArc(dayIdx + 1);
-      const variations: VideoVariation[] = (d.variations || []).map((v: any, vIdx: number) => {
+      const rawVars = d.variations || d.episodes || d.angles || d.options || (Array.isArray(d) ? d : []);
+      const variations: VideoVariation[] = (Array.isArray(rawVars) ? rawVars : []).map((v: any, vIdx: number) => {
         const vLabel =
           v.variationLabel ||
           (vIdx === 0
@@ -267,7 +284,20 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
         };
       });
 
-      const dailyPhotos = generateDailyPhotoPosts(
+      const rawPhotoPosts = d.dailyPhotoPosts || d.photoPosts || d.photos || [];
+      const llmDailyPhotos: DailyPhotoPost[] | null = Array.isArray(rawPhotoPosts) && rawPhotoPosts.length > 0
+        ? rawPhotoPosts.map((p: any, pIdx: number) => ({
+            id: p.id || `day-${dayIdx + 1}-photo-${pIdx + 1}`,
+            category: p.category || (spec.format === 'pet_comedy' ? 'Goofy Pet Candid' : 'Cafe Candid'),
+            title: p.title || `Day ${dayIdx + 1} Photo ${pIdx + 1}`,
+            caption: p.caption || `Day ${dayIdx + 1} moments. ✨`,
+            hashtags: Array.isArray(p.hashtags) ? p.hashtags : ['#DailyMoments', '#Aesthetic'],
+            outfit: p.outfit || (spec.format === 'pet_comedy' ? 'Natural pet fur coat' : 'Neutral aesthetic styling'),
+            imagePrompt: p.imagePrompt || `Photorealistic lifestyle photo for Day ${dayIdx + 1}.`,
+          }))
+        : null;
+
+      const dailyPhotos = llmDailyPhotos || generateDailyPhotoPosts(
         spec.cast[0],
         dayIdx + 1,
         arc.dayName,
@@ -277,12 +307,16 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
         spec.cast
       );
 
+      if (variations.length === 0) {
+        throw new Error(`LLM output did not contain valid variations for Day ${dayIdx + 1}. Please retry generation.`);
+      }
+
       return {
         dayNumber: dayIdx + 1,
         episodeTitle: EPISODE_TITLES[dayIdx + 1] || `Episode ${dayIdx + 1}`,
         dayName: arc.dayName,
         dailyEmotion: `${arc.dayName} Arc: ${arc.dailyEmotion}`,
-        variations: variations.length > 0 ? variations : generateWeeklyBatch(spec).days[dayIdx].variations,
+        variations,
         selectedVariationId: variations[0]?.id,
         dailyPhotoPosts: dailyPhotos,
       };

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callUniversalLLM, AIProviderConfig } from '@/lib/engine/llm-provider';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
   try {

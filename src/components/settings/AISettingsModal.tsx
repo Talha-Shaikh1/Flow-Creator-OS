@@ -130,8 +130,22 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
         }),
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
+      const rawText = await res.text();
+      let data: any = null;
+      try {
+        data = JSON.parse(rawText);
+      } catch (parseErr) {
+        const cleanSnippet = rawText
+          .replace(/<[^>]*>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 160);
+        throw new Error(
+          `Server returned HTTP ${res.status}: ${cleanSnippet || 'Non-JSON response'}`
+        );
+      }
+
+      if (res.ok && data?.success) {
         setTestResult({
           success: true,
           message: data.message || `Connected successfully in ${data.latencyMs}ms!`,
@@ -140,7 +154,7 @@ export function AISettingsModal({ isOpen, onClose }: AISettingsModalProps) {
       } else {
         setTestResult({
           success: false,
-          error: data.error || 'Connection test failed',
+          error: data?.error || 'Connection test failed',
         });
       }
     } catch (err: any) {

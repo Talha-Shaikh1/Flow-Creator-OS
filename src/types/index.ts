@@ -286,7 +286,18 @@ export interface InUniversePostBundle {
 
 export interface DailyPhotoPost {
   id: string;
-  category: 'Film Set BTS' | 'Forensic Prop Clue' | 'Candid Set Lore' | 'Desk / BTS Flatlay' | 'Cafe Candid' | 'Mirror OOTD' | 'Golden Hour Street';
+  category:
+    | 'Film Set BTS'
+    | 'Forensic Prop Clue'
+    | 'Candid Set Lore'
+    | 'Desk / BTS Flatlay'
+    | 'Cafe Candid'
+    | 'Mirror OOTD'
+    | 'Golden Hour Street'
+    | 'Goofy Pet Candid'
+    | 'Pet Comedy Standoff'
+    | 'Pet Parent BTS'
+    | string;
   title: string;
   caption: string;
   hashtags: string[];

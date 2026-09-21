@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { StorySpec, WeeklyBatchDelivery } from '@/types';
 import { WeeklyBatchView } from '@/components/studio/WeeklyBatchView';
-import { generateWeeklyBatch } from '@/lib/engine/generator';
+import { getStoredAIConfig } from '@/lib/ai/ai-settings';
 import {
   Sparkles,
   Camera,
@@ -21,6 +21,7 @@ import {
   Calendar,
   Eye,
   History,
+  AlertCircle,
 } from 'lucide-react';
 
 import { TokenBurnBadge } from '@/components/studio/TokenBurnBadge';
@@ -74,6 +75,7 @@ function InfluencerStudioContent() {
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [hasSavedBatch, setHasSavedBatch] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   // Check if a previously generated batch exists in LocalStorage (do NOT auto-load to prevent accidental token confusion)
   useEffect(() => {
@@ -87,9 +89,11 @@ function InfluencerStudioContent() {
     }
   }, []);
 
-  const handleGenerate = (pillar = topicPillar) => {
+  const handleGenerate = async (pillar = topicPillar) => {
     setIsLoading(true);
+    setGenerationError(null);
     try {
+      const uniqueSeed = Date.now().toString(36);
       const specToUse: StorySpec = {
         ...MASTER_PERSONA_SPEC,
         genres:
@@ -98,9 +102,22 @@ function InfluencerStudioContent() {
             : pillar === 'mindset'
             ? ['Motivational']
             : ['Romance', 'Motivational'],
+        customStoryIdea: `Elena Rostova UK/EU Lifestyle & Wellness podcast on ${pillar} topics, emotional boundaries, authenticity, and growth. Unique creative seed: ${uniqueSeed}. Generate completely fresh daily mind maps and dialogue hooks.`,
       };
 
-      const newBatch = generateWeeklyBatch(specToUse);
+      const aiConfig = getStoredAIConfig();
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spec: specToUse, aiConfig }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.batch) {
+        throw new Error(data.message || data.error || 'Failed to generate weekly batch via AI. Please check your API key and AI settings.');
+      }
+
+      const newBatch: WeeklyBatchDelivery = data.batch;
       if (newBatch.tokenUsage) {
         recordTokenBurn(newBatch.tokenUsage, `Persona 1 Weekly Batch (${pillar})`);
       }
@@ -122,8 +139,9 @@ function InfluencerStudioContent() {
           body: JSON.stringify({ batch: newBatch, spec: specToUse }),
         }).catch((e) => console.warn('Failed to sync batch to database:', e));
       } catch (e) {}
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to generate batch:', err);
+      setGenerationError(err?.message || 'Failed to generate weekly batch via AI.');
     } finally {
       setIsLoading(false);
     }
@@ -252,6 +270,23 @@ function InfluencerStudioContent() {
 
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+        {/* Generation Error Alert */}
+        {generationError && (
+          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm flex items-start gap-3 animate-in fade-in duration-200">
+            <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-red-200">AI Directing Engine Error</p>
+              <p className="text-xs text-red-300/90 mt-0.5 leading-relaxed">{generationError}</p>
+            </div>
+            <button
+              onClick={() => setGenerationError(null)}
+              className="text-xs text-neutral-400 hover:text-white px-2 py-1 rounded bg-neutral-900 border border-neutral-800"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* Persona Identity Bar */}
         <div className="p-4 rounded-2xl border border-neutral-800 bg-neutral-900/60 backdrop-blur flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">

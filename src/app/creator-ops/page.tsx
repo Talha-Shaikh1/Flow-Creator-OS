@@ -37,6 +37,7 @@ import { YouTubeIcon, InstagramIcon, TikTokIcon, FacebookIcon } from '@/componen
 import { getScheduledTasksForDay, ScheduledTask, getWeeklyTargetBreakdown } from '@/lib/creator-ops/schedule';
 import { SocialMetaPack } from '@/lib/creator-ops/meta-manager';
 import { PersonaHistoryModal } from '@/components/creator-ops/PersonaHistoryModal';
+import { getStoredAIConfig } from '@/lib/ai/ai-settings';
 
 interface Persona {
   id: string;
@@ -458,6 +459,7 @@ Tags: ${socialMeta.facebook.hashtags.join(' ')}
 
     setIsGenerating(true);
     try {
+      const aiConfig = getStoredAIConfig();
       const res = await fetch('/api/creator-ops/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -465,10 +467,15 @@ Tags: ${socialMeta.facebook.hashtags.join(' ')}
           personaId: targetPersona.id,
           customTopic,
           imagePostType,
+          aiConfig,
         }),
       });
 
       const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Content pack generation failed via AI.');
+      }
+
       if (data.plan) {
         setContentPlan(data.plan);
 
@@ -493,8 +500,8 @@ Tags: ${socialMeta.facebook.hashtags.join(' ')}
         });
         setTimeout(() => setActionNotice(null), 4000);
       }
-    } catch (e) {
-      setActionNotice({ type: 'error', message: 'Generation failed. Please check Gemini API key.' });
+    } catch (e: any) {
+      setActionNotice({ type: 'error', message: e?.message || 'Generation failed. Please verify your AI settings.' });
     } finally {
       setIsGenerating(false);
     }

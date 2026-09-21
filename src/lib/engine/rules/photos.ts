@@ -194,6 +194,52 @@ export function generateDailyPhotoPosts(
     ];
   }
 
+  // If Pet Comedy: Generate Authentic Hilarious Pet Photo Posts (Barnaby, Sir Reginald & Zara)
+  if (format === 'pet_comedy') {
+    const dogName = allCast?.find((c) => c.name.toLowerCase().includes('dog') || c.name.toLowerCase().includes('barnaby') || c.name.toLowerCase().includes('corgi'))?.name || 'Barnaby (Golden Retriever)';
+    const catName = allCast?.find((c) => c.name.toLowerCase().includes('cat') || c.name.toLowerCase().includes('reginald') || c.name.toLowerCase().includes('persian'))?.name || 'Sir Reginald (Persian Cat)';
+    const ownerName = allCast?.find((c) => c.name.toLowerCase().includes('zara') || c.role === 'Side')?.name || 'Zara';
+
+    return [
+      {
+        id: `day-${dayNum}-photo-1-guilty`,
+        category: 'Goofy Pet Candid',
+        title: `Guilty Face Confession: ${dogName}`,
+        outfit: 'Fluffy golden retriever coat, floppy ears pinned back, big round apologetic eyes',
+        caption: `Look into those eyes and tell me he didn't orchestrate the whole thing. The chewed evidence was right beside him on the rug, but he claims total innocence. 🐶😂 #GuiltyDog #GoldenRetrieverLife #PetComedy #CaughtRedHanded #DogHumor`,
+        hashtags: ['#GuiltyDog', '#GoldenRetriever', '#PetComedy', '#DogMemes', '#FunnyPets', '#DogLovers'],
+        imagePrompt: `Hilarious candid pet photography: Master keyframe photo of ${dogName} sitting on a lived-in living room hardwood floor with an undeniably guilty facial expression, ears pinned back, big round amber eyes looking sideways. Beside him lies an overturned dog chew toy. Ultra-realistic dog fur texture, wet nose reflections, warm natural morning sunlight streaming from living room window. 85mm portrait lens, f/2.0, photorealistic 8K film still, authentic pet photography.`,
+      },
+      {
+        id: `day-${dayNum}-photo-2-aristocrat`,
+        category: 'Goofy Pet Candid',
+        title: `Aristocratic Disdain: ${catName}`,
+        outfit: 'Lush pristine fluffy coat, flat squished face, supreme judgmental gaze',
+        caption: `He has reviewed today's schedule and found it entirely beneath him. Not a single nap will be compromised. 🐱👑 #CatLogic #PersianCat #AristocraticFeline #JudgingYou #CatComedy`,
+        hashtags: ['#CatLogic', '#PersianCat', '#GrumpyCatVibes', '#CatHumor', '#AristocraticPet', '#ViralCats'],
+        imagePrompt: `Cinematic macro pet portrait: Master keyframe photo of ${catName} perched majestically atop the backrest of a luxury velvet armchair. Extreme judgmental and unamused facial expression, piercing copper-amber eyes staring directly into camera, pristine fluffy white/cream fur with photorealistic individual whisker detail. Warm ambient living room light, shallow depth of field, 8K ultra-detailed animal photography.`,
+      },
+      {
+        id: `day-${dayNum}-photo-3-standoff`,
+        category: 'Pet Comedy Standoff',
+        title: `The Living Room Sofa Standoff`,
+        outfit: 'Both pets positioned on opposite ends of the cozy sofa',
+        caption: `Two kings, one couch cushion. Neither is willing to blink. Episode ${dayNum} drops tonight and the peace treaty is already expired! 😂🛋️🐾 #PetStandoff #CatVsDog #SiblingRivalry #PetWars #LivingRoomChaos`,
+        hashtags: ['#PetStandoff', '#CatVsDog', '#FunnyPets', '#AnimalComedy', '#CouchWars', '#ViralShorts'],
+        imagePrompt: `Wide cinematic living room candid: ${dogName} and ${catName} occupying opposite ends of a large comfortable fabric sofa in a cozy sunlit apartment. High-tension comedic stare-down, dog frozen with tail wagging cautiously, cat puffed up with narrowed eyes. Warm lived-in apartment aesthetic, authentic pet interaction, sharp focus across both animals, natural room lighting, 35mm film still.`,
+      },
+      {
+        id: `day-${dayNum}-photo-4-parent-bts`,
+        category: 'Pet Parent BTS',
+        title: `Pet Parent Reality: ${ownerName}'s Failed Group Selfie`,
+        outfit: 'Casual oversized loungewear and denim, holding phone high for selfie',
+        caption: `All I wanted was ONE nice photo where everyone looks at the camera at the same time. This is Take 47. 🤦‍♀️🐾❤️ #PetParentLife #BehindTheScenes #ChaosCrew #NeverWorkingWithPets #DailyLife`,
+        hashtags: ['#PetParent', '#PetMom', '#FailedSelfie', '#BehindTheScenes', '#LifeWithPets', '#DogAndCat'],
+        imagePrompt: `Candid selfie-style behind-the-scenes photograph: Original fictional character ${ownerName} attempting a front-facing selfie in her living room, smiling exasperatedly while ${dogName} tries to lick her cheek and ${catName} completely turns his back to the camera in contempt. Authentic UGC Instagram aesthetic, natural indoor lighting, motion blur on dog's tail, 100% realistic animal and human skin textures, no real celebrities.`,
+      },
+    ];
+  }
+
   // Fallback: Default Lifestyle Photos for Non-Drama Formats
   const theme = DAILY_PHOTO_THEMES[(dayNum - 1) % DAILY_PHOTO_THEMES.length];
   return [
