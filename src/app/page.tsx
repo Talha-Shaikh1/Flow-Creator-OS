@@ -19,6 +19,7 @@ import { getStoredAIConfig } from '@/lib/ai/ai-settings';
 import { TokenBurnBadge } from '@/components/studio/TokenBurnBadge';
 import { recordTokenBurn } from '@/lib/engine/tokens';
 import { useUserRole } from '@/lib/auth/useUserRole';
+import { saveBatchToLocalHistory } from '@/lib/history/batch-history';
 
 const LOCAL_STORAGE_KEY = 'flowcreator_latest_batch';
 
@@ -73,6 +74,7 @@ export default function StudioPage() {
     setBatch(newBatch);
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newBatch));
+      saveBatchToLocalHistory(newBatch);
     } catch (e) {
       console.warn('Failed to save to localStorage:', e);
     }

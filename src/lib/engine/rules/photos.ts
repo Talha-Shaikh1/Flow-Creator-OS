@@ -138,8 +138,8 @@ export function generateDailyPhotoPosts(
   location: string = 'Penthouse Study at Night',
   allCast?: CastMember[]
 ): DailyPhotoPost[] {
-  const char1 = persona || allCast?.[0] || { name: 'Julian Vance', role: 'Hero' };
-  const char2 = allCast?.[1] || { name: 'Elena Sterling', role: 'Villain' };
+  const char1 = persona || allCast?.[0] || { name: 'Lead Character', role: 'Hero' };
+  const char2 = allCast?.[1] || { name: 'Co-Star', role: 'Villain' };
   const charName = char1.name;
   const coStarName = char2.name;
 

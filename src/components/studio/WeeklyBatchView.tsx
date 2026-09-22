@@ -38,6 +38,7 @@ import { getOrCreateClientGuestId } from '@/lib/auth/session';
 import { sanitizeForGoogleFlow } from '@/lib/engine/rules/temporal';
 import { generateDailyPhotoPosts } from '@/lib/engine/rules/photos';
 import { getStoredAIConfig } from '@/lib/ai/ai-settings';
+import { saveBatchToLocalHistory } from '@/lib/history/batch-history';
 
 interface Props {
   batch: WeeklyBatchDelivery;
@@ -219,6 +220,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
         onUpdateBatch(newBatch);
         try {
           localStorage.setItem('flowcreator_latest_batch', JSON.stringify(newBatch));
+          saveBatchToLocalHistory(newBatch);
         } catch {}
       } else {
         alert(`AI Directing Engine Error: ${data.error || 'Failed to produce variation directives via AI.'}`);
@@ -400,6 +402,9 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
           days: updatedDays,
         };
         onUpdateBatch(newBatch);
+        try {
+          saveBatchToLocalHistory(newBatch);
+        } catch {}
       } else {
         alert(`AI Day Regeneration Error: ${data.error || 'Failed to regenerate day via AI'}`);
       }
@@ -425,10 +430,14 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
     const updatedDays = batch.days.map((d, i) =>
       i === activeDayIndex ? { ...d, variations: updatedVariations } : d
     );
-    onUpdateBatch({
+    const newBatch = {
       ...batch,
       days: updatedDays,
-    });
+    };
+    onUpdateBatch(newBatch);
+    try {
+      saveBatchToLocalHistory(newBatch);
+    } catch {}
   };
 
   const handleGenerateNextSeason = async () => {

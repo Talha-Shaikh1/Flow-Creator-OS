@@ -34,6 +34,7 @@ import { AIProviderConfig } from '@/lib/engine/llm-provider';
 import { ClerkAuthSync } from '@/components/auth/ClerkAuthSync';
 import { getOrCreateClientGuestId } from '@/lib/auth/session';
 import { AdminAccessGuard } from '@/components/auth/AdminAccessGuard';
+import { saveBatchToLocalHistory } from '@/lib/history/batch-history';
 
 const INFLUENCER_LOCAL_STORAGE_KEY = 'flowcreator_influencer_persona1_batch';
 
@@ -141,6 +142,7 @@ function InfluencerStudioContent() {
       setHasSavedBatch(true);
       try {
         localStorage.setItem(INFLUENCER_LOCAL_STORAGE_KEY, JSON.stringify(newBatch));
+        saveBatchToLocalHistory(newBatch, specToUse);
       } catch (e) {}
 
       // Auto-save batch into database history archive
@@ -417,6 +419,7 @@ function InfluencerStudioContent() {
               setBatch(updated);
               try {
                 localStorage.setItem(INFLUENCER_LOCAL_STORAGE_KEY, JSON.stringify(updated));
+                saveBatchToLocalHistory(updated);
               } catch (e) {}
             }}
           />
@@ -437,6 +440,10 @@ function InfluencerStudioContent() {
         onSelectBatch={(selected) => {
           setBatch(selected);
           setHasSavedBatch(true);
+          try {
+            localStorage.setItem(INFLUENCER_LOCAL_STORAGE_KEY, JSON.stringify(selected));
+            saveBatchToLocalHistory(selected);
+          } catch (e) {}
           setShowHistoryModal(false);
         }}
       />

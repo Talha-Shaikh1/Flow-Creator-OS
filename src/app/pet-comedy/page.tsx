@@ -41,6 +41,7 @@ import { AIProviderConfig } from '@/lib/engine/llm-provider';
 import { ClerkAuthSync } from '@/components/auth/ClerkAuthSync';
 import { getOrCreateClientGuestId } from '@/lib/auth/session';
 import { AdminAccessGuard } from '@/components/auth/AdminAccessGuard';
+import { saveBatchToLocalHistory } from '@/lib/history/batch-history';
 
 const PET_COMEDY_LOCAL_STORAGE_KEY = 'flowcreator_pet_comedy_persona2_batch';
 
@@ -161,6 +162,7 @@ function PetComedyStudioContent() {
       setHasSavedBatch(true);
       try {
         localStorage.setItem(PET_COMEDY_LOCAL_STORAGE_KEY, JSON.stringify(newBatch));
+        saveBatchToLocalHistory(newBatch, specToUse);
       } catch (e) {}
 
       // Auto-save batch into database history archive
@@ -546,6 +548,7 @@ function PetComedyStudioContent() {
               setBatch(updated);
               try {
                 localStorage.setItem(PET_COMEDY_LOCAL_STORAGE_KEY, JSON.stringify(updated));
+                saveBatchToLocalHistory(updated);
               } catch (e) {}
             }}
           />
@@ -566,6 +569,10 @@ function PetComedyStudioContent() {
         onSelectBatch={(selected) => {
           setBatch(selected);
           setHasSavedBatch(true);
+          try {
+            localStorage.setItem(PET_COMEDY_LOCAL_STORAGE_KEY, JSON.stringify(selected));
+            saveBatchToLocalHistory(selected);
+          } catch (e) {}
           setShowHistoryModal(false);
         }}
       />

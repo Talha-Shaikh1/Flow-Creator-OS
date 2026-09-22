@@ -1,7 +1,7 @@
-import { StorySpec, WeeklyBatchDelivery, DayContentPackage, VideoVariation, SEASON_ESCALATION_LADDER, DailyPhotoPost } from '@/types';
+import { StorySpec, WeeklyBatchDelivery, DayContentPackage, VideoVariation, SEASON_ESCALATION_LADDER, DailyPhotoPost, CastMember } from '@/types';
 import { getWeeklyEmotionArc } from './rules/retention';
 import { evaluatePromptCritique } from './critique';
-import { resolveSeriesTitle, EPISODE_TITLES } from './generator';
+import { resolveSeriesTitle, EPISODE_TITLES, resolveAutonomousCast } from './generator';
 import { generateDailyPhotoPosts } from './rules/photos';
 import { createTokenReport, estimateTokenCount } from './tokens';
 import { callUniversalLLM, AIProviderConfig } from './llm-provider';
@@ -283,6 +283,15 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
       throw new Error('LLM did not return valid parsed JSON data.');
     }
 
+    // 1. EXTRACT EFFECTIVE CAST FIRST so all downstream prompt anchors & photo posts use the real LLM cast!
+    const effectiveCast: CastMember[] =
+      Array.isArray(parsedData.cast) && parsedData.cast.length > 0
+        ? parsedData.cast
+        : (spec.cast && spec.cast.length > 0 ? spec.cast : resolveAutonomousCast(spec));
+
+    const heroChar = effectiveCast.find((c: any) => c.role === 'Hero')?.name || effectiveCast[0]?.name || 'Protagonist';
+    const villainChar = effectiveCast.find((c: any) => c.role === 'Villain')?.name || effectiveCast[1]?.name || 'Antagonist';
+
     // Standardize days array across all LLM formats (arrays, nested story_arc, schedule, day1/day2, etc.)
     const rawDays = extractDaysArray(parsedData);
 
@@ -299,11 +308,10 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
         normalizedRawDays.push(rawDays[dayIdx]);
       } else {
         const arc = getWeeklyEmotionArc(dayIdx + 1);
-        const personaLabel = spec.cast[0]?.name || 'Character';
         normalizedRawDays.push({
           day: dayIdx + 1,
           dayName: arc.dayName,
-          title: `${personaLabel} ${arc.dayName} Arc: ${arc.dailyEmotion}`,
+          title: `${heroChar} ${arc.dayName} Arc: ${arc.dailyEmotion}`,
           variations: [],
           dailyPhotoPosts: [],
         });
@@ -322,18 +330,19 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
             ? 'Variation B (Emotional Core)'
             : 'Variation C (Fast Hook)');
 
+        // Build character anchors dynamically for all characters in the actual cast
+        const dynamicCharAnchors = effectiveCast.map((c: CastMember) => ({
+          characterName: c.name,
+          anchorPrompt: `[MASTER CHARACTER ANCHOR]: ${c.name} (${c.role}) DNA Lock. ${c.dnaPrompt || `${c.description || ''} ${spec.visualStyle}`}`,
+        }));
+
         const unvalidatedVariation = {
           id: `day-${dayIdx + 1}-v${vIdx + 1}`,
           variationLabel: vLabel,
           title: v.title || `${arc.dayName} Episode - ${vLabel}`,
           hookDescription: v.hookDescription || `${spec.format} story for ${arc.dailyEmotion}`,
-          characterAnchors: v.characterAnchors || [
-            {
-              characterName: spec.cast[0]?.name || 'Protagonist',
-              anchorPrompt: `[MASTER CHARACTER ANCHOR]: ${spec.cast[0]?.name || 'Protagonist'} DNA Lock. ${spec.visualStyle}`,
-            },
-          ],
-          locationAnchors: v.locationAnchors || [
+          characterAnchors: v.characterAnchors && v.characterAnchors.length > 0 ? v.characterAnchors : dynamicCharAnchors,
+          locationAnchors: v.locationAnchors && v.locationAnchors.length > 0 ? v.locationAnchors : [
             {
               locationName: spec.locationSettings[0] || 'Main Location',
               anchorPrompt: `[LOCATION MASTER FRAME ANCHOR]: ${spec.locationSettings[0] || 'Main Location'}. ${spec.visualStyle}`,
@@ -341,55 +350,59 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
           ],
           clips: isMindMapOnly
             ? []
-            : (v.clips || []).map((c: any, cIdx: number) => ({
-                clipIndex: c.clipIndex || cIdx + 1,
-                totalClips: 3,
-                sceneName: c.sceneName || `Scene ${cIdx + 1}`,
-                locationAnchor: c.locationAnchor || spec.locationSettings[0] || 'Main Location',
-                masterKeyframeLock: c.masterKeyframeLock || `Spatial master lock in ${spec.visualStyle}`,
-                shotType: c.shotType || (cIdx === 1 ? 'Shot-Reverse-Shot Close-Up' : 'Master Wide'),
-                speakerIsolation: {
-                  activeSpeaker: c.speakerIsolation?.activeSpeaker || spec.cast[0]?.name || 'Speaker',
-                  speakingDialogue: c.speakerIsolation?.speakingDialogue || c.dialogue || '',
-                  silentCharacters: c.speakerIsolation?.silentCharacters || [],
-                  cameraCutApplied: Boolean(c.speakerIsolation?.cameraCutApplied ?? true),
-                },
-                timeline: (c.timeline || [
-                  {
-                    timeRange: '0:00 - 0:03',
-                    visualAction: 'High contrast visual opener.',
-                    cameraMovement: 'Subtle slow push-in.',
-                    sfxCue: 'Subtle bass sub-drop, sudden silence on cut.',
+            : (v.clips || []).map((c: any, cIdx: number) => {
+                const activeSpeakerName = c.speakerIsolation?.activeSpeaker || (cIdx === 1 ? villainChar : heroChar);
+                const silentSpeakerName = activeSpeakerName === heroChar ? villainChar : heroChar;
+                return {
+                  clipIndex: c.clipIndex || cIdx + 1,
+                  totalClips: 3,
+                  sceneName: c.sceneName || `Scene ${cIdx + 1}`,
+                  locationAnchor: c.locationAnchor || spec.locationSettings[0] || 'Main Location',
+                  masterKeyframeLock: c.masterKeyframeLock || `Spatial master lock in ${spec.visualStyle}`,
+                  shotType: c.shotType || (cIdx === 1 ? 'Shot-Reverse-Shot Close-Up' : 'Master Wide'),
+                  speakerIsolation: {
+                    activeSpeaker: activeSpeakerName,
+                    speakingDialogue: c.speakerIsolation?.speakingDialogue || c.dialogue || '',
+                    silentCharacters: c.speakerIsolation?.silentCharacters || [silentSpeakerName],
+                    cameraCutApplied: Boolean(c.speakerIsolation?.cameraCutApplied ?? true),
                   },
-                  {
-                    timeRange: '0:03 - 0:08',
-                    visualAction: 'Delivers dialogue with strict speaker isolation.',
-                    cameraMovement: 'Locked portrait framing.',
-                    sfxCue: 'Clear dialogue vocal warmth, faint emotional cello / atmospheric drone.',
-                  },
-                  {
-                    timeRange: '0:08 - 0:10',
-                    visualAction: 'Lingering reaction hold before clip cut.',
-                    cameraMovement: 'Static hold.',
-                    sfxCue: 'Sharp breath intake, cliffhanger riser sound, sudden audio cut.',
-                  },
-                ]).map((t: any) => ({
-                  ...t,
-                  sfxCue: t.sfxCue || 'Cinematic room tone and subtle foley sound.',
-                })),
-                frameImagePrompt:
-                  c.frameImagePrompt ||
-                  `[VIDEO FRAME IMAGE - KEYFRAME ${cIdx + 1}/3]: ${spec.locationSettings[0] || 'Scene'}. ${spec.visualStyle}. ${c.shotType || 'Cinematic Shot'}. Photorealistic 4K starting keyframe composition. Key lighting, architectural depth, shallow focus.`,
-                flowPromptText:
-                  c.flowPromptText ||
-                  `[CLIP ${cIdx + 1}/3 - GOOGLE FLOW VEO DIRECTIVE]\n[LOCATION]: ${spec.locationSettings[0]}\n[SHOT]: 4K Cinematic\n[ACTIVE SPEAKER]: ${c.speakerIsolation?.activeSpeaker || 'Speaker'}`,
-                retentionHookReasoning: c.retentionHookReasoning || '0-3s hook captures feed attention.',
-                pacingWordCount: (c.speakerIsolation?.speakingDialogue || '').split(/\s+/).filter(Boolean).length || 18,
-                sceneWardrobe: c.sceneWardrobe || 'Adaptive scene-appropriate styling',
-                requiresReferenceImageAttachment: Boolean(spec.cast.some((char) => char.usesReferenceImage)),
-                foleySoundDesign: c.foleySoundDesign || 'Cinematic room acoustic ambience, directional dialogue resonance, tension drone, subtle foley accents.',
-                negativePromptDirectives: c.negativePromptDirectives || 'morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter.',
-              })),
+                  timeline: (c.timeline || [
+                    {
+                      timeRange: '0:00 - 0:03',
+                      visualAction: 'High contrast visual opener.',
+                      cameraMovement: 'Subtle slow push-in.',
+                      sfxCue: 'Subtle bass sub-drop, sudden silence on cut.',
+                    },
+                    {
+                      timeRange: '0:03 - 0:08',
+                      visualAction: 'Delivers dialogue with strict speaker isolation.',
+                      cameraMovement: 'Locked portrait framing.',
+                      sfxCue: 'Clear dialogue vocal warmth, faint emotional cello / atmospheric drone.',
+                    },
+                    {
+                      timeRange: '0:08 - 0:10',
+                      visualAction: 'Lingering reaction hold before clip cut.',
+                      cameraMovement: 'Static hold.',
+                      sfxCue: 'Sharp breath intake, cliffhanger riser sound, sudden audio cut.',
+                    },
+                  ]).map((t: any) => ({
+                    ...t,
+                    sfxCue: t.sfxCue || 'Cinematic room tone and subtle foley sound.',
+                  })),
+                  frameImagePrompt:
+                    c.frameImagePrompt ||
+                    `[VIDEO FRAME IMAGE - KEYFRAME ${cIdx + 1}/3 (FLUX / MIDJOURNEY)]\n[IMAGE REFERENCE ANCHOR]: Attach Master Reference Image of ${activeSpeakerName}. Strict facial geometry lock. Zero facial distortion.\n[SCENE BLOCKING]: ${activeSpeakerName} positioned in dynamic foreground at ${spec.locationSettings[0] || 'Main Location'}.\n[CINEMATOGRAPHY & LIGHTING]: Shot on ARRI Alexa LF, 85mm Panavision Anamorphic T1.5 prime lens, f/1.8 shallow depth of field. 8K photorealistic film still.`,
+                  flowPromptText:
+                    c.flowPromptText ||
+                    `[CLIP ${cIdx + 1}/3 - GOOGLE FLOW VEO MASTER DIRECTIVE]\n[CINEMATIC SPEC]: 9:16 vertical composition, 24fps motion blur, 4K Hollywood composition.\n[LOCATION MASTER ANCHOR]: ${spec.locationSettings[0] || 'Main Location'}.\n[CHARACTER REFERENCE ANCHORS]: Active: ${activeSpeakerName} [ATTACH REFERENCE IMAGE 1 - ${activeSpeakerName.toUpperCase()}]. Counterpart: ${silentSpeakerName} [ATTACH REFERENCE IMAGE 2 - ${silentSpeakerName.toUpperCase()}], 100% silent, lips sealed.\n[SHOT]: 4K Cinematic Shot.`,
+                  retentionHookReasoning: c.retentionHookReasoning || '0-3s hook captures feed attention.',
+                  pacingWordCount: (c.speakerIsolation?.speakingDialogue || '').split(/\s+/).filter(Boolean).length || 18,
+                  sceneWardrobe: c.sceneWardrobe || 'Adaptive scene-appropriate styling',
+                  requiresReferenceImageAttachment: true,
+                  foleySoundDesign: c.foleySoundDesign || 'Cinematic room acoustic ambience, directional dialogue resonance, tension drone, subtle foley accents.',
+                  negativePromptDirectives: c.negativePromptDirectives || 'morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter.',
+                };
+              }),
           isProduced: !isMindMapOnly,
           dialogueScript: v.dialogueScript || [],
           seriesContinuityRecap: v.seriesContinuityRecap || `Day ${dayIdx + 1} Continuity: ${arc.dailyEmotion}. Culminates in a psychological cliffhanger.`,
@@ -429,13 +442,13 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
         : null;
 
       const dailyPhotos = llmDailyPhotos || generateDailyPhotoPosts(
-        spec.cast[0],
+        effectiveCast[0],
         dayIdx + 1,
         arc.dayName,
         arc.dailyEmotion,
         spec.format,
         spec.locationSettings[0],
-        spec.cast
+        effectiveCast
       );
 
       if (variations.length === 0) {
@@ -447,8 +460,8 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
             hookDescription: `${spec.customStoryIdea || spec.format} high-stakes escalation for ${arc.dailyEmotion}.`,
             characterAnchors: [
               {
-                characterName: spec.cast[0]?.name || 'Protagonist',
-                anchorPrompt: `[MASTER CHARACTER ANCHOR]: ${spec.cast[0]?.name || 'Protagonist'} DNA Lock. ${spec.visualStyle}`,
+                characterName: heroChar,
+                anchorPrompt: `[MASTER CHARACTER ANCHOR]: ${heroChar} DNA Lock. ${spec.visualStyle}`,
               },
             ],
             locationAnchors: [
@@ -459,7 +472,7 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
             ],
             clips: [],
             isProduced: false,
-            dialogueScript: [{ speaker: spec.cast[0]?.name || 'Speaker', line: 'The silence ends now. Everything we built is on the line.', timing: '0:03 - 0:07' }],
+            dialogueScript: [{ speaker: heroChar, line: 'The silence ends now. Everything we built is on the line.', timing: '0:03 - 0:07' }],
             seriesContinuityRecap: `${arc.dayName} high tension beat in the weekly arc.`,
             metadata: {
               caption: `${arc.dayName} high stakes reveal. 🎬 #StoryArc #HighTension`,
@@ -474,8 +487,8 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
             hookDescription: `Vulnerable emotional resonance and internal conflict for ${arc.dailyEmotion}.`,
             characterAnchors: [
               {
-                characterName: spec.cast[0]?.name || 'Protagonist',
-                anchorPrompt: `[MASTER CHARACTER ANCHOR]: ${spec.cast[0]?.name || 'Protagonist'} DNA Lock. ${spec.visualStyle}`,
+                characterName: heroChar,
+                anchorPrompt: `[MASTER CHARACTER ANCHOR]: ${heroChar} DNA Lock. ${spec.visualStyle}`,
               },
             ],
             locationAnchors: [
@@ -486,7 +499,7 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
             ],
             clips: [],
             isProduced: false,
-            dialogueScript: [{ speaker: spec.cast[0]?.name || 'Speaker', line: "I pretended it didn't matter, but truth has a way of finding you.", timing: '0:03 - 0:07' }],
+            dialogueScript: [{ speaker: heroChar, line: "I pretended it didn't matter, but truth has a way of finding you.", timing: '0:03 - 0:07' }],
             seriesContinuityRecap: `${arc.dayName} emotional turning point.`,
             metadata: {
               caption: `${arc.dayName} raw reflection. 🤍 #Authentic #CreatorStory`,
@@ -501,8 +514,8 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
             hookDescription: `Rapid pattern interruption and curiosity cliffhanger for ${arc.dailyEmotion}.`,
             characterAnchors: [
               {
-                characterName: spec.cast[0]?.name || 'Protagonist',
-                anchorPrompt: `[MASTER CHARACTER ANCHOR]: ${spec.cast[0]?.name || 'Protagonist'} DNA Lock. ${spec.visualStyle}`,
+                characterName: heroChar,
+                anchorPrompt: `[MASTER CHARACTER ANCHOR]: ${heroChar} DNA Lock. ${spec.visualStyle}`,
               },
             ],
             locationAnchors: [
@@ -513,7 +526,7 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
             ],
             clips: [],
             isProduced: false,
-            dialogueScript: [{ speaker: spec.cast[0]?.name || 'Speaker', line: 'If you only remember one thing from this week, let it be this.', timing: '0:03 - 0:07' }],
+            dialogueScript: [{ speaker: heroChar, line: 'If you only remember one thing from this week, let it be this.', timing: '0:03 - 0:07' }],
             seriesContinuityRecap: `${arc.dayName} high viral retention variation.`,
             metadata: {
               caption: `Watch till the end. ⚡️ #Cliffhanger #Trending`,
@@ -539,11 +552,6 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
       };
     });
 
-    const effectiveCast =
-      Array.isArray(parsedData.cast) && parsedData.cast.length > 0
-        ? parsedData.cast
-        : spec.cast;
-
     const finalSpec: StorySpec = {
       ...spec,
       seriesTitle: resolveSeriesTitle(spec),
@@ -553,7 +561,8 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
         SEASON_ESCALATION_LADDER.find((s) => s.seasonNumber === (spec.seasonNumber || 1))?.seasonTitle ||
         'The Local Betrayal',
       cast: effectiveCast,
-      castCount: effectiveCast.length || spec.castCount,
+      castCount: effectiveCast.length,
+      autonomousCast: false, // LOCK CAST: Cast is now permanently established and should never be wiped or replaced!
     };
 
     const seriesBible = parsedData.seriesBible || {

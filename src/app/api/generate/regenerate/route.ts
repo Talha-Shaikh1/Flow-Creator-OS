@@ -19,10 +19,14 @@ export async function POST(req: NextRequest) {
 
     if (target === 'clip') {
       // 1. REGENERATE SINGLE CLIP VIA LLM
-      const activeChar = spec.cast[0]?.name || 'Julian Vance';
-      const silentChars = spec.cast.slice(1).map((c: any) => c.name);
-      const location = spec.locationSettings[0] || 'Executive Penthouse';
       const cIndex = clipIndex || 1;
+      const heroChar = spec.cast?.find((c: any) => c.role === 'Hero')?.name || spec.cast?.[0]?.name || 'Protagonist';
+      const villainChar = spec.cast?.find((c: any) => c.role === 'Villain')?.name || spec.cast?.[1]?.name || heroChar;
+      const activeChar = (cIndex === 2 && spec.cast?.length > 1) ? villainChar : heroChar;
+      const counterpartChar = activeChar === heroChar ? villainChar : heroChar;
+      const silentChars = (spec.cast || []).filter((c: any) => c.name !== activeChar).map((c: any) => c.name);
+      if (silentChars.length === 0) silentChars.push(counterpartChar);
+      const location = spec.locationSettings?.[0] || 'Executive Penthouse';
 
       const promptText = `Regenerate Clip ${cIndex} of 3 for a 10s Google Flow Veo short film.
 Story Format: ${spec.format}
@@ -57,7 +61,6 @@ Return JSON format:
 
       const parsed = llmRes.parsed || {};
       const newDialogue = parsed.dialogue || 'I told you before—nothing changes until you confront the reality of what happened.';
-      const counterpartChar = silentChars[0] || 'counterpart';
       const shot = parsed.shotType || (cIndex === 2 ? 'Shot-Reverse-Shot Close-Up' : 'Master Wide');
       const scName = parsed.sceneName || `Scene ${cIndex} (Re-rolled: ${arc.dayName})`;
 

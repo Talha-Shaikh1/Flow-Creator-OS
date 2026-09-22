@@ -3,6 +3,22 @@ import { getDb, initDb } from '@/lib/db';
 import { getEffectiveUserId } from '@/lib/auth/server';
 
 export async function GET(req: NextRequest) {
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json({
+      success: true,
+      isLocalOnly: true,
+      userId: 'guest_local',
+      stats: {
+        totalBatches: 0,
+        totalClips: 0,
+        totalPrompts: 0,
+        totalVideosGenerated: 0,
+        completionRate: 0,
+      },
+      batches: [],
+    });
+  }
+
   try {
     await initDb();
     const userId = await getEffectiveUserId(req);
@@ -26,27 +42,26 @@ export async function GET(req: NextRequest) {
       const days = Array.isArray(b.days) ? b.days : [];
       const generatedClips = b.generatedClips || {};
 
-      // Calculate clips and prompts for this batch
       let batchClips = 0;
       let batchPhotos = 0;
       let batchProduced = 0;
 
       days.forEach((day: any) => {
-        const primaryVariation = day.variations?.[0];
-        if (primaryVariation?.clips) {
-          batchClips += primaryVariation.clips.length;
-        }
-        if (day.dailyPhotoPosts) {
+        const variations = day.variations || [];
+        variations.forEach((v: any) => {
+          if (Array.isArray(v.clips) && v.clips.length > 0) {
+            batchClips += v.clips.length;
+          }
+        });
+        if (day.dailyPhotoPosts && Array.isArray(day.dailyPhotoPosts)) {
           batchPhotos += day.dailyPhotoPosts.length;
         }
       });
 
-      // Count generated videos
       Object.keys(generatedClips).forEach((k) => {
         if (generatedClips[k]) batchProduced++;
       });
 
-      // Total prompts engineered = video clip prompts (frame + flow) + photo prompts
       const batchPrompts = batchClips * 2 + batchPhotos;
 
       totalAllClips += batchClips;
@@ -55,6 +70,7 @@ export async function GET(req: NextRequest) {
 
       const title =
         days[0]?.variations?.[0]?.title ||
+        s.seriesTitle ||
         s.customStoryIdea?.slice(0, 40) ||
         `${s.format ? s.format.replace('_', ' ').toUpperCase() : 'Series Batch'}`;
 
@@ -95,20 +111,22 @@ export async function GET(req: NextRequest) {
       batches: formattedBatches,
     });
   } catch (error: any) {
-    console.error('Failed to fetch batches from Neon DB:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error?.message,
-        stats: { totalBatches: 0, totalClips: 0, totalPrompts: 0, totalVideosGenerated: 0, completionRate: 0 },
-        batches: [],
-      },
-      { status: 500 }
-    );
+    console.warn('Neon DB unavailable, falling back to local history gracefully:', error?.message);
+    return NextResponse.json({
+      success: true,
+      isLocalOnly: true,
+      warning: error?.message,
+      stats: { totalBatches: 0, totalClips: 0, totalPrompts: 0, totalVideosGenerated: 0, completionRate: 0 },
+      batches: [],
+    });
   }
 }
 
 export async function POST(req: NextRequest) {
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json({ success: true, isLocalOnly: true });
+  }
+
   try {
     await initDb();
     const userId = await getEffectiveUserId(req);
@@ -132,12 +150,16 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, userId });
   } catch (error: any) {
-    console.error('Failed to save batch to Neon DB:', error);
-    return NextResponse.json({ success: false, error: error?.message }, { status: 500 });
+    console.warn('Failed to sync batch to Neon DB (running offline/local mode):', error?.message);
+    return NextResponse.json({ success: true, isLocalOnly: true, warning: error?.message });
   }
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json({ success: true, isLocalOnly: true });
+  }
+
   try {
     await initDb();
     const userId = await getEffectiveUserId(req);
@@ -156,7 +178,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true, id });
   } catch (error: any) {
-    console.error('Failed to delete batch from Neon DB:', error);
-    return NextResponse.json({ success: false, error: error?.message }, { status: 500 });
+    console.warn('Failed to delete batch from Neon DB (running offline/local mode):', error?.message);
+    return NextResponse.json({ success: true, isLocalOnly: true, warning: error?.message });
   }
 }

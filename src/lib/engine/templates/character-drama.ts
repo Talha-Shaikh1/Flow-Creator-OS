@@ -1357,7 +1357,7 @@ export function resolveDynamicDramaPlot(
           {
             speakerName: char1.name,
             silentNames: [char2.name],
-            dialogue: `Then let them come. Because tonight, Julian Vance and Elena Sterling are taking their firm back.`,
+            dialogue: `Then let them come. Because tonight, ${char1.name} and ${char2.name} are taking their firm back.`,
             action: `Over-the-shoulder dramatic forward march in ${location}. Both partners step side-by-side toward the double doors; screen cuts to black at 0:09.5s!`,
             shotType: 'Over-the-Shoulder',
             sceneName: 'Season Finale - Taking Firm Back (Cut to Black)',

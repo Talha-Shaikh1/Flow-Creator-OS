@@ -25,6 +25,19 @@ export function buildCinematicFrameImagePrompt({
   sceneName: string;
   dialogue?: string;
 }): string {
+  // Sanitize any leaked legacy character names if active character is different
+  let cleanSnippet = (rawPrompt || '')
+    .replace(/\[VIDEO FRAME IMAGE.*?\]:?/gi, '')
+    .replace(/\[KEYFRAME.*?\]:?/gi, '')
+    .trim();
+
+  if (characterName !== 'Julian Vance' && counterpartName !== 'Julian Vance') {
+    cleanSnippet = cleanSnippet.replace(/\bJulian Vance\b/gi, characterName);
+  }
+  if (characterName !== 'Elena Sterling' && counterpartName !== 'Elena Sterling') {
+    cleanSnippet = cleanSnippet.replace(/\bElena Sterling\b/gi, counterpartName);
+  }
+
   // If the prompt is already comprehensive (> 220 characters with key anchors), preserve it
   if (
     rawPrompt &&
@@ -32,14 +45,15 @@ export function buildCinematicFrameImagePrompt({
     (rawPrompt.includes('[IMAGE REFERENCE ANCHOR]') || rawPrompt.includes('REFERENCE IMAGE')) &&
     (rawPrompt.includes('[CINEMATOGRAPHY') || rawPrompt.includes('Anamorphic') || rawPrompt.includes('Alexa'))
   ) {
-    return rawPrompt;
+    let sanitizedRaw = rawPrompt;
+    if (characterName !== 'Julian Vance' && counterpartName !== 'Julian Vance') {
+      sanitizedRaw = sanitizedRaw.replace(/\bJulian Vance\b/gi, characterName);
+    }
+    if (characterName !== 'Elena Sterling' && counterpartName !== 'Elena Sterling') {
+      sanitizedRaw = sanitizedRaw.replace(/\bElena Sterling\b/gi, counterpartName);
+    }
+    return sanitizedRaw;
   }
-
-  // Clean raw prompt to use as scene action context
-  const cleanSnippet = (rawPrompt || '')
-    .replace(/\[VIDEO FRAME IMAGE.*?\]:?/gi, '')
-    .replace(/\[KEYFRAME.*?\]:?/gi, '')
-    .trim();
 
   const actionText =
     cleanSnippet ||
@@ -75,13 +89,21 @@ export function buildCinematicFlowPrompt({
   visualStyle: string;
   shotType?: string;
 }): string {
+  let cleanFlow = rawFlow || '';
+  if (activeSpeaker !== 'Julian Vance' && counterpart !== 'Julian Vance') {
+    cleanFlow = cleanFlow.replace(/\bJulian Vance\b/gi, activeSpeaker);
+  }
+  if (activeSpeaker !== 'Elena Sterling' && counterpart !== 'Elena Sterling') {
+    cleanFlow = cleanFlow.replace(/\bElena Sterling\b/gi, counterpart);
+  }
+
   // If already substantial (> 250 characters with timeline cues), keep it
   if (
-    rawFlow &&
-    rawFlow.length > 250 &&
-    (rawFlow.includes('SECOND-BY-SECOND') || rawFlow.includes('0:00 - 0:02') || rawFlow.includes('[TIMELINE]'))
+    cleanFlow &&
+    cleanFlow.length > 250 &&
+    (cleanFlow.includes('SECOND-BY-SECOND') || cleanFlow.includes('0:00 - 0:02') || cleanFlow.includes('[TIMELINE]'))
   ) {
-    return rawFlow;
+    return cleanFlow;
   }
 
   return `[CLIP ${clipIndex}/${totalClips} - GOOGLE FLOW VEO MASTER DIRECTIVE]
@@ -129,7 +151,9 @@ export async function produceVariationWithLLM({
   clips: ClipPrompt[];
   tokenUsage?: any;
 }> {
-  if (!spec.cast || spec.cast.length === 0 || spec.autonomousCast) {
+  // CRITICAL FIX: Only resolve autonomous cast if spec.cast is completely absent or empty!
+  // If spec.cast already has established characters (e.g. from autonomousCast stage 1), NEVER wipe them out!
+  if (!spec.cast || spec.cast.length === 0) {
     spec.cast = resolveAutonomousCast(spec);
     spec.castCount = spec.cast.length;
   }
@@ -141,12 +165,31 @@ export async function produceVariationWithLLM({
   const baseHook = (!forceFresh && existingVariation?.hookDescription) || `${spec.format} story for ${arc.dailyEmotion}`;
   const baseScript = (!forceFresh && existingVariation?.dialogueScript) || [];
 
-  const char1 = spec.cast[0]?.name || 'Julian Vance';
-  const char2 = spec.cast[1]?.name || 'Elena Sterling';
+  // Intelligently identify Hero and Villain/Rival or fallback to first two
+  const heroMember = spec.cast.find((c) => c.role === 'Hero') || spec.cast[0];
+  const villainMember = spec.cast.find((c) => c.role === 'Villain') || spec.cast[1] || spec.cast[0];
+  const char1 = heroMember?.name || 'Hero';
+  const char2 = villainMember?.name || 'Villain';
   const location = spec.locationSettings[0] || 'Executive Penthouse Study';
+
+  // Format the full cast overview so the LLM knows all established characters (Hero, Villain, Side characters)
+  const fullCastOverview = spec.cast
+    .map(
+      (c, i) =>
+        `  * Character #${i + 1} (${c.role || 'Cast'}): "${c.name}" — ${c.description || ''} (Personality / Cadence: ${c.personalityVibe || 'Authentic'})`
+    )
+    .join('\n');
+
+  const castNamesList = spec.cast.map((c) => `"${c.name}"`).join(', ');
 
   const systemInstruction = `You are FlowCreator OS — an Elite Autonomous Directing Engine producing a 3-clip short-form cinematic video episode for Google Flow (Veo 2).
 You MUST strictly adhere to the Directing Directives:
+
+CRITICAL CHARACTER CONTINUITY:
+The series cast is established and locked as:
+${fullCastOverview}
+You MUST use ONLY these exact characters (${castNamesList}) in all dialogue, character anchors, and clip choreographies.
+DO NOT replace, alter, or revert to any default names (such as "Julian Vance" or "Elena Sterling") unless they were explicitly listed above.
 
 1. 3-CLIP SHOT-REVERSE-SHOT CONTINUITY:
 - Multi-character dialogue MUST alternate: Clip 1 (Lead A speaks, Lead B silent), Clip 2 (Lead B speaks, Lead A silent), Clip 3 (Culmination/Reversal).
@@ -242,12 +285,11 @@ ${forceFresh ? `- FORCE FRESH GENERATION: Ignore prior dialogue lines. Craft com
 - Story Premise: "${spec.customStoryIdea || spec.tone}"
 - Format: ${spec.format}
 - Visual Style: ${spec.visualStyle}
-- Cast:
-  * Lead 1 (Hero): ${char1}
-  * Lead 2 (Villain/Rival): ${char2}
+- Established Cast (${spec.cast.length} Characters — Use these characters!):
+${fullCastOverview}
 - Location: ${location}
 
-Generate the complete 3-clip production package now. Ensure all "frameImagePrompt" fields are full 6-10 line cinematic master prompts.`;
+Generate the complete 3-clip production package now. Ensure all "frameImagePrompt" fields are full 6-10 line cinematic master prompts and all characters strictly match the established cast above.`;
 
   const llmRes = await callUniversalLLM({
     config: aiConfig,
@@ -264,8 +306,36 @@ Generate the complete 3-clip production package now. Ensure all "frameImagePromp
 
   const clips: ClipPrompt[] = parsed.clips.slice(0, 3).map((c: any, idx: number) => {
     const dialogue = c.speakerIsolation?.speakingDialogue || c.dialogue || '';
-    const activeSpk = c.speakerIsolation?.activeSpeaker || (idx === 1 ? char2 : char1);
-    const counterpartSpk = activeSpk === char1 ? char2 : char1;
+
+    // Match active speaker from LLM against established spec.cast
+    let rawActive = (c.speakerIsolation?.activeSpeaker || c.speaker || '').trim();
+    let matchedActive = spec.cast.find((m) => rawActive && m.name.toLowerCase() === rawActive.toLowerCase());
+    if (!matchedActive && rawActive) {
+      matchedActive = spec.cast.find(
+        (m) =>
+          m.name.toLowerCase().includes(rawActive.toLowerCase()) ||
+          rawActive.toLowerCase().includes(m.name.toLowerCase())
+      );
+    }
+    const activeSpk = matchedActive ? matchedActive.name : (idx === 1 ? char2 : char1);
+
+    // Counterpart resolution from silent characters or alternating lead
+    const silentList = (c.speakerIsolation?.silentCharacters || []).filter(
+      (s: string) => s && s.toLowerCase().trim() !== activeSpk.toLowerCase().trim()
+    );
+    let rawCounterpart = silentList[0] || (activeSpk === char1 ? char2 : char1);
+    let matchedCounterpart = spec.cast.find(
+      (m) => rawCounterpart && m.name.toLowerCase() === rawCounterpart.toLowerCase()
+    );
+    if (!matchedCounterpart && rawCounterpart) {
+      matchedCounterpart = spec.cast.find(
+        (m) =>
+          m.name.toLowerCase().includes(rawCounterpart.toLowerCase()) ||
+          rawCounterpart.toLowerCase().includes(m.name.toLowerCase())
+      );
+    }
+    const counterpartSpk = matchedCounterpart ? matchedCounterpart.name : (activeSpk === char1 ? char2 : char1);
+
     const shot = c.shotType || (idx === 1 ? 'Shot-Reverse-Shot Close-Up' : 'Master Wide');
     const scName = c.sceneName || `Scene ${idx + 1}`;
 
@@ -304,7 +374,9 @@ Generate the complete 3-clip production package now. Ensure all "frameImagePromp
       speakerIsolation: {
         activeSpeaker: activeSpk,
         speakingDialogue: dialogue,
-        silentCharacters: c.speakerIsolation?.silentCharacters || [counterpartSpk],
+        silentCharacters: c.speakerIsolation?.silentCharacters?.length > 0
+          ? c.speakerIsolation.silentCharacters
+          : [counterpartSpk],
         cameraCutApplied: true,
       },
       timeline: (c.timeline || [
@@ -333,15 +405,23 @@ Generate the complete 3-clip production package now. Ensure all "frameImagePromp
     llmRes.provider
   );
 
+  // Character anchors: Always include ALL members of spec.cast
+  const characterAnchors =
+    parsed.characterAnchors && parsed.characterAnchors.length >= spec.cast.length
+      ? parsed.characterAnchors
+      : spec.cast.map((c) => ({
+          characterName: c.name,
+          anchorPrompt:
+            c.dnaPrompt ||
+            `[MASTER CHARACTER ANCHOR]: ${c.name} DNA Lock. Role: ${c.role || 'Cast'}. ${c.description || ''}. ${spec.visualStyle}`,
+        }));
+
   return {
     title: parsed.title || baseTitle,
     hookDescription: parsed.hookDescription || baseHook,
     dialogueScript: parsed.dialogueScript || baseScript,
     masterFrameImagePrompt: parsed.masterFrameImagePrompt || clips[0]?.frameImagePrompt,
-    characterAnchors: parsed.characterAnchors || [
-      { characterName: char1, anchorPrompt: `[MASTER CHARACTER ANCHOR]: ${char1} DNA Lock. ${spec.visualStyle}` },
-      { characterName: char2, anchorPrompt: `[MASTER CHARACTER ANCHOR]: ${char2} DNA Lock. ${spec.visualStyle}` },
-    ],
+    characterAnchors,
     locationAnchors: parsed.locationAnchors || [
       { locationName: location, anchorPrompt: `[LOCATION MASTER FRAME ANCHOR]: ${location}. ${spec.visualStyle}` },
     ],

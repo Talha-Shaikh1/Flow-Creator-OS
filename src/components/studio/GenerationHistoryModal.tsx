@@ -21,31 +21,14 @@ import {
 } from 'lucide-react';
 import { WeeklyBatchDelivery } from '@/types';
 import { getOrCreateClientGuestId } from '@/lib/auth/session';
-
-interface BatchHistoryItem {
-  id: string;
-  createdAt: string;
-  updatedAt: string;
-  title: string;
-  format: string;
-  genres: string[];
-  tone: string;
-  premise: string;
-  cast: Array<{ name: string; role: string }>;
-  totalClips: number;
-  totalPrompts: number;
-  generatedVideosCount: number;
-  completionRate: number;
-  batch: WeeklyBatchDelivery;
-}
-
-interface StatsSummary {
-  totalBatches: number;
-  totalClips: number;
-  totalPrompts: number;
-  totalVideosGenerated: number;
-  completionRate: number;
-}
+import {
+  BatchHistoryItem,
+  HistoryStatsSummary as StatsSummary,
+  getLocalBatchHistory,
+  saveBatchToLocalHistory,
+  deleteBatchFromLocalHistory,
+  computeHistoryStats,
+} from '@/lib/history/batch-history';
 
 interface Props {
   isOpen: boolean;
@@ -62,35 +45,50 @@ export function GenerationHistoryModal({ isOpen, onClose, onSelectBatch }: Props
     totalVideosGenerated: 0,
     completionRate: 0,
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
 
+    // 1. Immediately load local history from localStorage (instant rendering)
+    const local = getLocalBatchHistory();
+    if (local.length > 0) {
+      setBatches(local);
+      setStats(computeHistoryStats(local));
+    }
+
+    // 2. Fetch and merge cloud batches in the background
     const fetchHistory = async () => {
-      setIsLoading(true);
+      if (local.length === 0) setIsLoading(true);
       try {
         const guestId = getOrCreateClientGuestId();
         const res = await fetch('/api/batches', {
           headers: { 'x-creator-guest-id': guestId },
         });
         const data = await res.json();
-        if (data.success) {
-          setBatches(data.batches || []);
-          setStats(
-            data.stats || {
-              totalBatches: data.batches?.length || 0,
-              totalClips: 0,
-              totalPrompts: 0,
-              totalVideosGenerated: 0,
-              completionRate: 0,
+        if (data.success && Array.isArray(data.batches) && data.batches.length > 0) {
+          // Merge cloud batches with local
+          const currentLocal = getLocalBatchHistory();
+          const merged = [...currentLocal];
+          data.batches.forEach((cloudB: BatchHistoryItem) => {
+            const idx = merged.findIndex((m) => m.id === cloudB.id);
+            if (idx >= 0) {
+              merged[idx] = cloudB;
+            } else {
+              merged.push(cloudB);
             }
-          );
+          });
+          // Save merged back to local storage
+          try {
+            localStorage.setItem('flowcreator_batches_history_v2', JSON.stringify(merged.slice(0, 50)));
+          } catch {}
+          setBatches(merged);
+          setStats(computeHistoryStats(merged));
         }
       } catch (err) {
-        console.error('Failed to load batch history:', err);
+        console.warn('Failed to sync cloud batch history, relying on local:', err);
       } finally {
         setIsLoading(false);
       }
@@ -106,18 +104,19 @@ export function GenerationHistoryModal({ isOpen, onClose, onSelectBatch }: Props
     if (!confirm('Are you sure you want to delete this batch from your history?')) return;
 
     setDeletingId(id);
+    // Immediately remove from local history
+    const remaining = deleteBatchFromLocalHistory(id);
+    setBatches(remaining);
+    setStats(computeHistoryStats(remaining));
+
     try {
       const guestId = getOrCreateClientGuestId();
-      const res = await fetch(`/api/batches?id=${id}`, {
+      await fetch(`/api/batches?id=${id}`, {
         method: 'DELETE',
         headers: { 'x-creator-guest-id': guestId },
       });
-      const data = await res.json();
-      if (data.success) {
-        setBatches((prev) => prev.filter((b) => b.id !== id));
-      }
     } catch (err) {
-      console.error('Failed to delete batch:', err);
+      console.warn('Failed to delete batch from cloud:', err);
     } finally {
       setDeletingId(null);
     }

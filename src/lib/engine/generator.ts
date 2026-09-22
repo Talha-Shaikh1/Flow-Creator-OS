@@ -193,7 +193,7 @@ export function produceVariationDirectives(
   clips: any[];
   tokenUsage?: any;
 } {
-  if (!spec.cast || spec.cast.length === 0 || spec.autonomousCast) {
+  if (!spec.cast || spec.cast.length === 0) {
     spec.cast = resolveAutonomousCast(spec);
     spec.castCount = spec.cast.length;
   }
@@ -265,7 +265,7 @@ export function generateWeeklyBatch(
   spec: StorySpec,
   options: { mode?: 'mind_maps' | 'full' } = { mode: 'mind_maps' }
 ): WeeklyBatchDelivery {
-  if (!spec.cast || spec.cast.length === 0 || spec.autonomousCast) {
+  if (!spec.cast || spec.cast.length === 0) {
     spec.cast = resolveAutonomousCast(spec);
     spec.castCount = spec.cast.length;
   }
