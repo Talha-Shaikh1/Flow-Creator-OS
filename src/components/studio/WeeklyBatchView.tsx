@@ -40,7 +40,7 @@ import { EpisodePromoCard } from './EpisodePromoCard';
 import { getOrCreateClientGuestId } from '@/lib/auth/session';
 import { sanitizeForGoogleFlow } from '@/lib/engine/rules/temporal';
 import { generateDailyPhotoPosts } from '@/lib/engine/rules/photos';
-import { buildSeasonTrailer } from '@/lib/engine/rules/promo';
+import { buildSeasonTrailer, buildNextEpisodePromo } from '@/lib/engine/rules/promo';
 import { getStoredAIConfig } from '@/lib/ai/ai-settings';
 import { saveBatchToLocalHistory } from '@/lib/history/batch-history';
 
@@ -163,6 +163,17 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
       batch.spec.seasonTitle || 'The Local Betrayal'
     );
 
+  const nextDayPackage = batch.days[activeDayIndex + 1];
+  const nextEpisodePromoToDisplay =
+    activeDay.nextEpisodePromo ||
+    activeVariation.nextEpisodePromo ||
+    buildNextEpisodePromo(
+      batch.spec,
+      activeDay.dayNumber,
+      activeVariation,
+      nextDayPackage
+    );
+
   const handleProduceVariation = async (forceFresh = false) => {
     setIsProducing(true);
     try {
@@ -224,9 +235,24 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
           i === activeVariationIndex ? updatedVariation : v
         );
 
-        const updatedDays = batch.days.map((d, i) =>
+        let updatedDays = batch.days.map((d, i) =>
           i === activeDayIndex ? { ...d, variations: updatedVariations } : d
         );
+
+        // Keep Next Episode Promos synced with the newly produced clips
+        for (let i = 0; i < updatedDays.length; i++) {
+          const nextDayPkg = updatedDays[i + 1];
+          const promo = buildNextEpisodePromo(
+            batch.spec,
+            updatedDays[i].dayNumber,
+            updatedDays[i].variations[0],
+            nextDayPkg
+          );
+          updatedDays[i].nextEpisodePromo = promo;
+          if (updatedDays[i].variations[0]) {
+            updatedDays[i].variations[0].nextEpisodePromo = promo;
+          }
+        }
 
         const newBatch: WeeklyBatchDelivery = {
           ...batch,
@@ -1198,15 +1224,16 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
                 ))}
               </div>
 
-              {/* Next Episode Sneak Peek Promo (Viral Retention Teaser) */}
-              {(activeDay.nextEpisodePromo || activeVariation.nextEpisodePromo) && (
-                <EpisodePromoCard
-                  promo={activeDay.nextEpisodePromo || activeVariation.nextEpisodePromo!}
-                  currentDayNumber={activeDay.dayNumber}
-                />
-              )}
             </div>
           </>
+        )}
+
+        {/* Next Episode Sneak Peek Promo (Viral Retention Teaser with Matching Character & Background) */}
+        {nextEpisodePromoToDisplay && (
+          <EpisodePromoCard
+            promo={nextEpisodePromoToDisplay}
+            currentDayNumber={activeDay.dayNumber}
+          />
         )}
 
         {/* Daily Lifestyle & Real-Star BTS Photo Posts */}

@@ -49,9 +49,48 @@ export function buildNextEpisodePromo(
       visualAction = 'Slow glide over nocturnal wet asphalt reflections into glowing neon halo.';
     }
 
+    // 100% Match: Extract upcoming episode's active speaker, counterpart, and exact location setting
+    const upcomingSpeaker =
+      nextVar.dialogueScript?.[0]?.speaker ||
+      nextVar.clips?.[0]?.speakerIsolation?.activeSpeaker ||
+      spec.cast?.[0]?.name ||
+      'Protagonist';
+
+    const counterpartSpeaker =
+      nextVar.dialogueScript?.[1]?.speaker ||
+      nextVar.clips?.[0]?.speakerIsolation?.silentCharacters?.[0] ||
+      spec.cast?.[1]?.name ||
+      'Antagonist';
+
+    const matchingCastMember = spec.cast?.find(
+      (c) => c.name.toLowerCase() === upcomingSpeaker.toLowerCase()
+    ) || spec.cast?.[0];
+
+    const charAnchorObj =
+      nextVar.characterAnchors?.find(
+        (c) => c.characterName.toLowerCase() === upcomingSpeaker.toLowerCase()
+      ) ||
+      nextVar.characterAnchors?.[0] ||
+      (matchingCastMember
+        ? {
+            characterName: matchingCastMember.name,
+            anchorPrompt: `[MASTER CHARACTER ANCHOR]: ${matchingCastMember.name} (${matchingCastMember.role}) DNA Lock. ${matchingCastMember.dnaPrompt || matchingCastMember.description || ''} ${spec.visualStyle}`,
+          }
+        : undefined);
+
+    const locAnchorObj = nextVar.locationAnchors?.[0];
+    const locationName =
+      locAnchorObj?.locationName ||
+      nextVar.clips?.[0]?.locationAnchor ||
+      spec.locationSettings?.[0] ||
+      'Main Location';
+    const locAnchorPrompt =
+      locAnchorObj?.anchorPrompt ||
+      `[LOCATION MASTER FRAME ANCHOR]: ${locationName}. ${spec.visualStyle}`;
+
     const startingFramePrompt = nextVar.clips?.[0]?.frameImagePrompt
-      ? `[10s SNEAK PEEK PROMO FRAME - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]: High-contrast teaser keyframe. ${nextVar.clips[0].frameImagePrompt} Cinematic teaser grade, intense rim lighting, 9:16 vertical composition.`
-      : `[10s SNEAK PEEK PROMO FRAME - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]: 4k photorealistic cinematic teaser keyframe. Intense dramatic lighting, high suspense portrait, 9:16 vertical composition.`;
+      ? `[10s SNEAK PEEK PROMO FRAME - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]:\n${nextVar.clips[0].frameImagePrompt}\n[CINEMATOGRAPHY]: Cinematic teaser grade, intense rim lighting, 9:16 vertical composition.`
+      : `[10s SNEAK PEEK PROMO FRAME - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]:\n${charAnchorObj ? charAnchorObj.anchorPrompt : `[MASTER CHARACTER ANCHOR]: ${upcomingSpeaker} DNA Lock. ${spec.visualStyle}`}\n${locAnchorPrompt}\n[IMAGE REFERENCE ANCHOR]: Attach Master Reference Image of ${upcomingSpeaker}. Maintain 100% exact facial geometry, cheekbone structure, eyes, and styling without alteration.\n[SCENE BLOCKING]: ${upcomingSpeaker} positioned in dynamic foreground at ${locationName}, caught in high dramatic tension.\n[CINEMATOGRAPHY & LIGHTING]: Shot on ARRI Alexa LF, 85mm Panavision Anamorphic T1.5 prime lens, f/1.8 shallow depth of field. ${spec.visualStyle}, chiaroscuro key lighting, atmospheric haze. 8K photorealistic film still, 9:16 vertical composition.`;
 
     // Extract key highlights / jhalkiyan of the entire upcoming episode
     const dialogueLines = nextVar.dialogueScript || [];
@@ -65,13 +104,14 @@ export function buildNextEpisodePromo(
       teaserHighlights.push(`High-Stakes Confrontation: ${nextVar.clips[1].sceneName}`);
       teaserHighlights.push(`Suspense Climax: ${nextVar.clips[2].sceneName}`);
     } else {
-      teaserHighlights.push(`Opening Beat: Hostile confrontation begins`);
+      teaserHighlights.push(`Opening Beat: Hostile confrontation begins at ${locationName}`);
       teaserHighlights.push(`Mid-Scene Twist: Irreversible truth exposed`);
       teaserHighlights.push(`Cliffhanger Cutoff: Final decisive ultimatum`);
     }
 
-    const flowMotionPrompt =
-      `[PROMO TEASER SHOT]: 9:16 vertical video. ${visualAction} Dialogue: "${nextDialogue}". Fast 24fps motion, high cinematic contrast. At 0:09.2s, the camera snaps rapidly into darkness with a suspended cliffhanger breath. Sound design: ${soundDesignCue}`;
+    const flowMotionPrompt = nextVar.clips?.[0]?.flowPromptText
+      ? `[PROMO TEASER SHOT - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]: 9:16 vertical video.\n${nextVar.clips[0].flowPromptText}\n[PROMO POST-HOOK]: At 0:09.2s, the camera snaps rapidly into darkness with a suspended cliffhanger breath. Sound design: ${soundDesignCue}`
+      : `[PROMO TEASER SHOT - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]: 9:16 vertical video.\n[LOCATION MASTER ANCHOR]: ${locationName}.\n[CHARACTER REFERENCE ANCHORS]: Active Speaker: ${upcomingSpeaker} [ATTACH MASTER REFERENCE IMAGE 1 - ${upcomingSpeaker.toUpperCase()}]. Counterpart: ${counterpartSpeaker} [ATTACH MASTER REFERENCE IMAGE 2 - ${counterpartSpeaker.toUpperCase()}], 100% silent, lips sealed.\n[ACTION]: ${visualAction}\n[SPOKEN DIALOGUE]: "${nextDialogue}" (crisp syllable lip-sync articulation).\n[CADENCE & SFX]: Fast 24fps motion, high cinematic contrast. At 0:09.2s, the camera snaps rapidly into darkness with a suspended cliffhanger breath. Sound design: ${soundDesignCue}`;
 
     return {
       targetDayNumber,
@@ -90,20 +130,22 @@ export function buildNextEpisodePromo(
   const nextSeasonNum = (spec.seasonNumber || 1) + 1;
   const finaleDialogue = "You thought this was over? We haven't even touched the real truth.";
   const finaleTitle = `Season ${nextSeasonNum} Official Premiere`;
+  const finaleHero = spec.cast?.[0]?.name || 'Protagonist';
+  const finaleLocation = spec.locationSettings?.[0] || 'Executive Headquarters';
 
   return {
     targetDayNumber: 8,
     targetEpisodeTitle: finaleTitle,
     teaserHook: `The Season Finale cliffhanger leaves the entire world in jeopardy. Season ${nextSeasonNum} arrives next.`,
     teaserDialogue: finaleDialogue,
-    startingFramePrompt: `[OFFICIAL NEXT SEASON TEASER KEYFRAME - ${seriesTitle.toUpperCase()} SEASON ${nextSeasonNum}]: Dark moody cinematic keyframe. Chiaroscuro lighting, shadowy silhouette turning slowly toward camera lens, volumetric smoke, glowing anamorphic lens flare. 9:16 vertical composition, 8k photorealistic.`,
-    flowMotionPrompt: `[SEASON FINALE SNEAK PEEK MOTION DIRECTIVE]: 9:16 vertical video. Slow dramatic camera pull back from a shadowy desk. Silhouette raises head and whispers: "${finaleDialogue}". Massive sub-bass boom at 0:09.5s as screen cuts abruptly to pure black.`,
+    startingFramePrompt: `[OFFICIAL NEXT SEASON TEASER KEYFRAME - ${seriesTitle.toUpperCase()} SEASON ${nextSeasonNum}]:\n[MASTER CHARACTER ANCHOR]: ${finaleHero} DNA Lock. ${spec.visualStyle}.\n[LOCATION MASTER ANCHOR]: ${finaleLocation}.\n[IMAGE REFERENCE ANCHOR]: Attach Master Reference Image of ${finaleHero}.\n[SCENE BLOCKING]: Shadowy silhouette of ${finaleHero} turning slowly toward camera lens against the backdrop of ${finaleLocation}.\n[CINEMATOGRAPHY & LIGHTING]: ARRI Alexa LF, 85mm Panavision anamorphic, chiaroscuro lighting, volumetric smoke, glowing anamorphic lens flare. 9:16 vertical cinema composition, 8k photorealistic.`,
+    flowMotionPrompt: `[SEASON FINALE SNEAK PEEK MOTION DIRECTIVE]: 9:16 vertical video.\n[LOCATION MASTER ANCHOR]: ${finaleLocation}.\n[CHARACTER REFERENCE ANCHOR]: ${finaleHero} [ATTACH MASTER REFERENCE IMAGE - ${finaleHero.toUpperCase()}].\n[ACTION]: Slow dramatic camera pull back from a shadowy desk in ${finaleLocation}. ${finaleHero} raises head and whispers: "${finaleDialogue}". Massive sub-bass boom at 0:09.5s as screen cuts abruptly to pure black.\n[SOUND DESIGN]: Deep Inception-style low brass braam, echoing metallic reverb, sudden absolute silence on cut.`,
     soundDesignCue: 'Deep Inception-style low brass braam, echoing metallic reverb, sudden absolute silence on cut.',
     estimatedAirTime: `Coming Soon • Season ${nextSeasonNum}`,
     teaserHighlights: [
       `Next Tier Stakes Escalation`,
       `New Unforgiving Antagonist Emerges`,
-      `Global Conspiracy Beyond the Penthouse`,
+      `Global Conspiracy Beyond ${finaleLocation}`,
     ],
   };
 }
