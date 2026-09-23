@@ -217,6 +217,8 @@ export interface ClipPrompt {
   requiresReferenceImageAttachment?: boolean; // Reminder badge to attach user ref image
   foleySoundDesign?: string; // Complete audio ambience and sound design directive
   negativePromptDirectives?: string; // Negative prompt directives for cleaner video output
+  continuityRole?: 'master_anchor' | 'reverse_angle_match' | 'culmination_match';
+  continuityReferenceTag?: string; // Cross-clip reference instruction (e.g. attach Keyframe 1)
 }
 
 export interface QualityCritique {
@@ -227,6 +229,15 @@ export interface QualityCritique {
   passedQualityGate: boolean;
   critiqueNotes: string[];
   refinementsApplied: string[];
+}
+
+export interface SceneContinuityLock {
+  masterKeyframeIndex?: number;
+  timeOfDay: string;
+  lightingSetup: string;
+  roomGeography: string;
+  wardrobeLocks: Array<{ characterName: string; exactOutfit: string; hairAndGrooming?: string }>;
+  midjourneyContinuityRecipe: string;
 }
 
 export interface VideoVariation {
@@ -258,6 +269,7 @@ export interface VideoVariation {
   seriesContinuityRecap?: string; // Episode plot continuity & cliffhanger note
   isProduced?: boolean; // True when full frame prompts and Flow motion directives have been produced
   inUniversePosts?: InUniversePostBundle; // 3 Hollywood In-Universe & BTS feed posts for this episode
+  sceneContinuityLock?: SceneContinuityLock;
 }
 
 export interface InUniversePostBundle {

@@ -1,7 +1,8 @@
-import { StorySpec, ClipPrompt, InUniversePostBundle, CastMember } from '@/types';
+import { StorySpec, ClipPrompt, InUniversePostBundle, CastMember, SceneContinuityLock } from '@/types';
 import { generateLocationAnchorPrompt, enforceSpatialBlocking } from '../rules/spatial';
 import { generateSecBySecTimeline, buildCinematicFlowVeoPrompt } from '../rules/temporal';
 import { calculateWordCount } from '../rules/retention';
+import { resolveEpisodeContinuity, buildContinuityFramePrompt } from '../rules/continuity';
 
 export interface PlotClipDef {
   speakerName: string;
@@ -1415,6 +1416,7 @@ export function buildCharacterDramaClips(
   locationAnchors: { locationName: string; anchorPrompt: string }[];
   dialogueScript: { speaker: string; line: string; timing: string }[];
   inUniversePosts?: InUniversePostBundle;
+  sceneContinuityLock?: SceneContinuityLock;
 } {
   const noirDefaults = [
     {
@@ -1454,6 +1456,7 @@ export function buildCharacterDramaClips(
 
   const title = activePlot.title;
   const hookDescription = activePlot.hook;
+  const continuity = resolveEpisodeContinuity(spec, dayNum, title, 'character_drama');
 
   const clips: ClipPrompt[] = activePlot.clips.map((cDef, idx) => {
     const isLast = idx === activePlot.clips.length - 1;
@@ -1513,6 +1516,36 @@ export function buildCharacterDramaClips(
           : 'Voice starts with an icy, dismissive calm (narmi), shifting into an unflinching, steely cadence of executive certainty (sakhti) without raising volume.',
     });
 
+    const activeWardrobe =
+      continuity.wardrobeLocks.find(
+        (w) => w.characterName.toLowerCase() === activeChar.name.toLowerCase()
+      )?.exactOutfit || continuity.wardrobeLocks[0]?.exactOutfit || 'Tailored bespoke dark styling';
+
+    const counterpartChar = silentList[0] || (activeChar.name === char1.name ? char2 : char1);
+
+    const frameImagePrompt = buildContinuityFramePrompt({
+      clipIndex: idx + 1,
+      totalClips: activePlot.clips.length,
+      activeSpeaker: activeChar.name,
+      counterpart: counterpartChar.name,
+      location,
+      sceneName: cDef.sceneName,
+      actionText: cDef.action,
+      continuity,
+    });
+
+    const continuityRole: 'master_anchor' | 'reverse_angle_match' | 'culmination_match' =
+      idx === 0
+        ? 'master_anchor'
+        : idx === 1
+        ? 'reverse_angle_match'
+        : 'culmination_match';
+
+    const continuityReferenceTag =
+      idx === 0
+        ? '🎯 MASTER ANCHOR KEYFRAME (Generate First: Sets scene & wardrobe DNA)'
+        : `🔄 CONTINUITY REVERSE SHOT (Attach Keyframe 1 as Style Ref: ${continuity.midjourneyContinuityRecipe})`;
+
     return {
       clipIndex: idx + 1,
       totalClips: activePlot.clips.length,
@@ -1521,12 +1554,9 @@ export function buildCharacterDramaClips(
       masterKeyframeLock: `Master frame of ${location}. ${enforceSpatialBlocking(
         activeChar.name,
         silentList.map((s) => s.name)
-      )} Rainy window background with soft bokeh.`,
+      )} Wardrobe: ${activeWardrobe}. ${continuity.lightingSetup}.`,
       shotType: cDef.shotType,
-      frameImagePrompt: `[VIDEO FRAME IMAGE ${idx + 1}/${activePlot.clips.length} - STARTING KEYFRAME (FLUX / MIDJOURNEY)]:
-[IMAGE REFERENCE ANCHOR]: Attach Master Reference Image of ${activeChar.name}. Retain 100% exact facial geometry, cheekbone structure, eyes, and hair styling identical to the reference image without alteration or face morphing.
-[SCENE BLOCKING & ACTION]: ${cDef.action}
-[CINEMATOGRAPHY & LIGHTING]: ARRI Alexa LF, 85mm Panavision Anamorphic T1.5 prime lens, f/1.8 shallow depth of field. Global Hollywood / Netflix Noir aesthetic, high-contrast chiaroscuro lighting, deep venetian blind shadows, warm practicals, atmospheric rain bokeh. Master 8K photorealistic film still.`,
+      frameImagePrompt,
       speakerIsolation: {
         activeSpeaker: activeChar.name,
         speakingDialogue: cDef.dialogue,
@@ -1539,6 +1569,9 @@ export function buildCharacterDramaClips(
         ? 'Abrupt 0:09.5s cutoff on tangible mystery forces audience to binge next episode.'
         : 'Continuous scene momentum with seamless match-cut to counterpart.',
       pacingWordCount: calculateWordCount(cDef.dialogue),
+      sceneWardrobe: activeWardrobe,
+      continuityRole,
+      continuityReferenceTag,
     };
   });
 
@@ -1567,5 +1600,13 @@ export function buildCharacterDramaClips(
       line: c.dialogue,
       timing: `0:${idx * 10 < 10 ? '0' : ''}${idx * 10 + 2} - 0:${idx * 10 + 7}`,
     })),
+    sceneContinuityLock: {
+      masterKeyframeIndex: 1,
+      timeOfDay: continuity.timeOfDay,
+      lightingSetup: continuity.lightingSetup,
+      roomGeography: continuity.roomGeography,
+      wardrobeLocks: continuity.wardrobeLocks,
+      midjourneyContinuityRecipe: continuity.midjourneyContinuityRecipe,
+    },
   };
 }

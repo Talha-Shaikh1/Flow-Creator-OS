@@ -1,4 +1,4 @@
-import { StorySpec, ClipPrompt } from '@/types';
+import { StorySpec, ClipPrompt, SceneContinuityLock } from '@/types';
 import { generateLocationAnchorPrompt } from '../rules/spatial';
 import { generateSecBySecTimeline } from '../rules/temporal';
 import { calculateWordCount } from '../rules/retention';
@@ -161,6 +161,7 @@ export function buildPodcastStyleClips(
   characterAnchors: { characterName: string; anchorPrompt: string }[];
   locationAnchors: { locationName: string; anchorPrompt: string }[];
   dialogueScript: { speaker: string; line: string; timing: string }[];
+  sceneContinuityLock?: SceneContinuityLock;
 } {
   // Day-specific outfit selection (locked across all 4 clips of this day + photo posts)
   const dayOutfit = DAILY_PODCAST_OUTFITS[(dayNum - 1) % DAILY_PODCAST_OUTFITS.length];
@@ -247,6 +248,10 @@ Eyes blink naturally and irregularly. Camera stays almost completely locked/stat
       requiresReferenceImageAttachment: true,
       foleySoundDesign: 'Warm acoustic studio presence, Shure SM7B proximity effect, natural vocal breathing, soft ambient room tone.',
       negativePromptDirectives: 'head tilt, direct camera stare, camera zoom, push-in, robotic speech, blurred facial features, missing cheek mole, smoothing filter, fast speech.',
+      continuityRole: 'master_anchor',
+      continuityReferenceTag: clipIndex === 1
+        ? '🎯 SINGLE MASTER STARTING FRAME (Generate once; animate all 4 clips from this exact frame to eliminate drift)'
+        : `🎯 USES DAY ${dayNum} MASTER STARTING FRAME (Same wardrobe: ${dayOutfit})`,
     });
   }
 
@@ -272,5 +277,19 @@ Eyes blink naturally and irregularly. Camera stays almost completely locked/stat
       line,
       timing: `Clip ${idx + 1}/4 (0:01 - 0:09)`,
     })),
+    sceneContinuityLock: {
+      masterKeyframeIndex: 1,
+      timeOfDay: 'Evening Studio Recording Session',
+      lightingSetup: 'Soft warm 3200K ring light from front-left, warm amber practical background lamp glow',
+      roomGeography: studioLocation,
+      wardrobeLocks: [
+        {
+          characterName: persona.name,
+          exactOutfit: dayOutfit,
+          hairAndGrooming: 'Soft natural waves, distinct cheek beauty mole, subtle natural makeup',
+        },
+      ],
+      midjourneyContinuityRecipe: '--sref [KEYFRAME_1_URL] --sw 100 --cref [CHARACTER_REF_URL] --cw 100 --ar 9:16',
+    },
   };
 }

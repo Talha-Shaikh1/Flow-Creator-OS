@@ -1,4 +1,4 @@
-import { StorySpec, ClipPrompt } from '@/types';
+import { StorySpec, ClipPrompt, SceneContinuityLock } from '@/types';
 import { generateLocationAnchorPrompt } from '../rules/spatial';
 import { generateSecBySecTimeline } from '../rules/temporal';
 import { calculateWordCount } from '../rules/retention';
@@ -188,6 +188,7 @@ export function buildPetComedyClips(
   characterAnchors: { characterName: string; anchorPrompt: string }[];
   locationAnchors: { locationName: string; anchorPrompt: string }[];
   dialogueScript: { speaker: string; line: string; timing: string }[];
+  sceneContinuityLock?: SceneContinuityLock;
 } {
   // Episode Selection based on dayNum and variation
   const episodeIndex = (dayNum - 1 + (variationType === 'High Tension' ? 0 : variationType === 'Fast Hook' ? 1 : 2)) % PET_COMEDY_EPISODES.length;
@@ -258,6 +259,10 @@ Warm golden hour sunlight through window, soft ambient glow from lit fireplace a
       requiresReferenceImageAttachment: true,
       foleySoundDesign: clipData.foley,
       negativePromptDirectives: 'double speaking characters, cartoon 3d style, distorted paws, extra ears, missing collar, plastic fur, robotic voice, flickering lighting, deformed animal face.',
+      continuityRole: clipIndex === 1 ? 'master_anchor' : (clipIndex === 2 ? 'reverse_angle_match' : 'culmination_match'),
+      continuityReferenceTag: clipIndex === 1
+        ? '🎯 MASTER LIVING ROOM ANCHOR (Sets Zara navy tank, Joe collar, Nova bowtie & fireplace)'
+        : `🔄 CONTINUITY REVERSE ANGLE (Locked to Day Master Living Room: --sref [KEYFRAME_1_URL] --sw 100)`,
     });
   }
 
@@ -291,5 +296,17 @@ Warm golden hour sunlight through window, soft ambient glow from lit fireplace a
       line: c.line,
       timing: `Clip ${idx + 1}/${ep.clips.length} (0:01 - 0:09)`,
     })),
+    sceneContinuityLock: {
+      masterKeyframeIndex: 1,
+      timeOfDay: 'Late afternoon golden hour',
+      lightingSetup: 'Warm golden hour sunlight streaming through sheer floral curtains, lit fireplace mantel glow',
+      roomGeography: 'Traditional cozy living room: cream sectional sofa, wooden coffee table, parquet wood floor, bookshelf backdrop',
+      wardrobeLocks: [
+        { characterName: 'Zara', exactOutfit: 'Casual navy tank top, layered silver necklaces' },
+        { characterName: 'Joe', exactOutfit: 'Distressed brown leather collar with round brass tag "JOE"' },
+        { characterName: 'Nova', exactOutfit: 'Vibrant scarlet-red bowtie' },
+      ],
+      midjourneyContinuityRecipe: '--sref [KEYFRAME_1_URL] --sw 100 --ar 9:16',
+    },
   };
 }

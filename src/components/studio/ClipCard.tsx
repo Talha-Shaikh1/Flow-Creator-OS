@@ -20,6 +20,7 @@ import {
   ShieldAlert,
   Sliders,
   Layers,
+  Lock,
 } from 'lucide-react';
 import { getStoredAIConfig } from '@/lib/ai/ai-settings';
 
@@ -186,6 +187,21 @@ export function ClipCard({
           <span className="px-2.5 py-1 text-xs font-bold rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20">
             CLIP {clip.clipIndex} OF {clip.totalClips} (10s)
           </span>
+
+          {clip.continuityRole === 'master_anchor' || clip.clipIndex === 1 ? (
+            <span className="px-2 py-0.5 text-[11px] font-bold rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+              🎯 Master Anchor Keyframe
+            </span>
+          ) : clip.continuityRole === 'reverse_angle_match' || clip.clipIndex === 2 ? (
+            <span className="px-2 py-0.5 text-[11px] font-bold rounded bg-purple-500/15 text-purple-300 border border-purple-500/30 flex items-center gap-1">
+              🔄 Reverse Angle Continuity
+            </span>
+          ) : (
+            <span className="px-2 py-0.5 text-[11px] font-bold rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1">
+              ⚡ Scene Culmination Match
+            </span>
+          )}
+
           <h4 className="font-semibold text-white text-sm">{clip.sceneName}</h4>
         </div>
 
@@ -463,9 +479,21 @@ export function ClipCard({
           <pre className="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-xs text-amber-100 font-mono whitespace-pre-wrap leading-relaxed max-h-36 overflow-y-auto">
             {getEnrichedFramePrompt()}
           </pre>
-          <span className="text-[11px] text-amber-300/80 block">
-            💡 <strong>Workflow:</strong> Generate this frame image first. This becomes the input image for Google Flow below.
-          </span>
+          {clip.clipIndex > 1 ? (
+            <div className="bg-amber-950/40 border border-amber-500/30 rounded-lg p-2.5 flex items-start gap-2 text-[11px] text-amber-200">
+              <Lock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <strong>Visual Continuity Chain:</strong> To lock character clothes, room background, and lighting to Clip 1, append Midjourney reference:
+                <div className="mt-1 font-mono text-[10px] bg-neutral-950/80 px-2 py-1 rounded text-amber-300 border border-amber-900/50">
+                  --sref [PASTE_CLIP_1_IMAGE_URL] --sw 100
+                </div>
+              </div>
+            </div>
+          ) : (
+            <span className="text-[11px] text-amber-300/80 block">
+              🎯 <strong>Master Anchor Frame:</strong> Generate this frame image first. This sets the character wardrobe and lighting anchor for the whole episode!
+            </span>
+          )}
         </div>
       )}
 

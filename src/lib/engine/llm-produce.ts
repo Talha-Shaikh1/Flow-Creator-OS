@@ -3,6 +3,11 @@ import { getWeeklyEmotionArc, calculateWordCount } from './rules/retention';
 import { createTokenReport } from './tokens';
 import { callUniversalLLM, AIProviderConfig } from './llm-provider';
 import { resolveAutonomousCast, resolveSeriesTitle, EPISODE_TITLES } from './generator';
+import {
+  resolveEpisodeContinuity,
+  buildContinuityFramePrompt,
+  EpisodeSceneContinuity,
+} from './rules/continuity';
 
 export function buildCinematicFrameImagePrompt({
   rawPrompt,
@@ -14,6 +19,7 @@ export function buildCinematicFrameImagePrompt({
   visualStyle,
   sceneName,
   dialogue,
+  continuity,
 }: {
   rawPrompt?: string;
   clipIndex: number;
@@ -24,6 +30,7 @@ export function buildCinematicFrameImagePrompt({
   visualStyle: string;
   sceneName: string;
   dialogue?: string;
+  continuity?: EpisodeSceneContinuity;
 }): string {
   // Sanitize any leaked legacy character names if active character is different
   let cleanSnippet = (rawPrompt || '')
@@ -38,23 +45,25 @@ export function buildCinematicFrameImagePrompt({
     cleanSnippet = cleanSnippet.replace(/\bElena Sterling\b/gi, counterpartName);
   }
 
-  // If the prompt is already comprehensive (> 220 characters with key anchors), preserve it
-  if (
-    rawPrompt &&
-    rawPrompt.length > 220 &&
-    (rawPrompt.includes('[IMAGE REFERENCE ANCHOR]') || rawPrompt.includes('REFERENCE IMAGE')) &&
-    (rawPrompt.includes('[CINEMATOGRAPHY') || rawPrompt.includes('Anamorphic') || rawPrompt.includes('Alexa'))
-  ) {
-    let sanitizedRaw = rawPrompt;
-    if (characterName !== 'Julian Vance' && counterpartName !== 'Julian Vance') {
-      sanitizedRaw = sanitizedRaw.replace(/\bJulian Vance\b/gi, characterName);
-    }
-    if (characterName !== 'Elena Sterling' && counterpartName !== 'Elena Sterling') {
-      sanitizedRaw = sanitizedRaw.replace(/\bElena Sterling\b/gi, counterpartName);
-    }
-    return sanitizedRaw;
+  // If continuity lock is provided, use the continuity engine to build matched keyframe prompts
+  if (continuity) {
+    const actionText =
+      cleanSnippet ||
+      `${characterName} delivering narrative beat: "${dialogue || 'high-stakes dialogue moment'}". Maintaining locked spatial blocking with ${counterpartName}.`;
+
+    return buildContinuityFramePrompt({
+      clipIndex,
+      totalClips,
+      activeSpeaker: characterName,
+      counterpart: counterpartName,
+      location,
+      sceneName,
+      actionText,
+      continuity,
+    });
   }
 
+  // Fallback if continuity object wasn't supplied
   const actionText =
     cleanSnippet ||
     `${characterName} positioned in high-tension dramatic standoff. Delivering narrative beat: "${dialogue || 'calculated emotional revelation'}"`;
@@ -150,9 +159,9 @@ export async function produceVariationWithLLM({
   locationAnchors: { locationName: string; anchorPrompt: string }[];
   clips: ClipPrompt[];
   tokenUsage?: any;
+  sceneContinuityLock?: any;
 }> {
   // CRITICAL FIX: Only resolve autonomous cast if spec.cast is completely absent or empty!
-  // If spec.cast already has established characters (e.g. from autonomousCast stage 1), NEVER wipe them out!
   if (!spec.cast || spec.cast.length === 0) {
     spec.cast = resolveAutonomousCast(spec);
     spec.castCount = spec.cast.length;
@@ -172,6 +181,9 @@ export async function produceVariationWithLLM({
   const char2 = villainMember?.name || 'Villain';
   const location = spec.locationSettings[0] || 'Executive Penthouse Study';
 
+  // 1. RESOLVE EPISODE CONTINUITY & WARDROBE LOCK
+  const continuity = resolveEpisodeContinuity(spec, dayNum, baseTitle, spec.format);
+
   // Format the full cast overview so the LLM knows all established characters (Hero, Villain, Side characters)
   const fullCastOverview = spec.cast
     .map(
@@ -182,14 +194,27 @@ export async function produceVariationWithLLM({
 
   const castNamesList = spec.cast.map((c) => `"${c.name}"`).join(', ');
 
+  const wardrobeLockText = continuity.wardrobeLocks
+    .map((w) => `  * ${w.characterName} (${w.role}): "${w.exactOutfit}"`)
+    .join('\n');
+
   const systemInstruction = `You are FlowCreator OS — an Elite Autonomous Directing Engine producing a 3-clip short-form cinematic video episode for Google Flow (Veo 2).
 You MUST strictly adhere to the Directing Directives:
 
-CRITICAL CHARACTER CONTINUITY:
-The series cast is established and locked as:
+CRITICAL CHARACTER & WARDROBE CONTINUITY (ZERO DRIFT ACROSS CLIPS):
+The series cast and locked scene styling for this entire 30-second episode are:
 ${fullCastOverview}
+
+LOCKED SCENE WARDROBE (MUST NOT CHANGE ACROSS CLIP 1, 2, AND 3):
+${wardrobeLockText}
+
+LOCKED SCENE LIGHTING & ENVIRONMENT:
+- Lighting: ${continuity.lightingSetup} (${continuity.timeOfDay})
+- Room Geography: ${continuity.roomGeography}
+
 You MUST use ONLY these exact characters (${castNamesList}) in all dialogue, character anchors, and clip choreographies.
 DO NOT replace, alter, or revert to any default names (such as "Julian Vance" or "Elena Sterling") unless they were explicitly listed above.
+DO NOT change the clothing between Clip 1, 2, and 3. Clip 2 is the exact reverse-angle of Clip 1.
 
 1. 3-CLIP SHOT-REVERSE-SHOT CONTINUITY:
 - Multi-character dialogue MUST alternate: Clip 1 (Lead A speaks, Lead B silent), Clip 2 (Lead B speaks, Lead A silent), Clip 3 (Culmination/Reversal).
@@ -221,14 +246,10 @@ Each clip's "flowPromptText" must be fully formatted as:
 [AUDIO & FOLEY SOUND DESIGN]: Room acoustics, directional vocal warmth, subtle tension drone.
 [NEGATIVE DIRECTIVES]: morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter. (NEVER write blood, weapons, violence, gore, or tobacco).
 
-4. REFERENCE IMAGE ANCHOR (Flux / Midjourney frameImagePrompt) — STRICT 6-10 LINE FORMAT:
-CRITICAL REQUIREMENT: Every single clip's "frameImagePrompt" MUST BE A COMPREHENSIVE 6 TO 10 LINE MASTER PHOTOREALISTIC PROMPT!
-NEVER PROVIDE A SHORT 1 OR 2 LINE PROMPT! You MUST include all 4 tagged sections:
-[VIDEO FRAME IMAGE - KEYFRAME X/3 (FLUX / MIDJOURNEY)]
-[IMAGE REFERENCE ANCHOR]: Attach Master Reference Image of [Character]. Maintain 100% exact facial geometry, high cheekbones, distinct jawline, eyes, and hair styling without alteration. Zero facial distortion or morphing.
-[SCENE BLOCKING & SPATIAL DEPTH]: [Character] positioned in dynamic foreground at ${location}. Detailed pose, posture, props, and micro-expression. Counterpart visible over-shoulder in soft optical depth-of-field blur.
-[CINEMATOGRAPHY & LIGHTING]: Shot on ARRI Alexa LF, 85mm Panavision Anamorphic T1.5 prime lens, f/1.8 shallow depth of field, dramatic cinematic chiaroscuro key lighting, moody volumetric rim light, subtle atmospheric haze.
-[FILM EMULATION & PALETTE]: 8K UHD photorealistic film still, ${spec.visualStyle}, Kodak Vision3 500T 5219 texture, natural skin pore detail, balanced film grain, high dynamic range, master graded color palette.
+4. REFERENCE IMAGE ANCHOR (Flux / Midjourney frameImagePrompt) — CONTINUITY CHAINING:
+- Clip 1: Master Establishing Keyframe.
+- Clip 2: 180-Degree Reverse Angle shot linking to Keyframe 1 with matching clothing & lighting.
+- Clip 3: Culmination Standoff maintaining continuous scene state.
 
 Return strictly valid JSON with this schema:
 {
@@ -287,9 +308,11 @@ ${forceFresh ? `- FORCE FRESH GENERATION: Ignore prior dialogue lines. Craft com
 - Visual Style: ${spec.visualStyle}
 - Established Cast (${spec.cast.length} Characters — Use these characters!):
 ${fullCastOverview}
-- Location: ${location}
+- Locked Scene Wardrobes:
+${wardrobeLockText}
+- Location & Environment: ${location} (${continuity.lightingSetup})
 
-Generate the complete 3-clip production package now. Ensure all "frameImagePrompt" fields are full 6-10 line cinematic master prompts and all characters strictly match the established cast above.`;
+Generate the complete 3-clip production package now. Ensure all "frameImagePrompt" fields maintain 100% visual and wardrobe continuity matching the locked scene specifications above.`;
 
   const llmRes = await callUniversalLLM({
     config: aiConfig,
@@ -349,6 +372,7 @@ Generate the complete 3-clip production package now. Ensure all "frameImagePromp
       visualStyle: spec.visualStyle,
       sceneName: scName,
       dialogue,
+      continuity,
     });
 
     const enrichedFlow = buildCinematicFlowPrompt({
@@ -363,6 +387,23 @@ Generate the complete 3-clip production package now. Ensure all "frameImagePromp
       visualStyle: spec.visualStyle,
       shotType: shot,
     });
+
+    const activeWardrobe =
+      continuity.wardrobeLocks.find(
+        (w) => w.characterName.toLowerCase() === activeSpk.toLowerCase()
+      )?.exactOutfit || continuity.wardrobeLocks[0]?.exactOutfit || 'Tailored bespoke styling';
+
+    const continuityRole: 'master_anchor' | 'reverse_angle_match' | 'culmination_match' =
+      idx === 0
+        ? 'master_anchor'
+        : idx === 1
+        ? 'reverse_angle_match'
+        : 'culmination_match';
+
+    const continuityReferenceTag =
+      idx === 0
+        ? '🎯 MASTER ANCHOR KEYFRAME (Generate First: Sets scene & wardrobe DNA)'
+        : `🔄 CONTINUITY REVERSE SHOT (Attach Keyframe 1 as Style Ref: ${continuity.midjourneyContinuityRecipe})`;
 
     return {
       clipIndex: idx + 1,
@@ -391,10 +432,12 @@ Generate the complete 3-clip production package now. Ensure all "frameImagePromp
       flowPromptText: enrichedFlow,
       retentionHookReasoning: c.retentionHookReasoning || '0-3s hook captures algorithmic retention.',
       pacingWordCount: calculateWordCount(dialogue) || 18,
-      sceneWardrobe: c.sceneWardrobe || 'Adaptive scene-appropriate styling',
+      sceneWardrobe: activeWardrobe,
       requiresReferenceImageAttachment: true,
       foleySoundDesign: c.foleySoundDesign || 'Cinematic room acoustic ambience, directional dialogue resonance, tension drone, subtle foley accents.',
       negativePromptDirectives: c.negativePromptDirectives || 'morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter.',
+      continuityRole,
+      continuityReferenceTag,
     };
   });
 
@@ -427,5 +470,13 @@ Generate the complete 3-clip production package now. Ensure all "frameImagePromp
     ],
     clips,
     tokenUsage,
+    sceneContinuityLock: {
+      masterKeyframeIndex: 1,
+      timeOfDay: continuity.timeOfDay,
+      lightingSetup: continuity.lightingSetup,
+      roomGeography: continuity.roomGeography,
+      wardrobeLocks: continuity.wardrobeLocks,
+      midjourneyContinuityRecipe: continuity.midjourneyContinuityRecipe,
+    },
   };
 }

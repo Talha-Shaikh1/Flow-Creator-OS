@@ -31,6 +31,7 @@ import {
   Clapperboard,
   CheckCheck,
   History,
+  Lock,
 } from 'lucide-react';
 import { ContentCalendarModal } from '@/components/calendar/ContentCalendarModal';
 import { GenerationHistoryModal } from './GenerationHistoryModal';
@@ -52,6 +53,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
   const [copiedAllScript, setCopiedAllScript] = useState(false);
   const [copiedFullFlowBundle, setCopiedFullFlowBundle] = useState(false);
   const [copiedMasterFrame, setCopiedMasterFrame] = useState(false);
+  const [copiedContinuityRecipe, setCopiedContinuityRecipe] = useState(false);
   const [isRegeneratingDay, setIsRegeneratingDay] = useState(false);
   const [isProducing, setIsProducing] = useState(false);
   const [isGeneratingNextSeason, setIsGeneratingNextSeason] = useState(false);
@@ -201,6 +203,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
           locationAnchors,
           clips,
           critique: critique || activeVariation.critique,
+          sceneContinuityLock: data.produced.sceneContinuityLock || activeVariation.sceneContinuityLock,
           isProduced: true,
         };
 
@@ -991,6 +994,116 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
                   </div>
                 </div>
               </div>
+
+              {/* Scene & Wardrobe Continuity Lock (Multi-Clip Cohesion) */}
+              {activeVariation.sceneContinuityLock && (
+                <div className="bg-gradient-to-r from-amber-950/30 via-neutral-900 to-indigo-950/30 border border-amber-500/30 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xl">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        <Lock className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-bold text-white tracking-wide">
+                            Episode Scene & Wardrobe Continuity Lock
+                          </h4>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            100% COHESION GUARANTEE
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-400">
+                          Prevents wardrobe drifting and background jumps across all 10s clips in this episode.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          activeVariation.sceneContinuityLock?.midjourneyContinuityRecipe || ''
+                        );
+                        setCopiedContinuityRecipe(true);
+                        setTimeout(() => setCopiedContinuityRecipe(false), 2500);
+                      }}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition border shadow-sm ${
+                        copiedContinuityRecipe
+                          ? 'bg-emerald-500 text-white border-emerald-400'
+                          : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border-amber-500/40'
+                      }`}
+                      title="Copy Midjourney image chaining parameters (--sref and --cref)"
+                    >
+                      {copiedContinuityRecipe ? (
+                        <Check className="w-3.5 h-3.5" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                      <span>
+                        {copiedContinuityRecipe ? 'Chaining Recipe Copied!' : 'Copy Midjourney Chaining Recipe'}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Lock Parameters Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
+                    <div className="bg-neutral-950/70 p-2.5 rounded-lg border border-neutral-800">
+                      <span className="text-[10px] uppercase font-mono text-neutral-500 block">Locked Environment & Geography</span>
+                      <span className="font-semibold text-neutral-200 line-clamp-1">
+                        {activeVariation.sceneContinuityLock.roomGeography}
+                      </span>
+                    </div>
+                    <div className="bg-neutral-950/70 p-2.5 rounded-lg border border-neutral-800">
+                      <span className="text-[10px] uppercase font-mono text-neutral-500 block">Time & Ambience</span>
+                      <span className="font-semibold text-neutral-200 line-clamp-1">
+                        {activeVariation.sceneContinuityLock.timeOfDay}
+                      </span>
+                    </div>
+                    <div className="bg-neutral-950/70 p-2.5 rounded-lg border border-neutral-800">
+                      <span className="text-[10px] uppercase font-mono text-neutral-500 block">Locked Lighting Setup</span>
+                      <span className="font-semibold text-neutral-200 line-clamp-1">
+                        {activeVariation.sceneContinuityLock.lightingSetup}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Wardrobe Breakdown */}
+                  {activeVariation.sceneContinuityLock.wardrobeLocks &&
+                    activeVariation.sceneContinuityLock.wardrobeLocks.length > 0 && (
+                      <div className="bg-neutral-950/60 p-3 rounded-xl border border-neutral-800/80 space-y-1.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 block">
+                          🔒 Locked Outfits Across All Clips (Zero Wardrobe Drifting):
+                        </span>
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          {activeVariation.sceneContinuityLock.wardrobeLocks.map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="bg-neutral-900 border border-neutral-800 px-2.5 py-1 rounded-md text-neutral-300"
+                            >
+                              <strong className="text-white">{item.characterName}:</strong> {item.exactOutfit}
+                              {item.hairAndGrooming && (
+                                <span className="text-neutral-500 block text-[10px] mt-0.5">{item.hairAndGrooming}</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Midjourney Chaining Quick Recipe */}
+                  <div className="bg-neutral-950/80 p-2.5 rounded-lg border border-neutral-800 text-[11px] text-neutral-400 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-amber-400 font-mono font-bold">Midjourney Workflow:</span>
+                      <code className="text-amber-200 font-mono text-[10px] bg-neutral-900 px-2 py-0.5 rounded">
+                        {activeVariation.sceneContinuityLock.midjourneyContinuityRecipe}
+                      </code>
+                    </div>
+                    <span className="text-neutral-500 text-[10px]">
+                      Clip 1 = Anchor image. Clip 2 & 3 must use Clip 1&apos;s URL as --sref.
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-2">

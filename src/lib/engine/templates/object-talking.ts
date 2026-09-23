@@ -1,4 +1,4 @@
-import { StorySpec, ClipPrompt } from '@/types';
+import { StorySpec, ClipPrompt, SceneContinuityLock } from '@/types';
 import { generateLocationAnchorPrompt } from '../rules/spatial';
 import { generateSecBySecTimeline, buildCinematicFlowVeoPrompt } from '../rules/temporal';
 import { calculateWordCount } from '../rules/retention';
@@ -14,6 +14,7 @@ export function buildObjectTalkingClips(
   characterAnchors: { characterName: string; anchorPrompt: string }[];
   locationAnchors: { locationName: string; anchorPrompt: string }[];
   dialogueScript: { speaker: string; line: string; timing: string }[];
+  sceneContinuityLock?: SceneContinuityLock;
 } {
   const objectChar = spec.cast[0] || {
     name: 'Coffee Cup',
@@ -129,15 +130,25 @@ export function buildObjectTalkingClips(
     negativePromptDirectives: 'morphing, blurred features, distorted face, low quality render.',
   });
 
+  const lockedLighting = 'Low-angle morning sunlight grazing across countertop from camera-left, creating long warm shadows and crisp specular edge rim reflections on ceramic';
+  const lockedSurface = 'Luxury modern kitchen: polished dark-veined Italian Carrara marble countertop, blurred copper goose-neck kettle and coffee grinder in soft bokeh backdrop';
+
   const clips: ClipPrompt[] = [
     {
       clipIndex: 1,
       totalClips: 3,
       sceneName: 'The Awakening Hook',
       locationAnchor: location,
-      masterKeyframeLock: `Fixed macro perspective of ${location}, 50mm f/1.8 lens, shallow depth of field, warm sunrise rim light.`,
+      masterKeyframeLock: `Fixed macro perspective of ${location}, 100mm macro f/2.0 prime lens, ${lockedLighting}.`,
       shotType: 'Master Wide',
-      frameImagePrompt: `[VIDEO FRAME IMAGE 1/3 - STARTING KEYFRAME]: Fixed macro perspective of ${location}. ${objectChar.name} - ${objectChar.dnaPrompt}. 50mm f/1.8 lens, shallow depth of field, warm sunrise rim light, photorealistic ceramic gloss reflection, 4K composition.`,
+      frameImagePrompt: `[VIDEO FRAME IMAGE - MASTER ANCHOR KEYFRAME 1/3 (FLUX / MIDJOURNEY)]
+[EPISODE TEXTURE & SURFACE LOCK]:
+- OBJECT: ${objectChar.name} — ${objectChar.dnaPrompt}. Raw terracotta base rim, glossy interior glaze, gentle steam plume.
+- SURFACE: ${lockedSurface}.
+- LIGHTING: ${lockedLighting}.
+[CINEMATOGRAPHY]: ARRI Alexa LF, 100mm macro prime, f/2.0 shallow depth of field. 8K UHD photorealistic film still.
+[MIDJOURNEY MASTER ANCHOR]: Generate this Master Frame first. Use as --sref for subsequent clips to guarantee 100% material match.
+[MIDJOURNEY PARAMS]: --ar 9:16 --v 6.1 --style raw`,
       speakerIsolation: {
         activeSpeaker: objectChar.name,
         speakingDialogue: dialogue1,
@@ -148,15 +159,25 @@ export function buildObjectTalkingClips(
       flowPromptText: flowPrompt1,
       retentionHookReasoning: '0-3s unexpected object movement & sharp direct address creates curiosity gap.',
       pacingWordCount: calculateWordCount(dialogue1),
+      sceneWardrobe: `${objectChar.name} artisanal ceramic body with glossy interior glaze`,
+      continuityRole: 'master_anchor',
+      continuityReferenceTag: '🎯 MASTER ANCHOR KEYFRAME (Generate First: Sets ceramic texture & lighting DNA)',
     },
     {
       clipIndex: 2,
       totalClips: 3,
       sceneName: 'The Escalation',
       locationAnchor: location,
-      masterKeyframeLock: `Same fixed perspective in ${location}, lighting deepens into moody contrast.`,
+      masterKeyframeLock: `Same fixed perspective in ${location}, 45-degree macro profile, ${lockedLighting}.`,
       shotType: 'Shot-Reverse-Shot Close-Up',
-      frameImagePrompt: `[VIDEO FRAME IMAGE 2/3 - STARTING KEYFRAME]: Tight macro profile switching to 3/4 angle on ${objectChar.name} in ${location}. Dramatic blue-hour fill lighting, steam dissipating, high specular contrast, 4K cinematic still.`,
+      frameImagePrompt: `[VIDEO FRAME IMAGE - KEYFRAME 2/3 (CONTINUITY 3/4 PROFILE - MATCH KEYFRAME 1)]
+[CRITICAL CONTINUITY MATCH TO KEYFRAME 1]:
+- MASTER REFERENCE: [ATTACH KEYFRAME 1 IMAGE AS SCENE & STYLE REFERENCE]
+- OBJECT LOCK (100% IDENTICAL TO KEYFRAME 1): ${objectChar.name} — ${objectChar.dnaPrompt}. Exact same ceramic texture, glossy rim, steam swirl.
+- SURFACE & LIGHTING LOCK: Exact same ${lockedSurface}, exact same ${lockedLighting}.
+- CAMERA SETUP: 45-degree macro orbital profile arc maintaining spatial axis.
+[CINEMATOGRAPHY]: ARRI Alexa LF, 100mm macro prime, f/2.0 shallow focus. 8K UHD photorealistic still.
+[MIDJOURNEY CONTINUITY RECIPE]: --sref [KEYFRAME_1_URL] --sw 100 --ar 9:16 --v 6.1 --style raw`,
       speakerIsolation: {
         activeSpeaker: objectChar.name,
         speakingDialogue: dialogue2,
@@ -167,15 +188,25 @@ export function buildObjectTalkingClips(
       flowPromptText: flowPrompt2,
       retentionHookReasoning: 'Vulnerability escalation keeps viewer emotionally invested.',
       pacingWordCount: calculateWordCount(dialogue2),
+      sceneWardrobe: `${objectChar.name} artisanal ceramic body with glossy interior glaze`,
+      continuityRole: 'reverse_angle_match',
+      continuityReferenceTag: '🔄 CONTINUITY 3/4 PROFILE (Attach Keyframe 1 as Style Ref: --sref [KEYFRAME_1_URL] --sw 100)',
     },
     {
       clipIndex: 3,
       totalClips: 3,
       sceneName: 'The Cliffhanger Callout',
       locationAnchor: location,
-      masterKeyframeLock: `Macro lock on ${location}, sharp dramatic rim light, moody shadow falloff.`,
+      masterKeyframeLock: `Macro lock on ${location}, forward tilt toward lens, ${lockedLighting}.`,
       shotType: 'Dynamic Tracking',
-      frameImagePrompt: `[VIDEO FRAME IMAGE 3/3 - STARTING KEYFRAME]: Extreme macro dynamic angle of ${objectChar.name} leaning towards camera in ${location}. Moody rim light, high focal clarity on rim edge, dramatic suspense composition, 4K render.`,
+      frameImagePrompt: `[VIDEO FRAME IMAGE - KEYFRAME 3/3 (CONTINUITY CLIFFHANGER PUSH - MATCH KEYFRAME 1)]
+[CRITICAL CONTINUITY MATCH TO KEYFRAME 1]:
+- MASTER REFERENCE: [ATTACH KEYFRAME 1 IMAGE AS SCENE & STYLE REFERENCE]
+- OBJECT LOCK (100% IDENTICAL TO KEYFRAME 1): ${objectChar.name} leaning towards camera lens. Exact ceramic glaze, steam plume.
+- SURFACE & LIGHTING LOCK: Exact same ${lockedSurface}, exact same ${lockedLighting}.
+- CAMERA SETUP: Low-angle macro push-in from counter level.
+[CINEMATOGRAPHY]: ARRI Alexa LF, 100mm macro prime, f/2.0 shallow focus. 8K UHD photorealistic still.
+[MIDJOURNEY CONTINUITY RECIPE]: --sref [KEYFRAME_1_URL] --sw 100 --ar 9:16 --v 6.1 --style raw`,
       speakerIsolation: {
         activeSpeaker: objectChar.name,
         speakingDialogue: dialogue3,
@@ -186,6 +217,9 @@ export function buildObjectTalkingClips(
       flowPromptText: flowPrompt3,
       retentionHookReasoning: 'Open-ended psychological question drives repeat watch time.',
       pacingWordCount: calculateWordCount(dialogue3),
+      sceneWardrobe: `${objectChar.name} artisanal ceramic body with glossy interior glaze`,
+      continuityRole: 'culmination_match',
+      continuityReferenceTag: '⚡ CONTINUITY CLIFFHANGER SHOT (Attach Keyframe 1 as Style Ref: --sref [KEYFRAME_1_URL] --sw 100)',
     },
   ];
 
@@ -210,5 +244,18 @@ export function buildObjectTalkingClips(
       { speaker: objectChar.name, line: dialogue2, timing: '0:02 - 0:07' },
       { speaker: objectChar.name, line: dialogue3, timing: '0:02 - 0:07' },
     ],
+    sceneContinuityLock: {
+      masterKeyframeIndex: 1,
+      timeOfDay: 'Early morning 7:15 AM dawn light',
+      lightingSetup: lockedLighting,
+      roomGeography: lockedSurface,
+      wardrobeLocks: [
+        {
+          characterName: objectChar.name,
+          exactOutfit: `${objectChar.name} artisanal ceramic body with raw terracotta base and glossy interior glaze`,
+        },
+      ],
+      midjourneyContinuityRecipe: '--sref [KEYFRAME_1_URL] --sw 100 --ar 9:16',
+    },
   };
 }

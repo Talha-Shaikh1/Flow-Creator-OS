@@ -5,6 +5,7 @@ import {
   VideoVariation,
   CastMember,
   SEASON_ESCALATION_LADDER,
+  SceneContinuityLock,
 } from '@/types';
 import { getWeeklyEmotionArc } from './rules/retention';
 import { buildObjectTalkingClips } from './templates/object-talking';
@@ -192,6 +193,7 @@ export function produceVariationDirectives(
   locationAnchors: { locationName: string; anchorPrompt: string }[];
   clips: any[];
   tokenUsage?: any;
+  sceneContinuityLock?: SceneContinuityLock;
 } {
   if (!spec.cast || spec.cast.length === 0) {
     spec.cast = resolveAutonomousCast(spec);
@@ -258,6 +260,7 @@ export function produceVariationDirectives(
     locationAnchors: builtOutput.locationAnchors,
     clips,
     tokenUsage,
+    sceneContinuityLock: (builtOutput as any).sceneContinuityLock,
   };
 }
 
@@ -347,6 +350,7 @@ export function generateWeeklyBatch(
         },
         isProduced: !isMindMapOnly,
         inUniversePosts: (builtOutput as any).inUniversePosts,
+        sceneContinuityLock: (builtOutput as any).sceneContinuityLock,
       };
 
       // Run Quality Gate & Self-Critique

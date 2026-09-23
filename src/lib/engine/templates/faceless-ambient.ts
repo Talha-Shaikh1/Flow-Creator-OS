@@ -1,4 +1,4 @@
-import { StorySpec, ClipPrompt } from '@/types';
+import { StorySpec, ClipPrompt, SceneContinuityLock } from '@/types';
 import { generateLocationAnchorPrompt } from '../rules/spatial';
 import { buildCinematicFlowVeoPrompt } from '../rules/temporal';
 import { calculateWordCount } from '../rules/retention';
@@ -14,6 +14,7 @@ export function buildFacelessAmbientClips(
   characterAnchors: { characterName: string; anchorPrompt: string }[];
   locationAnchors: { locationName: string; anchorPrompt: string }[];
   dialogueScript: { speaker: string; line: string; timing: string }[];
+  sceneContinuityLock?: SceneContinuityLock;
 } {
   const location = spec.locationSettings[0] || 'Midnight Rain-Drenched Neon Alley';
 
@@ -237,7 +238,13 @@ export function buildFacelessAmbientClips(
       locationAnchor: location,
       masterKeyframeLock: `Identical color palette and rain reflections in ${location}.`,
       shotType: 'Point of View',
-      frameImagePrompt: `[VIDEO FRAME IMAGE 2/3 - STARTING KEYFRAME]: Point of view cinematic angle in ${location}. Glowing warm storefront window with condensation, solitary silhouette with umbrella in soft background focus, 4K film still.`,
+      frameImagePrompt: `[VIDEO FRAME IMAGE - KEYFRAME 2/3 (CONTINUITY SLIDER SHOT - MATCH KEYFRAME 1)]
+[CRITICAL CONTINUITY MATCH TO KEYFRAME 1]:
+- MASTER REFERENCE: [ATTACH KEYFRAME 1 AS SCENE & STYLE REFERENCE]
+- SCENE & LIGHTING LOCK: 100% exact match to Keyframe 1 midnight rain atmosphere, cyan and amber neon reflections, wet reflective ground.
+- CAMERA SETUP: Cinematic point-of-view slider shot past warm glowing condensation shopfront window.
+[CINEMATOGRAPHY]: ARRI Alexa LF, 50mm anamorphic prime lens, f/1.8 shallow focus. 8K UHD film still.
+[MIDJOURNEY CONTINUITY RECIPE]: --sref [KEYFRAME_1_URL] --sw 100 --ar 9:16 --v 6.1 --style raw`,
       speakerIsolation: {
         activeSpeaker: 'Voiceover / Ambient Narration',
         speakingDialogue: voLine2,
@@ -248,15 +255,24 @@ export function buildFacelessAmbientClips(
       flowPromptText: flowPrompt2,
       retentionHookReasoning: 'Consistent meditative visual flow ensures full watch completion.',
       pacingWordCount: calculateWordCount(voLine2),
+      sceneWardrobe: 'Heavy charcoal wool trench coat with structured lapels, matte leather gloves',
+      continuityRole: 'reverse_angle_match',
+      continuityReferenceTag: '🔄 CONTINUITY POV SHOT (Attach Keyframe 1 as Style Ref: --sref [KEYFRAME_1_URL] --sw 100)',
     },
     {
       clipIndex: 3,
       totalClips: 3,
       sceneName: 'The Inspiring Closing Callout',
       locationAnchor: location,
-      masterKeyframeLock: `Wide vista overlooking the atmospheric skyline under soft morning light.`,
+      masterKeyframeLock: `Wide vista in ${location} maintaining midnight neon rain reflection continuity.`,
       shotType: 'Master Wide',
-      frameImagePrompt: `[VIDEO FRAME IMAGE 3/3 - STARTING KEYFRAME]: Expansive cinematic vista of morning skyline through mist in ${location}. Golden hour sunbeams cutting through rain clouds, wet architectural reflections, 4K wide keyframe.`,
+      frameImagePrompt: `[VIDEO FRAME IMAGE - KEYFRAME 3/3 (CONTINUITY RESOLUTION - MATCH KEYFRAME 1)]
+[CRITICAL CONTINUITY MATCH TO KEYFRAME 1]:
+- MASTER REFERENCE: [ATTACH KEYFRAME 1 AS SCENE & STYLE REFERENCE]
+- SCENE & LIGHTING LOCK: Exact continuous midnight storm environment, wet cobblestones, glowing ambient neon signs.
+- CAMERA SETUP: Expansive slow crane elevation revealing solitary silhouette with umbrella against glistening neon street.
+[CINEMATOGRAPHY]: ARRI Alexa LF, 85mm anamorphic prime, f/2.0 shallow focus. 8K UHD film still.
+[MIDJOURNEY CONTINUITY RECIPE]: --sref [KEYFRAME_1_URL] --sw 100 --ar 9:16 --v 6.1 --style raw`,
       speakerIsolation: {
         activeSpeaker: 'Voiceover / Ambient Narration',
         speakingDialogue: voLine3,
@@ -267,6 +283,9 @@ export function buildFacelessAmbientClips(
       flowPromptText: flowPrompt3,
       retentionHookReasoning: 'Inspirational takeaway drives video saves, reposts, and loop watches.',
       pacingWordCount: calculateWordCount(voLine3),
+      sceneWardrobe: 'Heavy charcoal wool trench coat with structured lapels, matte leather gloves',
+      continuityRole: 'culmination_match',
+      continuityReferenceTag: '⚡ CONTINUITY RESOLUTION SHOT (Attach Keyframe 1 as Style Ref: --sref [KEYFRAME_1_URL] --sw 100)',
     },
   ];
 
@@ -291,5 +310,18 @@ export function buildFacelessAmbientClips(
       { speaker: 'Voiceover', line: voLine2, timing: '0:02 - 0:07' },
       { speaker: 'Voiceover', line: voLine3, timing: '0:02 - 0:07' },
     ],
+    sceneContinuityLock: {
+      masterKeyframeIndex: 1,
+      timeOfDay: '1:45 AM Midnight Rain',
+      lightingSetup: 'Rain-soaked asphalt with gleaming specular reflections of amber streetlights and cyan retro shop neon, deep moody shadows',
+      roomGeography: location,
+      wardrobeLocks: [
+        {
+          characterName: 'Solitary Protagonist',
+          exactOutfit: 'Tailored heavy midnight-charcoal wool trench coat with structured lapels, black cashmere turtleneck, matte leather gloves',
+        },
+      ],
+      midjourneyContinuityRecipe: '--sref [KEYFRAME_1_URL] --sw 100 --ar 9:16',
+    },
   };
 }
