@@ -11,6 +11,8 @@ import {
   Headphones,
   Film,
   FastForward,
+  Clock,
+  Layers,
 } from 'lucide-react';
 
 interface Props {
@@ -67,6 +69,49 @@ export function EpisodePromoCard({ promo, currentDayNumber }: Props) {
             {promo.estimatedAirTime}
           </span>
         )}
+      </div>
+
+      {/* Duration & Production Specs Badge Bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+        <div className="bg-neutral-950/90 border border-indigo-500/40 p-2.5 rounded-xl flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+            <Clock className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block">Video Duration</span>
+            <span className="font-extrabold text-white text-xs">10 Seconds (1 Clip)</span>
+          </div>
+        </div>
+
+        <div className="bg-neutral-950/90 border border-neutral-800 p-2.5 rounded-xl flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-neutral-800 text-amber-400 border border-neutral-700">
+            <Video className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider block">Aspect Ratio</span>
+            <span className="font-bold text-neutral-200 text-xs">9:16 Vertical Reel</span>
+          </div>
+        </div>
+
+        <div className="bg-neutral-950/90 border border-neutral-800 p-2.5 rounded-xl flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-neutral-800 text-emerald-400 border border-neutral-700">
+            <Layers className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider block">Frame Rate</span>
+            <span className="font-bold text-neutral-200 text-xs">24fps Hollywood Blur</span>
+          </div>
+        </div>
+
+        <div className="bg-neutral-950/90 border border-neutral-800 p-2.5 rounded-xl flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-neutral-800 text-purple-400 border border-neutral-700">
+            <Headphones className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider block">Audio Design</span>
+            <span className="font-bold text-neutral-200 text-xs">Dialogue + SFX Riser</span>
+          </div>
+        </div>
       </div>
 
       {/* Target Episode Title & Teaser Dialogue */}

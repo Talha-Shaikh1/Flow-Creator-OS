@@ -14,6 +14,7 @@ import {
   Film,
   Play,
   Layers,
+  Clock,
 } from 'lucide-react';
 
 interface Props {
@@ -115,6 +116,49 @@ export function SeasonTrailerModal({ trailer, seriesTitle, isOpen, onClose }: Pr
 
         {/* Scrollable Trailer Body */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-6">
+          {/* Duration & Production Spec Banner */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <div className="bg-neutral-900/90 border border-amber-500/40 p-2.5 rounded-xl flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <Clock className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block">Trailer Duration</span>
+                <span className="font-extrabold text-white text-xs">40 Seconds (4 x 10s Cuts)</span>
+              </div>
+            </div>
+
+            <div className="bg-neutral-900/90 border border-neutral-800 p-2.5 rounded-xl flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-neutral-800 text-indigo-400 border border-neutral-700">
+                <Layers className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider block">Shot Breakdown</span>
+                <span className="font-bold text-neutral-200 text-xs">4 Independent 10s Shots</span>
+              </div>
+            </div>
+
+            <div className="bg-neutral-900/90 border border-neutral-800 p-2.5 rounded-xl flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-neutral-800 text-emerald-400 border border-neutral-700">
+                <Video className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider block">Aspect Ratio</span>
+                <span className="font-bold text-neutral-200 text-xs">9:16 Vertical Reel</span>
+              </div>
+            </div>
+
+            <div className="bg-neutral-900/90 border border-neutral-800 p-2.5 rounded-xl flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-neutral-800 text-purple-400 border border-neutral-700">
+                <Headphones className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider block">Sound & Voiceover</span>
+                <span className="font-bold text-neutral-200 text-xs">Full VO Script + Braam SFX</span>
+              </div>
+            </div>
+          </div>
+
           {/* Audio Cues & Sound Design Bar */}
           <div className="bg-neutral-900/70 border border-neutral-800 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2">
@@ -122,6 +166,7 @@ export function SeasonTrailerModal({ trailer, seriesTitle, isOpen, onClose }: Pr
               <strong className="text-amber-300 font-medium">Trailer Sound Signature:</strong>
               <span className="text-neutral-400">{trailer.soundDesignCues.join(' • ')}</span>
             </div>
+
             <button
               type="button"
               onClick={() => {
@@ -151,8 +196,9 @@ export function SeasonTrailerModal({ trailer, seriesTitle, isOpen, onClose }: Pr
                   {/* Shot Top Row */}
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-800/80 pb-3">
                     <div className="flex items-center gap-2.5">
-                      <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30">
-                        SHOT {clip.clipIndex}/4
+                      <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
+                        <span>SHOT {clip.clipIndex}/4</span>
+                        <span className="text-[10px] text-amber-400/80 font-mono font-normal">⏱️ 10s</span>
                       </span>
                       <span className="text-xs font-extrabold text-white">
                         {clip.phaseLabel}
