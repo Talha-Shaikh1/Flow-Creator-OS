@@ -95,6 +95,29 @@ export function EpisodePromoCard({ promo, currentDayNumber }: Props) {
         </p>
       </div>
 
+      {/* Episode Highlights & Quick Cuts (Jhalkiyan) */}
+      {promo.teaserHighlights && promo.teaserHighlights.length > 0 && (
+        <div className="bg-neutral-950/70 p-3 rounded-xl border border-neutral-800 space-y-1.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            Upcoming Episode Highlights & Teaser Montages (Jhalkiyan):
+          </span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+            {promo.teaserHighlights.map((hl, i) => (
+              <div
+                key={i}
+                className="bg-neutral-900 border border-neutral-800/90 p-2.5 rounded-lg text-neutral-300 flex flex-col justify-between"
+              >
+                <span className="text-amber-400 font-bold text-[10px] font-mono block mb-1">
+                  MONTAGE CUT {i + 1}
+                </span>
+                <span className="text-neutral-200 text-xs leading-relaxed">{hl}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 2-Step Production: Step 1 (Frame) & Step 2 (Google Flow) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Step 1: Teaser Frame Image */}

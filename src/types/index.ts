@@ -242,7 +242,7 @@ export interface SceneContinuityLock {
 
 export interface VideoVariation {
   id: string;
-  variationLabel: 'Variation A (High Tension)' | 'Variation B (Emotional Core)' | 'Variation C (Fast Hook)';
+  variationLabel: 'Canonical Episode' | 'Variation A (High Tension)' | 'Variation B (Emotional Core)' | 'Variation C (Fast Hook)' | string;
   title: string;
   hookDescription: string;
   masterFrameImagePrompt?: string;
@@ -327,6 +327,7 @@ export interface EpisodePromo {
   flowMotionPrompt: string;
   soundDesignCue: string;
   estimatedAirTime?: string;
+  teaserHighlights?: string[];
 }
 
 export interface SeasonTrailerClip {

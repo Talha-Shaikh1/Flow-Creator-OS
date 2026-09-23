@@ -5,6 +5,7 @@ import { resolveSeriesTitle, EPISODE_TITLES, resolveAutonomousCast } from './gen
 import { generateDailyPhotoPosts } from './rules/photos';
 import { createTokenReport, estimateTokenCount } from './tokens';
 import { callUniversalLLM, AIProviderConfig } from './llm-provider';
+import { buildNextEpisodePromo, buildSeasonTrailer } from './rules/promo';
 
 function extractDaysArray(data: any): any[] {
   if (!data || typeof data !== 'object') return [];
@@ -75,32 +76,12 @@ You MUST return valid JSON ONLY with a top-level "days" array:
       "dayName": "Monday",
       "variations": [
         {
-          "variationLabel": "Variation A (High Tension)",
+          "variationLabel": "Canonical Episode",
           "title": "Episode Title (3-6 words)",
           "hookDescription": "1 punchy sentence describing the psychological or visual hook",
           "dialogueScript": [{ "speaker": "Character Name", "line": "Concise dialogue line (15-22 words)" }],
           "seriesContinuityRecap": "1 sentence plot continuity recap",
           "metadata": { "caption": "1-2 sentence caption", "hashtags": ["#tag1", "#tag2", "#tag3"] },
-          "clips": [],
-          "isProduced": false
-        },
-        {
-          "variationLabel": "Variation B (Emotional Core)",
-          "title": "Episode Title",
-          "hookDescription": "1 punchy sentence",
-          "dialogueScript": [{ "speaker": "Character Name", "line": "Concise dialogue line" }],
-          "seriesContinuityRecap": "1 sentence recap",
-          "metadata": { "caption": "Caption", "hashtags": ["#tag1", "#tag2"] },
-          "clips": [],
-          "isProduced": false
-        },
-        {
-          "variationLabel": "Variation C (Fast Hook)",
-          "title": "Episode Title",
-          "hookDescription": "1 punchy sentence",
-          "dialogueScript": [{ "speaker": "Character Name", "line": "Concise dialogue line" }],
-          "seriesContinuityRecap": "1 sentence recap",
-          "metadata": { "caption": "Caption", "hashtags": ["#tag1", "#tag2"] },
           "clips": [],
           "isProduced": false
         }
@@ -150,6 +131,7 @@ PERSONA NICHE DIRECTIVES:
 
 RULES:
 - Exactly 7 days (Day 1 to 7).
+- For each day, generate exactly ONE canonical episode in the "variations" array with "variationLabel": "Canonical Episode" (DO NOT generate 3 variations or Variation A/B/C).
 - In each variation, leave "clips": [] empty to save tokens.
 - Keep sentences concise and punchy so the complete 7-day batch finishes without hitting token limits.
 - Return JSON ONLY.`
@@ -190,10 +172,9 @@ PILLAR 5: IN-UNIVERSE BTS & FORENSIC FEED CONTENT (ANTI-AI CLICHÉ)
 - Output authentic Hollywood Film Set BTS (director monitor, ARRI camera rigs, script reads between takes), Forensic Macro Prop Clues (the exact physical evidence from today's episode), and Candid In-Universe Set Lore (varying set angles, rainy terrace, executive elevator foyer).
 
 OUTPUT SPECIFICATION:
-Generate a 7-Day arc (Day 1 to Day 7). For each day, create 3 variations:
-- Variation A (High Tension)
-- Variation B (Emotional Core)
-- Variation C (Fast Hook)
+Generate a 7-Day arc (Day 1 to Day 7). For each day, create exactly ONE solid canonical episode:
+- "variationLabel": "Canonical Episode"
+(DO NOT generate multiple variations or Variation A/B/C. Deliver 1 cohesive episodic sequence across the week).
 
 CRITICAL: For EACH clip, you MUST provide TWO distinct prompts:
 1. "frameImagePrompt": The Reference Image-Anchored Text-to-Image prompt for Midjourney / Flux (composition, character placement screen-left/right, scene-adaptive wardrobe, 4K/8K photorealistic Netflix Noir lighting).
@@ -266,7 +247,7 @@ ${spec.customStoryIdea ? `- CREATOR'S CUSTOM STORY PREMISE / ANCHOR: "${spec.cus
 ${castInstruction}
 - Locations: ${spec.locationSettings.join(', ')}
 
-Generate a complete 7-Day production delivery package with 3 variations per day.`;
+Generate a complete 7-Day production delivery package with exactly 1 solid canonical episode per day (NO multiple variations).`;
 
 
   try {
@@ -321,14 +302,10 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
     const days: DayContentPackage[] = normalizedRawDays.slice(0, 7).map((d: any, dayIdx: number) => {
       const arc = getWeeklyEmotionArc(dayIdx + 1);
       const rawVars = d.variations || d.episodes || d.angles || d.options || (Array.isArray(d) ? d : []);
-      let variations: VideoVariation[] = (Array.isArray(rawVars) ? rawVars : []).map((v: any, vIdx: number) => {
-        const vLabel =
-          v.variationLabel ||
-          (vIdx === 0
-            ? 'Variation A (High Tension)'
-            : vIdx === 1
-            ? 'Variation B (Emotional Core)'
-            : 'Variation C (Fast Hook)');
+      // Take only the primary/canonical variation (no 3 variations split)
+      const rawVarList = Array.isArray(rawVars) && rawVars.length > 0 ? [rawVars[0]] : [];
+      let variations: VideoVariation[] = rawVarList.map((v: any, vIdx: number) => {
+        const vLabel = 'Canonical Episode';
 
         // Build character anchors dynamically for all characters in the actual cast
         const dynamicCharAnchors = effectiveCast.map((c: CastMember) => ({
@@ -337,9 +314,9 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
         }));
 
         const unvalidatedVariation = {
-          id: `day-${dayIdx + 1}-v${vIdx + 1}`,
+          id: `day-${dayIdx + 1}-v1`,
           variationLabel: vLabel,
-          title: v.title || `${arc.dayName} Episode - ${vLabel}`,
+          title: v.title || `${arc.dayName} Episode - ${arc.dailyEmotion}`,
           hookDescription: v.hookDescription || `${spec.format} story for ${arc.dailyEmotion}`,
           characterAnchors: v.characterAnchors && v.characterAnchors.length > 0 ? v.characterAnchors : dynamicCharAnchors,
           locationAnchors: v.locationAnchors && v.locationAnchors.length > 0 ? v.locationAnchors : [
@@ -455,7 +432,7 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
         const syntheticList: Array<Omit<VideoVariation, 'critique'>> = [
           {
             id: `day-${dayIdx + 1}-v1`,
-            variationLabel: 'Variation A (High Tension)',
+            variationLabel: 'Canonical Episode',
             title: `${arc.dayName} Episode - High Stakes Confrontation`,
             hookDescription: `${spec.customStoryIdea || spec.format} high-stakes escalation for ${arc.dailyEmotion}.`,
             characterAnchors: [
@@ -480,60 +457,6 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
               audioVibe: spec.tone,
             },
           },
-          {
-            id: `day-${dayIdx + 1}-v2`,
-            variationLabel: 'Variation B (Emotional Core)',
-            title: `${arc.dayName} Episode - Unspoken Truth`,
-            hookDescription: `Vulnerable emotional resonance and internal conflict for ${arc.dailyEmotion}.`,
-            characterAnchors: [
-              {
-                characterName: heroChar,
-                anchorPrompt: `[MASTER CHARACTER ANCHOR]: ${heroChar} DNA Lock. ${spec.visualStyle}`,
-              },
-            ],
-            locationAnchors: [
-              {
-                locationName: spec.locationSettings[0] || 'Main Location',
-                anchorPrompt: `[LOCATION MASTER FRAME ANCHOR]: ${spec.locationSettings[0] || 'Main Location'}. ${spec.visualStyle}`,
-              },
-            ],
-            clips: [],
-            isProduced: false,
-            dialogueScript: [{ speaker: heroChar, line: "I pretended it didn't matter, but truth has a way of finding you.", timing: '0:03 - 0:07' }],
-            seriesContinuityRecap: `${arc.dayName} emotional turning point.`,
-            metadata: {
-              caption: `${arc.dayName} raw reflection. 🤍 #Authentic #CreatorStory`,
-              hashtags: ['#Deep', '#Storytelling', '#Shorts'],
-              audioVibe: 'Introspective, intimate acoustic presence',
-            },
-          },
-          {
-            id: `day-${dayIdx + 1}-v3`,
-            variationLabel: 'Variation C (Fast Hook)',
-            title: `${arc.dayName} Episode - Immediate Hook`,
-            hookDescription: `Rapid pattern interruption and curiosity cliffhanger for ${arc.dailyEmotion}.`,
-            characterAnchors: [
-              {
-                characterName: heroChar,
-                anchorPrompt: `[MASTER CHARACTER ANCHOR]: ${heroChar} DNA Lock. ${spec.visualStyle}`,
-              },
-            ],
-            locationAnchors: [
-              {
-                locationName: spec.locationSettings[0] || 'Main Location',
-                anchorPrompt: `[LOCATION MASTER FRAME ANCHOR]: ${spec.locationSettings[0] || 'Main Location'}. ${spec.visualStyle}`,
-              },
-            ],
-            clips: [],
-            isProduced: false,
-            dialogueScript: [{ speaker: heroChar, line: 'If you only remember one thing from this week, let it be this.', timing: '0:03 - 0:07' }],
-            seriesContinuityRecap: `${arc.dayName} high viral retention variation.`,
-            metadata: {
-              caption: `Watch till the end. ⚡️ #Cliffhanger #Trending`,
-              hashtags: ['#Viral', '#Trending', '#CuriosityGap'],
-              audioVibe: 'Subtle bass sub-drop with sudden silence on cut',
-            },
-          },
         ];
         variations = syntheticList.map((item) => ({
           ...item,
@@ -543,7 +466,7 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
 
       return {
         dayNumber: dayIdx + 1,
-        episodeTitle: EPISODE_TITLES[dayIdx + 1] || `Episode ${dayIdx + 1}`,
+        episodeTitle: variations[0]?.title || EPISODE_TITLES[dayIdx + 1] || `Episode ${dayIdx + 1}`,
         dayName: arc.dayName,
         dailyEmotion: `${arc.dayName} Arc: ${arc.dailyEmotion}`,
         variations,
@@ -564,6 +487,29 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
       castCount: effectiveCast.length,
       autonomousCast: false, // LOCK CAST: Cast is now permanently established and should never be wiped or replaced!
     };
+
+    // Attach Next Episode Promos (Day N links to Day N+1, Day 7 links to Season Finale / Next Season)
+    for (let i = 0; i < days.length; i++) {
+      const nextDay = days[i + 1];
+      const promo = buildNextEpisodePromo(
+        finalSpec,
+        days[i].dayNumber,
+        days[i].variations[0],
+        nextDay
+      );
+      days[i].nextEpisodePromo = promo;
+      if (days[i].variations[0]) {
+        days[i].variations[0].nextEpisodePromo = promo;
+      }
+    }
+
+    // Generate Official Season Teaser Trailer Montage (Hollywood 4-Shot Trailer Arc)
+    const seasonTrailer = buildSeasonTrailer(
+      finalSpec,
+      days,
+      finalSpec.seasonNumber || 1,
+      finalSpec.seasonTitle || 'The Local Betrayal'
+    );
 
     const seriesBible = parsedData.seriesBible || {
       arcOverview: `7-Day Story Arc for ${spec.format.replace('_', ' ').toUpperCase()} in ${spec.visualStyle}. Follows a rising tension progression from initial curiosity to weekend climax.`,
@@ -593,6 +539,7 @@ Generate a complete 7-Day production delivery package with 3 variations per day.
       days,
       seriesBible,
       tokenUsage,
+      seasonTrailer,
     };
   } catch (err: any) {
     console.error('AI Generation error:', err);

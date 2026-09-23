@@ -53,10 +53,11 @@ export const QualityCritiqueSchema = z.object({
 export const VideoVariationSchema = z.object({
   id: z.string(),
   variationLabel: z.enum([
+    'Canonical Episode',
     'Variation A (High Tension)',
     'Variation B (Emotional Core)',
     'Variation C (Fast Hook)',
-  ]),
+  ]).or(z.string()),
   title: z.string(),
   hookDescription: z.string(),
   masterFrameImagePrompt: z.string().optional(),

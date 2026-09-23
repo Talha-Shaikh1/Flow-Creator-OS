@@ -53,6 +53,23 @@ export function buildNextEpisodePromo(
       ? `[10s SNEAK PEEK PROMO FRAME - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]: High-contrast teaser keyframe. ${nextVar.clips[0].frameImagePrompt} Cinematic teaser grade, intense rim lighting, 9:16 vertical composition.`
       : `[10s SNEAK PEEK PROMO FRAME - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]: 4k photorealistic cinematic teaser keyframe. Intense dramatic lighting, high suspense portrait, 9:16 vertical composition.`;
 
+    // Extract key highlights / jhalkiyan of the entire upcoming episode
+    const dialogueLines = nextVar.dialogueScript || [];
+    const teaserHighlights: string[] = [];
+    if (dialogueLines.length >= 3) {
+      teaserHighlights.push(`Inciting Clash: "${dialogueLines[0].speaker}: ${dialogueLines[0].line}"`);
+      teaserHighlights.push(`Mid-Episode Reversal: "${dialogueLines[1].speaker}: ${dialogueLines[1].line}"`);
+      teaserHighlights.push(`Cliffhanger Cutoff: "${dialogueLines[dialogueLines.length - 1].speaker}: ${dialogueLines[dialogueLines.length - 1].line}"`);
+    } else if (nextVar.clips && nextVar.clips.length >= 3) {
+      teaserHighlights.push(`Opening Beat: ${nextVar.clips[0].sceneName}`);
+      teaserHighlights.push(`High-Stakes Confrontation: ${nextVar.clips[1].sceneName}`);
+      teaserHighlights.push(`Suspense Climax: ${nextVar.clips[2].sceneName}`);
+    } else {
+      teaserHighlights.push(`Opening Beat: Hostile confrontation begins`);
+      teaserHighlights.push(`Mid-Scene Twist: Irreversible truth exposed`);
+      teaserHighlights.push(`Cliffhanger Cutoff: Final decisive ultimatum`);
+    }
+
     const flowMotionPrompt =
       `[PROMO TEASER SHOT]: 9:16 vertical video. ${visualAction} Dialogue: "${nextDialogue}". Fast 24fps motion, high cinematic contrast. At 0:09.2s, the camera snaps rapidly into darkness with a suspended cliffhanger breath. Sound design: ${soundDesignCue}`;
 
@@ -65,6 +82,7 @@ export function buildNextEpisodePromo(
       flowMotionPrompt,
       soundDesignCue,
       estimatedAirTime: `Tomorrow • Day ${targetDayNumber}`,
+      teaserHighlights,
     };
   }
 
@@ -82,6 +100,11 @@ export function buildNextEpisodePromo(
     flowMotionPrompt: `[SEASON FINALE SNEAK PEEK MOTION DIRECTIVE]: 9:16 vertical video. Slow dramatic camera pull back from a shadowy desk. Silhouette raises head and whispers: "${finaleDialogue}". Massive sub-bass boom at 0:09.5s as screen cuts abruptly to pure black.`,
     soundDesignCue: 'Deep Inception-style low brass braam, echoing metallic reverb, sudden absolute silence on cut.',
     estimatedAirTime: `Coming Soon • Season ${nextSeasonNum}`,
+    teaserHighlights: [
+      `Next Tier Stakes Escalation`,
+      `New Unforgiving Antagonist Emerges`,
+      `Global Conspiracy Beyond the Penthouse`,
+    ],
   };
 }
 
