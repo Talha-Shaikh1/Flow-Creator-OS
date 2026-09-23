@@ -270,6 +270,7 @@ export interface VideoVariation {
   isProduced?: boolean; // True when full frame prompts and Flow motion directives have been produced
   inUniversePosts?: InUniversePostBundle; // 3 Hollywood In-Universe & BTS feed posts for this episode
   sceneContinuityLock?: SceneContinuityLock;
+  nextEpisodePromo?: EpisodePromo;
 }
 
 export interface InUniversePostBundle {
@@ -317,14 +318,48 @@ export interface DailyPhotoPost {
   imagePrompt: string; // The exact Midjourney / Flux / Google Flow prompt
 }
 
+export interface EpisodePromo {
+  targetDayNumber: number;
+  targetEpisodeTitle: string;
+  teaserHook: string;
+  teaserDialogue: string;
+  startingFramePrompt: string;
+  flowMotionPrompt: string;
+  soundDesignCue: string;
+  estimatedAirTime?: string;
+}
+
+export interface SeasonTrailerClip {
+  clipIndex: number;
+  phaseLabel: 'The Inciting Hook' | 'The Mid-Season Betrayal' | 'The Climax Standoff' | 'Series Title Reveal';
+  shotType: string;
+  visualAction: string;
+  dialogueOrVoiceover: string;
+  frameImagePrompt: string;
+  flowMotionPrompt: string;
+  soundDesignCue: string;
+}
+
+export interface SeasonTrailerPromo {
+  seasonNumber: number;
+  seasonTitle: string;
+  trailerLogline: string;
+  voiceoverScript: string[];
+  soundDesignCues: string[];
+  masterTrailerFramePrompt: string;
+  trailerClips: SeasonTrailerClip[];
+  titleCardPrompt: string;
+}
+
 export interface DayContentPackage {
   dayNumber: number; // 1-7
   dayName: string; // e.g. "Monday"
   episodeTitle?: string; // e.g. "The Forged Will"
   dailyEmotion: string; // e.g. "Monday Hook - Curiosity & Intrigue"
-  variations: VideoVariation[];
+  variations: VideoVariation[]; // variations[0] is the canonical episode
   selectedVariationId?: string;
   dailyPhotoPosts?: DailyPhotoPost[]; // 3-4 daily authentic lifestyle photos
+  nextEpisodePromo?: EpisodePromo; // 10s teaser for Day N+1 (or Season Finale teaser for Day 7)
 }
 
 
@@ -352,5 +387,6 @@ export interface WeeklyBatchDelivery {
   seriesBible?: SeriesBibleSummary;
   tokenUsage?: TokenUsageReport;
   generatedClips?: Record<string, boolean>; // Map of generated clip keys to track video production
+  seasonTrailer?: SeasonTrailerPromo; // Official Season Montage Teaser Trailer
 }
 

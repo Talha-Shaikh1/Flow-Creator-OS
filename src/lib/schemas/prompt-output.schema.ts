@@ -97,6 +97,7 @@ export const DayContentPackageSchema = z.object({
   dailyEmotion: z.string(),
   variations: z.array(VideoVariationSchema).min(1),
   selectedVariationId: z.string().optional(),
+  nextEpisodePromo: z.any().optional(),
 });
 
 export const SeriesBibleSummarySchema = z.object({
@@ -127,5 +128,6 @@ export const WeeklyBatchDeliverySchema = z.object({
   days: z.array(DayContentPackageSchema).length(7),
   seriesBible: SeriesBibleSummarySchema.optional(),
   tokenUsage: TokenUsageReportSchema.optional(),
+  seasonTrailer: z.any().optional(),
 });
 

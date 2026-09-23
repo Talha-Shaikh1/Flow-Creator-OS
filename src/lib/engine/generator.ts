@@ -15,6 +15,7 @@ import { buildFacelessAmbientClips } from './templates/faceless-ambient';
 import { buildPetComedyClips } from './templates/pet-comedy';
 import { evaluatePromptCritique } from './critique';
 import { generateDailyPhotoPosts } from './rules/photos';
+import { buildNextEpisodePromo, buildSeasonTrailer } from './rules/promo';
 import { WeeklyBatchDeliverySchema } from '../schemas/prompt-output.schema';
 import { createTokenReport, estimateTokenCount } from './tokens';
 
@@ -282,85 +283,77 @@ export function generateWeeklyBatch(
   const days: DayContentPackage[] = [];
   const isMindMapOnly = options.mode === 'mind_maps';
 
-  const variationTypes: Array<{
-    label: 'Variation A (High Tension)' | 'Variation B (Emotional Core)' | 'Variation C (Fast Hook)';
-    type: 'High Tension' | 'Emotional Core' | 'Fast Hook';
-  }> = [
-    { label: 'Variation A (High Tension)', type: 'High Tension' },
-    { label: 'Variation B (Emotional Core)', type: 'Emotional Core' },
-    { label: 'Variation C (Fast Hook)', type: 'Fast Hook' },
-  ];
+  // Single Canonical Episode Workflow (No variant split - cohesive linear TV series)
+  const canonicalType: 'High Tension' = 'High Tension';
 
   for (let dayNum = 1; dayNum <= 7; dayNum++) {
     const arc = getWeeklyEmotionArc(dayNum);
     const dayVariations: VideoVariation[] = [];
 
-    for (const v of variationTypes) {
-      let builtOutput: ReturnType<typeof buildCharacterDramaClips>;
+    let builtOutput: ReturnType<typeof buildCharacterDramaClips>;
 
-      switch (spec.format) {
-        case 'object_talking':
-          builtOutput = buildObjectTalkingClips(spec, arc.dailyEmotion, v.type);
-          break;
-        case 'podcast_style':
-          builtOutput = buildPodcastStyleClips(spec, arc.dailyEmotion, v.type, dayNum);
-          break;
-        case 'pet_comedy':
-          builtOutput = buildPetComedyClips(spec, arc.dailyEmotion, v.type, dayNum);
-          break;
-        case 'faceless_ambient':
-          builtOutput = buildFacelessAmbientClips(spec, arc.dailyEmotion, v.type);
-          break;
-        case 'character_drama':
-        default:
-          builtOutput = buildCharacterDramaClips(spec, arc.dailyEmotion, v.type, dayNum);
-          break;
-      }
-
-      // If mind-maps mode (Stage 1), do NOT build full clip prompts yet (saves 75% tokens!)
-      const clips = isMindMapOnly
-        ? []
-        : builtOutput.clips.map((c) => ({
-            ...c,
-            foleySoundDesign:
-              c.foleySoundDesign ||
-              'Cinematic room acoustic ambience, directional dialogue resonance, tension drone, subtle foley accents.',
-            negativePromptDirectives:
-              c.negativePromptDirectives ||
-              'morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter.',
-          }));
-
-      const unvalidatedVariation = {
-        id: `day-${dayNum}-${v.type.toLowerCase().replace(/\s+/g, '-')}`,
-        variationLabel: v.label,
-        title: builtOutput.title,
-        hookDescription: builtOutput.hookDescription,
-        masterFrameImagePrompt: isMindMapOnly
-          ? undefined
-          : (builtOutput as any).masterFrameImagePrompt || builtOutput.clips[0]?.frameImagePrompt,
-        characterAnchors: isMindMapOnly ? [] : builtOutput.characterAnchors,
-        locationAnchors: isMindMapOnly ? [] : builtOutput.locationAnchors,
-        clips,
-        dialogueScript: builtOutput.dialogueScript,
-        seriesContinuityRecap: `Day ${dayNum} Continuity: ${arc.dailyEmotion}. Culminates in a psychological cliffhanger leading into Day ${(dayNum % 7) + 1}.`,
-        metadata: {
-          caption: `${builtOutput.title} 🎬 Generated with FlowCreator OS. #AIcinema #GoogleFlow #Storytelling #ViralContent`,
-          hashtags: ['#GoogleFlow', '#Veo', '#AIFilmmaking', '#ShortFilm', '#CreatorEconomy'],
-          audioVibe: spec.tone,
-        },
-        isProduced: !isMindMapOnly,
-        inUniversePosts: (builtOutput as any).inUniversePosts,
-        sceneContinuityLock: (builtOutput as any).sceneContinuityLock,
-      };
-
-      // Run Quality Gate & Self-Critique
-      const critique = evaluatePromptCritique(unvalidatedVariation);
-
-      dayVariations.push({
-        ...unvalidatedVariation,
-        critique,
-      });
+    switch (spec.format) {
+      case 'object_talking':
+        builtOutput = buildObjectTalkingClips(spec, arc.dailyEmotion, canonicalType);
+        break;
+      case 'podcast_style':
+        builtOutput = buildPodcastStyleClips(spec, arc.dailyEmotion, canonicalType, dayNum);
+        break;
+      case 'pet_comedy':
+        builtOutput = buildPetComedyClips(spec, arc.dailyEmotion, canonicalType, dayNum);
+        break;
+      case 'faceless_ambient':
+        builtOutput = buildFacelessAmbientClips(spec, arc.dailyEmotion, canonicalType);
+        break;
+      case 'character_drama':
+      default:
+        builtOutput = buildCharacterDramaClips(spec, arc.dailyEmotion, canonicalType, dayNum);
+        break;
     }
+
+    // If mind-maps mode (Stage 1), do NOT build full clip prompts yet (saves 75% tokens!)
+    const clips = isMindMapOnly
+      ? []
+      : builtOutput.clips.map((c) => ({
+          ...c,
+          foleySoundDesign:
+            c.foleySoundDesign ||
+            'Cinematic room acoustic ambience, directional dialogue resonance, tension drone, subtle foley accents.',
+          negativePromptDirectives:
+            c.negativePromptDirectives ||
+            'morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter.',
+        }));
+
+    const unvalidatedVariation = {
+      id: `day-${dayNum}-canonical-episode`,
+      variationLabel: `Episode ${dayNum}` as any,
+      title: builtOutput.title,
+      hookDescription: builtOutput.hookDescription,
+      masterFrameImagePrompt: isMindMapOnly
+        ? undefined
+        : (builtOutput as any).masterFrameImagePrompt || builtOutput.clips[0]?.frameImagePrompt,
+      characterAnchors: isMindMapOnly ? [] : builtOutput.characterAnchors,
+      locationAnchors: isMindMapOnly ? [] : builtOutput.locationAnchors,
+      clips,
+      dialogueScript: builtOutput.dialogueScript,
+      seriesContinuityRecap: `Day ${dayNum} Continuity: ${arc.dailyEmotion}. Culminates in a psychological cliffhanger leading into Day ${(dayNum % 7) + 1}.`,
+      metadata: {
+        caption: `${builtOutput.title} 🎬 Generated with FlowCreator OS. #AIcinema #GoogleFlow #Storytelling #ViralContent`,
+        hashtags: ['#GoogleFlow', '#Veo', '#AIFilmmaking', '#ShortFilm', '#CreatorEconomy'],
+        audioVibe: spec.tone,
+      },
+      isProduced: !isMindMapOnly,
+      inUniversePosts: (builtOutput as any).inUniversePosts,
+      sceneContinuityLock: (builtOutput as any).sceneContinuityLock,
+    };
+
+    // Run Quality Gate & Self-Critique
+    const critique = evaluatePromptCritique(unvalidatedVariation);
+
+    dayVariations.push({
+      ...unvalidatedVariation,
+      critique,
+    });
 
     const dailyPhotos = generateDailyPhotoPosts(
       spec.cast[0],
@@ -381,6 +374,29 @@ export function generateWeeklyBatch(
       dailyPhotoPosts: dailyPhotos,
     });
   }
+
+  // Generate Next Episode Promos (Day N links to Day N+1, Day 7 links to Season Finale / Next Season)
+  for (let i = 0; i < days.length; i++) {
+    const nextDay = days[i + 1];
+    const promo = buildNextEpisodePromo(
+      spec,
+      days[i].dayNumber,
+      days[i].variations[0],
+      nextDay
+    );
+    days[i].nextEpisodePromo = promo;
+    if (days[i].variations[0]) {
+      days[i].variations[0].nextEpisodePromo = promo;
+    }
+  }
+
+  // Generate Official Season Teaser Trailer Montage (Hollywood 4-Shot Trailer Arc)
+  const seasonTrailer = buildSeasonTrailer(
+    spec,
+    days,
+    spec.seasonNumber || 1,
+    spec.seasonTitle || 'The Local Betrayal'
+  );
 
   const seriesBible = {
     arcOverview: `7-Day Story Arc for ${spec.format.replace('_', ' ').toUpperCase()} in ${spec.visualStyle}. Follows a rising tension progression from initial curiosity on Monday to a climactic standoff on Friday and cliffhanger resolution on Sunday.`,
@@ -413,6 +429,7 @@ export function generateWeeklyBatch(
     days,
     seriesBible,
     tokenUsage,
+    seasonTrailer,
   };
 
   // Strict Schema Validation

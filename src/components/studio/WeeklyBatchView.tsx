@@ -35,9 +35,12 @@ import {
 } from 'lucide-react';
 import { ContentCalendarModal } from '@/components/calendar/ContentCalendarModal';
 import { GenerationHistoryModal } from './GenerationHistoryModal';
+import { SeasonTrailerModal } from './SeasonTrailerModal';
+import { EpisodePromoCard } from './EpisodePromoCard';
 import { getOrCreateClientGuestId } from '@/lib/auth/session';
 import { sanitizeForGoogleFlow } from '@/lib/engine/rules/temporal';
 import { generateDailyPhotoPosts } from '@/lib/engine/rules/photos';
+import { buildSeasonTrailer } from '@/lib/engine/rules/promo';
 import { getStoredAIConfig } from '@/lib/ai/ai-settings';
 import { saveBatchToLocalHistory } from '@/lib/history/batch-history';
 
@@ -60,6 +63,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
   const [showSeriesBibleModal, setShowSeriesBibleModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showSeasonTrailerModal, setShowSeasonTrailerModal] = useState(false);
   const [adoptedDays, setAdoptedDays] = useState<Record<number, boolean>>({});
 
   // Track generated clips: key is `${dayNumber}-${variationId}-clip-${clipIndex}`
@@ -149,6 +153,15 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
           batch.spec.locationSettings?.[0],
           batch.spec.cast
         );
+
+  const seasonTrailerToDisplay =
+    batch.seasonTrailer ||
+    buildSeasonTrailer(
+      batch.spec,
+      batch.days,
+      batch.spec.seasonNumber || 1,
+      batch.spec.seasonTitle || 'The Local Betrayal'
+    );
 
   const handleProduceVariation = async (forceFresh = false) => {
     setIsProducing(true);
@@ -549,6 +562,16 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
                 : 'Produce & Copy Flow Bundle'}
             </span>
           </button>
+          {/* Watch Season Trailer Button */}
+          <button
+            onClick={() => setShowSeasonTrailerModal(true)}
+            className="px-3.5 py-2 text-xs font-bold rounded-lg bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-neutral-950 transition flex items-center gap-1.5 shadow-lg shadow-amber-500/20"
+            title="Open 4-shot cinematic season teaser trailer montage"
+          >
+            <Clapperboard className="w-4 h-4 text-neutral-950" />
+            <span>🎬 Season Trailer</span>
+          </button>
+
           {/* Generate Next Season Button */}
           {batch.spec.format === 'character_drama' && (
             <button
@@ -620,9 +643,18 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
               </p>
             </div>
           </div>
-          <div className="text-right shrink-0">
-            <span className="text-[11px] text-neutral-400">Continuous Arc</span>
-            <div className="text-xs text-amber-300 font-medium">Days 1–7 • Dynamic Arc (30s–50s / Episode)</div>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => setShowSeasonTrailerModal(true)}
+              className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs flex items-center gap-1.5 shadow-md transition"
+            >
+              <Clapperboard className="w-3.5 h-3.5" />
+              <span>Watch Season Trailer</span>
+            </button>
+            <div className="text-right hidden sm:block">
+              <span className="text-[11px] text-neutral-400">Continuous Arc</span>
+              <div className="text-xs text-amber-300 font-medium">Days 1–7 • Dynamic Arc (30s–50s / Episode)</div>
+            </div>
           </div>
         </div>
       )}
@@ -715,92 +747,128 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
         </div>
       </div>
 
-      {/* 3 Variation Selection Cards */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-            Step 1: Choose Your Story Variation for {activeDay.dayName}
-          </span>
-          <span className="text-xs text-neutral-500">
-            Click any variation to load its Frame Images & Video Prompts
-          </span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {activeDay.variations.map((v, vIdx) => {
-            const isSelected = activeVariationIndex === vIdx;
-            return (
-              <div
-                key={v.id}
-                onClick={() => setActiveVariationIndex(vIdx)}
-                className={`p-4 rounded-xl border text-left cursor-pointer transition relative flex flex-col justify-between ${
-                  isSelected
-                    ? 'bg-neutral-800/95 border-blue-500 text-white shadow-xl shadow-blue-500/10 ring-1 ring-blue-500/50'
-                    : 'bg-neutral-900/50 border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
+      {/* Canonical Daily Episode Header vs Multi-Variation Selection */}
+      {activeDay.variations.length === 1 ? (
+        <div className="bg-gradient-to-r from-neutral-900 via-neutral-900/90 to-neutral-950 p-4 sm:p-5 rounded-2xl border border-neutral-800 shadow-xl space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black px-2.5 py-1 rounded-md bg-blue-500/20 text-blue-400 border border-blue-500/30 uppercase tracking-wider font-mono">
+                {activeDay.dayName} • Canonical Episode
+              </span>
+              <span
+                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                  activeVariation.isProduced && activeVariation.clips && activeVariation.clips.length > 0
+                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
+                    : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                 }`}
               >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span
-                      className={`text-xs font-bold px-2.5 py-0.5 rounded-md ${
-                        isSelected
-                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                          : 'bg-neutral-950 text-neutral-400'
-                      }`}
-                    >
-                      {v.variationLabel}
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
-                        v.isProduced && v.clips && v.clips.length > 0
-                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
-                          : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                      }`}>
-                        {v.isProduced && v.clips && v.clips.length > 0 ? '🎬 Produced' : '📋 Mind Map'}
-                      </span>
-                      <span className="text-xs font-mono font-bold text-neutral-300">
-                        {v.critique.overallScore}% Score
-                      </span>
-                      {isSelected && <Check className="w-4 h-4 text-blue-400" />}
-                    </div>
-                  </div>
-                  <h4 className="text-sm font-semibold text-neutral-100 mb-1.5">{v.title}</h4>
-                  <p className="text-xs text-neutral-400 leading-relaxed line-clamp-2">{v.hookDescription}</p>
+                {activeVariation.isProduced && activeVariation.clips && activeVariation.clips.length > 0
+                  ? '🎬 Directing Ready'
+                  : '📋 Mind Map'}
+              </span>
+              <span className="text-xs font-mono font-bold text-neutral-400">
+                Quality Gate: {activeVariation.critique.overallScore}%
+              </span>
+            </div>
+            <span className="text-xs text-neutral-400 font-medium">
+              {activeDay.dailyEmotion}
+            </span>
+          </div>
 
-                  {/* Compact Mind Map Preview */}
-                  {v.dialogueScript && v.dialogueScript.length > 0 && (
-                    <div className="mt-2.5 pt-2.5 border-t border-neutral-800/70 space-y-1.5">
-                      <div className="flex items-center gap-1 text-[10px] text-neutral-400 font-mono">
-                        <span className="text-neutral-500">Arc:</span>
-                        {v.dialogueScript.map((d, dIdx) => (
-                          <React.Fragment key={dIdx}>
-                            <span className="font-semibold text-neutral-300 truncate max-w-[45px]">{d.speaker}</span>
-                            {dIdx < v.dialogueScript.length - 1 && <span className="text-neutral-600">➔</span>}
-                          </React.Fragment>
-                        ))}
-                      </div>
-                      {v.dialogueScript[0] && (
-                        <p className="text-[11px] text-neutral-400 italic line-clamp-1">
-                          &ldquo;{v.dialogueScript[0].line}&rdquo;
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="pt-3 mt-3 border-t border-neutral-800/60 flex items-center justify-between text-[11px]">
-                  <span className="text-neutral-500">
-                    {v.isProduced && v.clips && v.clips.length > 0
-                      ? `${v.clips.length} Clips (${v.clips.length * 10}s Arc)`
-                      : 'Stage 1: Mind Map Ready'}
-                  </span>
-                  <span className={isSelected ? 'text-blue-400 font-semibold' : 'text-neutral-500'}>
-                    {isSelected ? (v.isProduced && v.clips && v.clips.length > 0 ? '✓ Prompts Ready' : '✓ Viewing Mind Map') : 'Click to View'}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+          <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
+            {activeVariation.title}
+          </h3>
+          <p className="text-xs text-neutral-300 leading-relaxed max-w-4xl">
+            {activeVariation.hookDescription}
+          </p>
         </div>
-      </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+              Step 1: Choose Your Story Variation for {activeDay.dayName}
+            </span>
+            <span className="text-xs text-neutral-500">
+              Click any variation to load its Frame Images & Video Prompts
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {activeDay.variations.map((v, vIdx) => {
+              const isSelected = activeVariationIndex === vIdx;
+              return (
+                <div
+                  key={v.id}
+                  onClick={() => setActiveVariationIndex(vIdx)}
+                  className={`p-4 rounded-xl border text-left cursor-pointer transition relative flex flex-col justify-between ${
+                    isSelected
+                      ? 'bg-neutral-800/95 border-blue-500 text-white shadow-xl shadow-blue-500/10 ring-1 ring-blue-500/50'
+                      : 'bg-neutral-900/50 border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span
+                        className={`text-xs font-bold px-2.5 py-0.5 rounded-md ${
+                          isSelected
+                            ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                            : 'bg-neutral-950 text-neutral-400'
+                        }`}
+                      >
+                        {v.variationLabel}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                          v.isProduced && v.clips && v.clips.length > 0
+                            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
+                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                        }`}>
+                          {v.isProduced && v.clips && v.clips.length > 0 ? '🎬 Produced' : '📋 Mind Map'}
+                        </span>
+                        <span className="text-xs font-mono font-bold text-neutral-300">
+                          {v.critique.overallScore}% Score
+                        </span>
+                        {isSelected && <Check className="w-4 h-4 text-blue-400" />}
+                      </div>
+                    </div>
+                    <h4 className="text-sm font-semibold text-neutral-100 mb-1.5">{v.title}</h4>
+                    <p className="text-xs text-neutral-400 leading-relaxed line-clamp-2">{v.hookDescription}</p>
+
+                    {/* Compact Mind Map Preview */}
+                    {v.dialogueScript && v.dialogueScript.length > 0 && (
+                      <div className="mt-2.5 pt-2.5 border-t border-neutral-800/70 space-y-1.5">
+                        <div className="flex items-center gap-1 text-[10px] text-neutral-400 font-mono">
+                          <span className="text-neutral-500">Arc:</span>
+                          {v.dialogueScript.map((d, dIdx) => (
+                            <React.Fragment key={dIdx}>
+                              <span className="font-semibold text-neutral-300 truncate max-w-[45px]">{d.speaker}</span>
+                              {dIdx < v.dialogueScript.length - 1 && <span className="text-neutral-600">➔</span>}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                        {v.dialogueScript[0] && (
+                          <p className="text-[11px] text-neutral-400 italic line-clamp-1">
+                            &ldquo;{v.dialogueScript[0].line}&rdquo;
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="pt-3 mt-3 border-t border-neutral-800/60 flex items-center justify-between text-[11px]">
+                    <span className="text-neutral-500">
+                      {v.isProduced && v.clips && v.clips.length > 0
+                        ? `${v.clips.length} Clips (${v.clips.length * 10}s Arc)`
+                        : 'Stage 1: Mind Map Ready'}
+                    </span>
+                    <span className={isSelected ? 'text-blue-400 font-semibold' : 'text-neutral-500'}>
+                      {isSelected ? (v.isProduced && v.clips && v.clips.length > 0 ? '✓ Prompts Ready' : '✓ Viewing Mind Map') : 'Click to View'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Main Director Studio for Selected Variation */}
       <div className="space-y-6 pt-2 border-t border-neutral-800/80">
@@ -1129,6 +1197,14 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
                   />
                 ))}
               </div>
+
+              {/* Next Episode Sneak Peek Promo (Viral Retention Teaser) */}
+              {(activeDay.nextEpisodePromo || activeVariation.nextEpisodePromo) && (
+                <EpisodePromoCard
+                  promo={activeDay.nextEpisodePromo || activeVariation.nextEpisodePromo!}
+                  currentDayNumber={activeDay.dayNumber}
+                />
+              )}
             </div>
           </>
         )}
@@ -1264,6 +1340,16 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
         onClose={() => setShowHistoryModal(false)}
         onSelectBatch={onUpdateBatch}
       />
+
+      {/* Official Season Trailer Modal */}
+      {showSeasonTrailerModal && seasonTrailerToDisplay && (
+        <SeasonTrailerModal
+          trailer={seasonTrailerToDisplay}
+          seriesTitle={batch.spec.seriesTitle || batch.spec.customStoryIdea || 'Original Series'}
+          isOpen={showSeasonTrailerModal}
+          onClose={() => setShowSeasonTrailerModal(false)}
+        />
+      )}
     </div>
   );
 }
