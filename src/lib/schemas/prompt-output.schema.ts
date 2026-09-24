@@ -10,10 +10,38 @@ export const SecBySecActionSchema = z.object({
   sfxCue: z.string().optional(),
 });
 
+export const PlatformSocialMetadataSchema = z.object({
+  youtube: z.object({
+    title: z.string(),
+    description: z.string(),
+    tags: z.array(z.string()),
+    hashtags: z.array(z.string()),
+  }),
+  social: z.object({
+    caption: z.string(),
+    hashtags: z.array(z.string()),
+    commentCallToAction: z.string(),
+  }),
+});
+
+export const CleanLocationPlateSchema = z.object({
+  sceneNumber: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  sceneName: z.string(),
+  locationName: z.string(),
+  timeRange: z.string(),
+  cleanPlatePrompt: z.string(),
+  lightingAndAtmosphere: z.string(),
+});
+
 export const ClipPromptSchema = z.object({
   clipIndex: z.number().int().min(1),
   totalClips: z.number().int().min(1),
   sceneName: z.string(),
+  sceneNumber: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
+  sceneLocation: z.string().optional(),
+  eyelineDirection: z.enum(['screen-left', 'screen-right', 'center-forward']).optional(),
+  cleanPlateStartFramePrompt: z.string().optional(),
+  omniFlash11Prompt: z.string().optional(),
   locationAnchor: z.string(),
   masterKeyframeLock: z.string(),
   shotType: z.enum([
@@ -61,6 +89,7 @@ export const VideoVariationSchema = z.object({
   title: z.string(),
   hookDescription: z.string(),
   masterFrameImagePrompt: z.string().optional(),
+  cleanLocationPlates: z.array(CleanLocationPlateSchema).optional(),
   characterAnchors: z.array(
     z.object({
       characterName: z.string(),
@@ -86,6 +115,10 @@ export const VideoVariationSchema = z.object({
     hashtags: z.array(z.string()),
     audioVibe: z.string(),
   }),
+  dualMetadata: z.object({
+    episode: PlatformSocialMetadataSchema,
+    bts: PlatformSocialMetadataSchema,
+  }).optional(),
   critique: QualityCritiqueSchema,
   seriesContinuityRecap: z.string().optional(),
   isProduced: z.boolean().optional(),

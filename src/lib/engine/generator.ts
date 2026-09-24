@@ -337,11 +337,19 @@ export function generateWeeklyBatch(
       clips,
       dialogueScript: builtOutput.dialogueScript,
       seriesContinuityRecap: `Day ${dayNum} Continuity: ${arc.dailyEmotion}. Culminates in a psychological cliffhanger leading into Day ${(dayNum % 7) + 1}.`,
-      metadata: {
-        caption: `${builtOutput.title} 🎬 Generated with FlowCreator OS. #AIcinema #GoogleFlow #Storytelling #ViralContent`,
-        hashtags: ['#GoogleFlow', '#Veo', '#AIFilmmaking', '#ShortFilm', '#CreatorEconomy'],
-        audioVibe: spec.tone,
-      },
+      cleanLocationPlates: isMindMapOnly ? [] : (builtOutput as any).cleanLocationPlates,
+      dualMetadata: (builtOutput as any).dualMetadata,
+      metadata: (builtOutput as any).dualMetadata?.episode?.social
+        ? {
+            caption: (builtOutput as any).dualMetadata.episode.social.caption,
+            hashtags: (builtOutput as any).dualMetadata.episode.social.hashtags,
+            audioVibe: spec.tone,
+          }
+        : {
+            caption: `${builtOutput.title} 🎬 Generated with FlowCreator OS. #AIcinema #GoogleFlow #Storytelling #ViralContent`,
+            hashtags: ['#GoogleFlow', '#Veo', '#AIFilmmaking', '#ShortFilm', '#CreatorEconomy'],
+            audioVibe: spec.tone,
+          },
       isProduced: !isMindMapOnly,
       inUniversePosts: (builtOutput as any).inUniversePosts,
       sceneContinuityLock: (builtOutput as any).sceneContinuityLock,

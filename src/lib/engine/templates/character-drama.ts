@@ -1,8 +1,9 @@
-import { StorySpec, ClipPrompt, InUniversePostBundle, CastMember, SceneContinuityLock } from '@/types';
-import { generateLocationAnchorPrompt, enforceSpatialBlocking } from '../rules/spatial';
-import { generateSecBySecTimeline, buildCinematicFlowVeoPrompt } from '../rules/temporal';
+import { StorySpec, ClipPrompt, InUniversePostBundle, CastMember, SceneContinuityLock, CleanLocationPlate, PlatformSocialMetadata } from '@/types';
+import { generateLocationAnchorPrompt, generateCleanLocationPlatePrompt, enforceSpatialBlocking, enforceEyelineBlocking } from '../rules/spatial';
+import { generateSecBySecTimeline, buildCinematicFlowVeoPrompt, buildOmniFlash11Directive } from '../rules/temporal';
 import { calculateWordCount } from '../rules/retention';
 import { resolveEpisodeContinuity, buildContinuityFramePrompt } from '../rules/continuity';
+import { resolve7DayMultiScenePlot, generateVIPBehindTheScenesPost, generateDualCrossPlatformMetadata } from './drama-multi-scene';
 
 export interface PlotClipDef {
   speakerName: string;
@@ -1443,25 +1444,46 @@ export function buildCharacterDramaClips(
   const char2 = spec.cast[1] || noirDefaults[1];
   const location = spec.locationSettings[0] || 'Penthouse Study at Night';
 
-  // Dynamic plot resolution: adapts to custom premise, variation type, or existing variation dialogue!
-  const activePlot = resolveDynamicDramaPlot(
+  // 7-Day 3-Scene 6-Clip Multi-Scene Plot Engine (Gemini Omni Flash 1.1)
+  const multiScenePlot = resolve7DayMultiScenePlot(
     spec,
     dayNum,
     variationType,
     char1,
     char2,
-    location,
     existingVariation
   );
 
-  const title = activePlot.title;
-  const hookDescription = activePlot.hook;
+  const title = multiScenePlot.title;
+  const hookDescription = multiScenePlot.hook;
   const continuity = resolveEpisodeContinuity(spec, dayNum, title, 'character_drama');
 
-  const clips: ClipPrompt[] = activePlot.clips.map((cDef, idx) => {
-    const isLast = idx === activePlot.clips.length - 1;
+  // 100% Human-Free Clean Location Plates for Scenes 1, 2, 3 (Start-Frame Anchors)
+  const cleanLocationPlates: CleanLocationPlate[] = multiScenePlot.scenes.map((s) => ({
+    sceneNumber: s.sceneNumber,
+    sceneName: s.sceneName,
+    locationName: s.locationName,
+    timeRange: s.timeRange,
+    cleanPlatePrompt: generateCleanLocationPlatePrompt(s.locationName, spec.visualStyle, s.lightingTheme, s.sceneNumber),
+    lightingAndAtmosphere: s.lightingTheme,
+  }));
+
+  // Build 6 clips with Gemini Omni Flash 1.1 Directives & 180-Degree Cinema Eyeline Matching
+  const clips: ClipPrompt[] = multiScenePlot.clips.map((cDef, idx) => {
+    const isLast = idx === multiScenePlot.clips.length - 1;
     const activeChar = cDef.speakerName === char2.name ? char2 : char1;
     const silentList = cDef.silentNames.map((name) => (name === char2.name ? char2 : char1));
+    const counterpartChar = silentList[0] || (activeChar.name === char1.name ? char2 : char1);
+
+    const activeWardrobe =
+      continuity.wardrobeLocks.find(
+        (w) => w.characterName.toLowerCase() === activeChar.name.toLowerCase()
+      )?.exactOutfit || continuity.wardrobeLocks[0]?.exactOutfit || 'Tailored bespoke dark styling';
+
+    const eyelineRule = enforceEyelineBlocking(activeChar.name, cDef.eyelineDirection, counterpartChar.name);
+
+    const matchingPlate = cleanLocationPlates.find((p) => p.sceneNumber === cDef.sceneNumber);
+    const cleanPlatePrompt = matchingPlate ? matchingPlate.cleanPlatePrompt : cleanLocationPlates[0]?.cleanPlatePrompt || '';
 
     const timeline = generateSecBySecTimeline(
       activeChar.name,
@@ -1475,71 +1497,70 @@ export function buildCharacterDramaClips(
       isLast
         ? '1-second suspended breath before delivering the final revelation line.'
         : '1.5-second measured dramatic pause; heavy silence, calm breath intake before speech.',
-      isLast // ONLY TRUE FOR THE VERY LAST CLIP!
+      isLast
     );
+
+    const omniFlash11Prompt = buildOmniFlash11Directive({
+      cameraFramingAndMotion: idx % 2 === 0
+        ? 'Slow steady dolly push-in, medium close-up, 50mm prime lens'
+        : 'Static locked reverse angle, tight medium close-up, 85mm portrait telephoto lens',
+      lensAndStyle: `${spec.visualStyle}, shallow depth of field f/1.8, 35mm film grain, 4K UHD`,
+      lightingTheme: cDef.lightingTheme,
+      locationName: cDef.sceneLocation,
+      speakerName: activeChar.name,
+      counterpartName: counterpartChar.name,
+      wardrobe: activeWardrobe,
+      eyelineDirective: eyelineRule.facingDirective,
+      actionAndMicroExpression: cDef.action,
+      dialogue: cDef.dialogue,
+      foleyAndAudio: isLast
+        ? 'Sharp suspense string riser, sudden sub-bass drop, clean audio blackout'
+        : 'Subtle tense room reverb, directional dialogue resonance, continuous background acoustic ambience',
+      clipIndex: idx + 1,
+      totalClips: multiScenePlot.clips.length,
+      sceneName: cDef.sceneName,
+    });
 
     const flowPrompt = buildCinematicFlowVeoPrompt({
       seriesTitle: spec.seriesTitle,
       seasonNumber: spec.seasonNumber || 1,
       seasonTitle: spec.seasonTitle,
       episodeNumber: dayNum,
-      episodeTitle: activePlot.title.replace(/^Ep \d+:\s*/, '').split(' - ')[0],
+      episodeTitle: title.replace(/^Ep \d+:\s*/, '').split(' - ')[0],
       clipIndex: idx + 1,
-      totalClips: activePlot.clips.length,
+      totalClips: multiScenePlot.clips.length,
       sceneName: cDef.sceneName,
       shotType: cDef.shotType,
-      locationAnchor: location,
+      locationAnchor: cDef.sceneLocation,
       activeSpeaker: {
         name: activeChar.name,
         dnaPrompt: activeChar.dnaPrompt,
-        voiceTone:
-          activeChar.role === 'Hero'
-            ? 'Intense baritone, authoritative focus, crisp English articulation'
-            : 'Poised, cold, resonant feminine cadence, unwavering composure',
+        voiceTone: activeChar.role === 'Hero'
+          ? 'Intense baritone, authoritative focus, crisp articulation'
+          : 'Poised, cold, resonant feminine cadence, unwavering composure',
       },
       silentCharacters: silentList.map((s) => ({ name: s.name, dnaPrompt: s.dnaPrompt })),
       dialogue: cDef.dialogue,
-      cameraSetup:
-        cDef.cameraSetup ||
-        '85mm cinematic portrait lens, f/1.8 shallow depth of field, anamorphic lens flares from rain streaks on window.',
-      lightingTheme:
-        'Moody chiaroscuro cinema lighting, deep shadows, warm mahogany reflections, cool blue rim light on jawline.',
+      cameraSetup: cDef.cameraSetup,
+      lightingTheme: cDef.lightingTheme,
       timeline,
-      cliffhangerNote: isLast
-        ? 'Clip abruptly cuts to black at 0:09.5s on a suspended high-stakes revelation and audio drop.'
-        : undefined,
-      negativePromptDirectives:
-        'morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter.',
-      vocalModulation:
-        activeChar.role === 'Hero'
-          ? 'Delivery starts with calm, quiet restraint (narmi), gradually hardening into a sharp, steely edge of legal authority (sakhti), dropping to a cold whisper on the final name.'
-          : 'Voice starts with an icy, dismissive calm (narmi), shifting into an unflinching, steely cadence of executive certainty (sakhti) without raising volume.',
+      cliffhangerNote: isLast ? 'Clip abruptly cuts to black at 0:09.5s on suspended revelation.' : undefined,
+      negativePromptDirectives: 'morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter.',
     });
-
-    const activeWardrobe =
-      continuity.wardrobeLocks.find(
-        (w) => w.characterName.toLowerCase() === activeChar.name.toLowerCase()
-      )?.exactOutfit || continuity.wardrobeLocks[0]?.exactOutfit || 'Tailored bespoke dark styling';
-
-    const counterpartChar = silentList[0] || (activeChar.name === char1.name ? char2 : char1);
 
     const frameImagePrompt = buildContinuityFramePrompt({
       clipIndex: idx + 1,
-      totalClips: activePlot.clips.length,
+      totalClips: multiScenePlot.clips.length,
       activeSpeaker: activeChar.name,
       counterpart: counterpartChar.name,
-      location,
+      location: cDef.sceneLocation,
       sceneName: cDef.sceneName,
       actionText: cDef.action,
       continuity,
     });
 
     const continuityRole: 'master_anchor' | 'reverse_angle_match' | 'culmination_match' =
-      idx === 0
-        ? 'master_anchor'
-        : idx === 1
-        ? 'reverse_angle_match'
-        : 'culmination_match';
+      idx === 0 ? 'master_anchor' : idx === 1 ? 'reverse_angle_match' : 'culmination_match';
 
     const continuityReferenceTag =
       idx === 0
@@ -1548,13 +1569,15 @@ export function buildCharacterDramaClips(
 
     return {
       clipIndex: idx + 1,
-      totalClips: activePlot.clips.length,
+      totalClips: multiScenePlot.clips.length,
       sceneName: cDef.sceneName,
-      locationAnchor: location,
-      masterKeyframeLock: `Master frame of ${location}. ${enforceSpatialBlocking(
-        activeChar.name,
-        silentList.map((s) => s.name)
-      )} Wardrobe: ${activeWardrobe}. ${continuity.lightingSetup}.`,
+      sceneNumber: cDef.sceneNumber,
+      sceneLocation: cDef.sceneLocation,
+      eyelineDirection: cDef.eyelineDirection,
+      cleanPlateStartFramePrompt: cleanPlatePrompt,
+      omniFlash11Prompt,
+      locationAnchor: cDef.sceneLocation,
+      masterKeyframeLock: `Clean plate of ${cDef.sceneLocation}. ${eyelineRule.blockingText} Wardrobe: ${activeWardrobe}. ${cDef.lightingTheme}.`,
       shotType: cDef.shotType,
       frameImagePrompt,
       speakerIsolation: {
@@ -1564,10 +1587,10 @@ export function buildCharacterDramaClips(
         cameraCutApplied: true,
       },
       timeline,
-      flowPromptText: flowPrompt,
+      flowPromptText: omniFlash11Prompt || flowPrompt,
       retentionHookReasoning: isLast
         ? 'Abrupt 0:09.5s cutoff on tangible mystery forces audience to binge next episode.'
-        : 'Continuous scene momentum with seamless match-cut to counterpart.',
+        : 'Continuous scene momentum with seamless 180-degree match-cut to counterpart.',
       pacingWordCount: calculateWordCount(cDef.dialogue),
       sceneWardrobe: activeWardrobe,
       continuityRole,
@@ -1575,10 +1598,56 @@ export function buildCharacterDramaClips(
     };
   });
 
+  // Dual Cross-Platform Metadata (YouTube SEO + Instagram/TikTok/Facebook)
+  const dualMetadata = generateDualCrossPlatformMetadata({
+    seriesTitle: spec.seriesTitle || 'The Trust Betrayal',
+    seasonNumber: spec.seasonNumber || 1,
+    dayNum,
+    episodeTitle: title,
+    hook: hookDescription,
+    char1Name: char1.name,
+    char2Name: char2.name,
+    scenes: multiScenePlot.scenes,
+    lastCliffhangerDialogue: multiScenePlot.clips[multiScenePlot.clips.length - 1]?.dialogue || '',
+  });
+
+  // VIP Behind-The-Scenes (BTS) Post
+  const btsPost = generateVIPBehindTheScenesPost({
+    dayNum,
+    seriesTitle: spec.seriesTitle || 'The Trust Betrayal',
+    char1,
+    char2,
+    scene1Location: multiScenePlot.scenes[0]?.locationName || location,
+  });
+
+  const inUniversePosts: InUniversePostBundle = {
+    btsPost: {
+      ...btsPost,
+      metadata: dualMetadata.bts,
+    },
+    propPost: {
+      title: `Ep ${dayNum} Forensic Clue: Official Trust Transfer Certificate`,
+      imagePrompt: `Macro close-up forensic photograph of confidential stock certificates dated 02:14 AM spread across dark mahogany desk in ${multiScenePlot.scenes[0]?.locationName || location}. Official red wax seal, Montblanc pen resting nearby, sharp chiaroscuro lighting, 8k resolution.`,
+      caption: `The document that started the war. Notice the timestamp: 02:14 AM. Who signed it first? 🔍`,
+      hashtags: ['#DramaClue', '#ForensicProp', '#DramaSeries', '#MysteryUnsolved'],
+      clueName: 'Forged Trust Transfer Certificate',
+    },
+    candidPost: {
+      title: `Ep ${dayNum} In-Character Mood: Overlooking the City`,
+      imagePrompt: `Cinematic 35mm portrait of ${char1.name} in tailored dark bespoke suit standing in ${multiScenePlot.scenes[1]?.locationName || location}, looking through rain-streaked glass into night city skyline lights, holding crystal glass, moody blue lighting, hyper-realistic.`,
+      caption: `“Once you cross the line, there is no going back.” Ep ${dayNum} drops tonight. 🍸`,
+      hashtags: ['#CharacterMood', '#CinematicDrama', '#ShortFilm', '#ActorInCharacter'],
+      moodDescription: 'Nocturnal brooding suspense and resolve',
+    },
+  };
+
   return {
     title,
     hookDescription,
     clips,
+    cleanLocationPlates,
+    dualMetadata,
+    inUniversePosts,
     characterAnchors: [
       {
         characterName: char1.name,
@@ -1589,16 +1658,14 @@ export function buildCharacterDramaClips(
         anchorPrompt: `[MASTER CHARACTER REFERENCE ANCHOR]: ${char2.name}. ${char2.dnaPrompt} Global Hollywood / Netflix Noir aesthetic. ARRI Alexa LF 85mm prime lens, volumetric chiaroscuro studio lighting, neutral dark studio backdrop. Generate and save this master portrait once, then attach as Reference Image in all video prompts to eliminate face drift.`,
       },
     ],
-    locationAnchors: [
-      {
-        locationName: location,
-        anchorPrompt: generateLocationAnchorPrompt(location, spec.visualStyle, spec.tone),
-      },
-    ],
-    dialogueScript: activePlot.clips.map((c, idx) => ({
+    locationAnchors: cleanLocationPlates.map((p) => ({
+      locationName: p.locationName,
+      anchorPrompt: p.cleanPlatePrompt,
+    })),
+    dialogueScript: multiScenePlot.clips.map((c, idx) => ({
       speaker: c.speakerName,
       line: c.dialogue,
-      timing: `0:${idx * 10 < 10 ? '0' : ''}${idx * 10 + 2} - 0:${idx * 10 + 7}`,
+      timing: `0:${idx * 10 < 10 ? '0' : ''}${idx * 10 + 2} - 0:${idx * 10 + 8}`,
     })),
     sceneContinuityLock: {
       masterKeyframeIndex: 1,

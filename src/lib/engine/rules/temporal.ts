@@ -236,3 +236,38 @@ ${timelineFormatted}
 ${params.cliffhangerNote ? `[CLIFFHANGER NOTE]: ${params.cliffhangerNote}\n` : '[TRANSITION NOTE]: Seamless match-cut to subsequent reverse shot. No black cut. Continuous ambient room acoustic drone.\n'}[AUDIO & FOLEY SOUND DESIGN]: Crisp isolated dialogue audio in English, room acoustics, low tension drone, zero speech overlap.
 [NEGATIVE DIRECTIVES]: ${safeNegativeDirectives}`;
 }
+
+export interface OmniFlash11Params {
+  cameraFramingAndMotion: string;
+  lensAndStyle: string;
+  lightingTheme: string;
+  locationName: string;
+  speakerName: string;
+  counterpartName?: string;
+  wardrobe: string;
+  eyelineDirective: string;
+  actionAndMicroExpression: string;
+  dialogue: string;
+  foleyAndAudio?: string;
+  clipIndex: number;
+  totalClips: number;
+  sceneName: string;
+}
+
+/**
+ * Builds the official lean 5-layer prompt for Gemini Omni Flash 1.1 (10-second video clips).
+ * Camera-first structure, start-frame clean plate pinning, eyeline match, and native dialogue sync.
+ */
+export function buildOmniFlash11Directive(params: OmniFlash11Params): string {
+  const audioCue = params.foleyAndAudio
+    ? `${params.foleyAndAudio}, realistic room acoustic ambience.`
+    : 'natural room reverberation, subtle background tension drone, zero audio overlap.';
+
+  return `[GEMINI OMNI FLASH 1.1 - 10s DIRECTIVE | CLIP ${params.clipIndex}/${params.totalClips} | ${params.sceneName.toUpperCase()}]
+Camera: ${params.cameraFramingAndMotion}
+Style: ${params.lensAndStyle}, 9:16 vertical video (Shorts/Reels/TikTok), 24fps motion cadence, ultra-realistic skin micro-texture.
+Lighting: ${params.lightingTheme}
+Setting: ${params.locationName}. [START-FRAME PIN: Anchored to clean location plate with identical lighting & shadows].
+Subject & Action: ${params.speakerName} wearing ${params.wardrobe}. ${params.eyelineDirective}. ${params.actionAndMicroExpression}
+Audio & Lip-Sync: Native synchronized speech: "${params.dialogue}". Realistic mouth and facial muscle articulation, ${audioCue}`;
+}

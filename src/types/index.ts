@@ -195,15 +195,43 @@ export interface SecBySecAction {
 }
 
 
+export interface PlatformSocialMetadata {
+  youtube: {
+    title: string;
+    description: string; // up to 1000 characters with timestamps, synopsis, cast & CTA
+    tags: string[];
+    hashtags: string[];
+  };
+  social: { // Instagram, TikTok, Facebook
+    caption: string; // up to 300 characters with hook & comment debate question
+    hashtags: string[];
+    commentCallToAction: string;
+  };
+}
+
+export interface CleanLocationPlate {
+  sceneNumber: 1 | 2 | 3;
+  sceneName: string;
+  locationName: string;
+  timeRange: string; // e.g. "00s - 20s"
+  cleanPlatePrompt: string; // 100% human-free cinematic plate prompt
+  lightingAndAtmosphere: string;
+}
+
 export interface ClipPrompt {
   clipIndex: number;
   totalClips: number;
   sceneName: string;
+  sceneNumber?: 1 | 2 | 3;
+  sceneLocation?: string;
+  eyelineDirection?: 'screen-left' | 'screen-right' | 'center-forward';
+  cleanPlateStartFramePrompt?: string;
+  omniFlash11Prompt?: string; // Specialized Gemini Omni Flash 1.1 camera-first prompt
   locationAnchor: string;
   masterKeyframeLock: string;
   shotType: 'Master Wide' | 'Shot-Reverse-Shot Close-Up' | 'Over-the-Shoulder' | 'Dynamic Tracking' | 'Point of View';
   frameImagePrompt: string; // The exact prompt to generate the starting keyframe/video frame image
-  flowPromptText: string; // Full video motion directive for Google Flow
+  flowPromptText: string; // Full video motion directive for Google Flow / Omni Flash 1.1
   speakerIsolation: {
     activeSpeaker: string;
     speakingDialogue: string;
@@ -246,6 +274,7 @@ export interface VideoVariation {
   title: string;
   hookDescription: string;
   masterFrameImagePrompt?: string;
+  cleanLocationPlates?: CleanLocationPlate[]; // 3 human-free location plates for Scenes 1, 2, 3
   characterAnchors: {
     characterName: string;
     anchorPrompt: string;
@@ -265,6 +294,10 @@ export interface VideoVariation {
     hashtags: string[];
     audioVibe: string;
   };
+  dualMetadata?: {
+    episode: PlatformSocialMetadata;
+    bts: PlatformSocialMetadata;
+  };
   critique: QualityCritique;
   seriesContinuityRecap?: string; // Episode plot continuity & cliffhanger note
   isProduced?: boolean; // True when full frame prompts and Flow motion directives have been produced
@@ -280,6 +313,7 @@ export interface InUniversePostBundle {
     caption: string;
     hashtags: string[];
     angleDescription: string;
+    metadata?: PlatformSocialMetadata;
   };
   propPost: {
     title: string;

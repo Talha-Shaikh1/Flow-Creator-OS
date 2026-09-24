@@ -65,6 +65,11 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showSeasonTrailerModal, setShowSeasonTrailerModal] = useState(false);
   const [adoptedDays, setAdoptedDays] = useState<Record<number, boolean>>({});
+  const [copiedPlateIdx, setCopiedPlateIdx] = useState<number | null>(null);
+  const [socialMetadataTab, setSocialMetadataTab] = useState<'episode' | 'bts'>('episode');
+  const [copiedYtDesc, setCopiedYtDesc] = useState(false);
+  const [copiedYtTags, setCopiedYtTags] = useState(false);
+  const [copiedSocialCaption, setCopiedSocialCaption] = useState(false);
 
   // Track generated clips: key is `${dayNumber}-${variationId}-clip-${clipIndex}`
   const [generatedClips, setGeneratedClips] = useState<Record<string, boolean>>({});
@@ -1065,6 +1070,69 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
               </div>
             )}
 
+            {/* Clean Location Plates for Omni Flash 1.1 / Google Flow (3 Distinct Scenes) */}
+            {activeVariation.cleanLocationPlates && activeVariation.cleanLocationPlates.length > 0 && (
+              <div className="bg-gradient-to-r from-neutral-900 via-indigo-950/30 to-neutral-900 border border-indigo-500/30 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xl">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                      <Layers className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-bold text-white tracking-wide">
+                          Clean Location Plates (3 Dynamic Scenes)
+                        </h4>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          100% HUMAN-FREE START FRAMES
+                        </span>
+                      </div>
+                      <p className="text-xs text-neutral-400">
+                        Zero humans / empty backgrounds. Upload each plate as the Start-Frame in Gemini Omni Flash 1.1 to anchor zero-drift room backgrounds!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {activeVariation.cleanLocationPlates.map((plate) => (
+                    <div key={plate.sceneNumber} className="bg-neutral-950/80 border border-neutral-800 rounded-xl p-3.5 flex flex-col justify-between space-y-2.5">
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            Scene {plate.sceneNumber} ({plate.timeRange})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(plate.cleanPlatePrompt);
+                              setCopiedPlateIdx(plate.sceneNumber);
+                              setTimeout(() => setCopiedPlateIdx(null), 2000);
+                            }}
+                            className={`px-2 py-0.5 text-[11px] font-semibold rounded flex items-center gap-1 transition border ${
+                              copiedPlateIdx === plate.sceneNumber
+                                ? 'bg-emerald-500 text-white border-emerald-400'
+                                : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border-neutral-700'
+                            }`}
+                          >
+                            {copiedPlateIdx === plate.sceneNumber ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                            <span>{copiedPlateIdx === plate.sceneNumber ? 'Copied Plate!' : 'Copy Plate'}</span>
+                          </button>
+                        </div>
+                        <h5 className="text-xs font-bold text-white line-clamp-1">{plate.locationName}</h5>
+                        <pre className="mt-1 text-[11px] text-neutral-300 font-mono bg-neutral-900/90 p-2 rounded border border-neutral-800/80 whitespace-pre-wrap max-h-24 overflow-y-auto leading-relaxed">
+                          {plate.cleanPlatePrompt}
+                        </pre>
+                      </div>
+                      <div className="text-[10px] text-neutral-500 italic">
+                        Start-Frame Anchor for Clips {plate.sceneNumber * 2 - 1} & {plate.sceneNumber * 2}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Clips Grid */}
             <div className="space-y-4">
               {/* Proactive 3-Step Production Guide Ribbon */}
@@ -1245,34 +1313,305 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
           />
         )}
 
-        {/* Metadata & Script Footer */}
-        <div className="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5 space-y-3">
-
-          <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-neutral-400" />
-            Social Publishing Metadata
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <div>
-              <span className="text-neutral-500">Suggested Caption:</span>
-              <p className="text-neutral-300 mt-1 font-mono bg-neutral-950 p-2.5 rounded border border-neutral-800">
-                {activeVariation.metadata.caption}
-              </p>
+        {/* Dual Cross-Platform Metadata (Episode Video + BTS Post) */}
+        <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-5 space-y-4 shadow-xl">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800 pb-3">
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-indigo-400" />
+              <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                Cross-Platform Viral Publishing Kit (YouTube • Insta • TikTok • FB)
+              </h4>
             </div>
-            <div>
-              <span className="text-neutral-500">Optimized Hashtags:</span>
-              <div className="flex flex-wrap gap-1.5 mt-1">
-                {activeVariation.metadata.hashtags.map((tag, i) => (
-                  <span
-                    key={i}
-                    className="px-2 py-1 rounded bg-neutral-950 border border-neutral-800 text-indigo-400 font-mono"
-                  >
-                    {tag}
-                  </span>
-                ))}
+
+            {/* Tab Selector: Episode Video vs Behind-The-Scenes */}
+            {activeVariation.dualMetadata && (
+              <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setSocialMetadataTab('episode')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+                    socialMetadataTab === 'episode'
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  <span>🎬 Episode Video Metadata</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSocialMetadataTab('bts')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+                    socialMetadataTab === 'bts'
+                      ? 'bg-amber-600 text-white shadow-md'
+                      : 'text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  <span>📸 BTS Post Metadata</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {activeVariation.dualMetadata ? (
+            <div className="space-y-4">
+              {socialMetadataTab === 'episode' ? (
+                /* EPISODE METADATA SUITE */
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* YouTube Column */}
+                  <div className="bg-neutral-950/80 border border-red-500/20 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+                        🔴 YouTube (Shorts & VOD SEO)
+                      </span>
+                      <span className="text-[10px] text-neutral-500">Up to 1,000 Chars • Timestamps Included</span>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] text-neutral-400 block mb-1">Clickbait High-CTR Title (&lt;70 chars):</span>
+                      <div className="flex items-center justify-between bg-neutral-900 px-3 py-2 rounded-lg border border-neutral-800 text-xs text-neutral-100 font-semibold">
+                        <span className="truncate">{activeVariation.dualMetadata.episode.youtube.title}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(activeVariation.dualMetadata?.episode.youtube.title || '');
+                            setCopiedSocialCaption(true);
+                            setTimeout(() => setCopiedSocialCaption(false), 2000);
+                          }}
+                          className="text-[11px] text-indigo-400 hover:text-indigo-300 ml-2 shrink-0"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[11px] text-neutral-400">SEO Description (1,000 Chars):</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(activeVariation.dualMetadata?.episode.youtube.description || '');
+                            setCopiedYtDesc(true);
+                            setTimeout(() => setCopiedYtDesc(false), 2000);
+                          }}
+                          className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                        >
+                          {copiedYtDesc ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                          <span>{copiedYtDesc ? 'Copied Desc!' : 'Copy Description'}</span>
+                        </button>
+                      </div>
+                      <pre className="text-xs text-neutral-300 font-mono bg-neutral-900 p-3 rounded-lg border border-neutral-800 whitespace-pre-wrap max-h-40 overflow-y-auto leading-relaxed">
+                        {activeVariation.dualMetadata.episode.youtube.description}
+                      </pre>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[11px] text-neutral-400">High-Ranking Search Tags:</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(activeVariation.dualMetadata?.episode.youtube.tags.join(', ') || '');
+                            setCopiedYtTags(true);
+                            setTimeout(() => setCopiedYtTags(false), 2000);
+                          }}
+                          className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                        >
+                          {copiedYtTags ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                          <span>{copiedYtTags ? 'Copied Tags!' : 'Copy All Tags'}</span>
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {activeVariation.dualMetadata.episode.youtube.tags.map((t, idx) => (
+                          <span key={idx} className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-[10px] text-neutral-400 font-mono">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Instagram / TikTok / Facebook Column */}
+                  <div className="bg-neutral-950/80 border border-pink-500/20 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-pink-400 uppercase tracking-wider flex items-center gap-1.5">
+                        📱 Instagram • TikTok • Facebook Reels
+                      </span>
+                      <span className="text-[10px] text-neutral-500">&lt;300 Chars • Comment Debate Trigger</span>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[11px] text-neutral-400">Viral Hook Caption:</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const full = `${activeVariation.dualMetadata?.episode.social.caption}\n\n${activeVariation.dualMetadata?.episode.social.hashtags.join(' ')}`;
+                            navigator.clipboard.writeText(full);
+                            setCopiedSocialCaption(true);
+                            setTimeout(() => setCopiedSocialCaption(false), 2000);
+                          }}
+                          className="text-[11px] text-pink-400 hover:text-pink-300 flex items-center gap-1"
+                        >
+                          {copiedSocialCaption ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                          <span>{copiedSocialCaption ? 'Copied Caption!' : 'Copy Caption + Tags'}</span>
+                        </button>
+                      </div>
+                      <pre className="text-xs text-neutral-200 font-sans bg-neutral-900 p-3 rounded-lg border border-neutral-800 whitespace-pre-wrap max-h-36 overflow-y-auto leading-relaxed">
+                        {activeVariation.dualMetadata.episode.social.caption}
+                      </pre>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] text-neutral-400 block mb-1">High-Velocity Viral Hashtags:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {activeVariation.dualMetadata.episode.social.hashtags.map((tag, i) => (
+                          <span
+                            key={i}
+                            className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-pink-400 font-mono text-[11px]"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* BEHIND-THE-SCENES (BTS) METADATA SUITE */
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* YouTube BTS Column */}
+                  <div className="bg-neutral-950/80 border border-amber-500/20 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                        🔴 YouTube BTS (Filmmaking & Gear)
+                      </span>
+                      <span className="text-[10px] text-neutral-500">Camera Rig & Director Lore</span>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] text-neutral-400 block mb-1">BTS Video Title:</span>
+                      <div className="flex items-center justify-between bg-neutral-900 px-3 py-2 rounded-lg border border-neutral-800 text-xs text-neutral-100 font-semibold">
+                        <span className="truncate">{activeVariation.dualMetadata.bts.youtube.title}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(activeVariation.dualMetadata?.bts.youtube.title || '');
+                            setCopiedSocialCaption(true);
+                            setTimeout(() => setCopiedSocialCaption(false), 2000);
+                          }}
+                          className="text-[11px] text-amber-400 hover:text-amber-300 ml-2 shrink-0"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[11px] text-neutral-400">Cinematography Breakdown (1,000 Chars):</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(activeVariation.dualMetadata?.bts.youtube.description || '');
+                            setCopiedYtDesc(true);
+                            setTimeout(() => setCopiedYtDesc(false), 2000);
+                          }}
+                          className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1"
+                        >
+                          {copiedYtDesc ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                          <span>{copiedYtDesc ? 'Copied!' : 'Copy BTS Desc'}</span>
+                        </button>
+                      </div>
+                      <pre className="text-xs text-neutral-300 font-mono bg-neutral-900 p-3 rounded-lg border border-neutral-800 whitespace-pre-wrap max-h-40 overflow-y-auto leading-relaxed">
+                        {activeVariation.dualMetadata.bts.youtube.description}
+                      </pre>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] text-neutral-400 block mb-1">BTS Search Tags:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {activeVariation.dualMetadata.bts.youtube.tags.map((t, idx) => (
+                          <span key={idx} className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-[10px] text-amber-300/80 font-mono">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Social BTS Column */}
+                  <div className="bg-neutral-950/80 border border-amber-500/20 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                        📱 Social BTS (Reels, TikTok, FB Post)
+                      </span>
+                      <span className="text-[10px] text-neutral-500">Actor Chemistry & Bloopers</span>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[11px] text-neutral-400">BTS Trivia Caption (&lt;300 chars):</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const full = `${activeVariation.dualMetadata?.bts.social.caption}\n\n${activeVariation.dualMetadata?.bts.social.hashtags.join(' ')}`;
+                            navigator.clipboard.writeText(full);
+                            setCopiedSocialCaption(true);
+                            setTimeout(() => setCopiedSocialCaption(false), 2000);
+                          }}
+                          className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1"
+                        >
+                          {copiedSocialCaption ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                          <span>{copiedSocialCaption ? 'Copied!' : 'Copy BTS Caption'}</span>
+                        </button>
+                      </div>
+                      <pre className="text-xs text-neutral-200 font-sans bg-neutral-900 p-3 rounded-lg border border-neutral-800 whitespace-pre-wrap max-h-36 overflow-y-auto leading-relaxed">
+                        {activeVariation.dualMetadata.bts.social.caption}
+                      </pre>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] text-neutral-400 block mb-1">BTS Viral Hashtags:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {activeVariation.dualMetadata.bts.social.hashtags.map((tag, i) => (
+                          <span
+                            key={i}
+                            className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-amber-400 font-mono text-[11px]"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Fallback simple metadata */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div>
+                <span className="text-neutral-500">Suggested Caption:</span>
+                <p className="text-neutral-300 mt-1 font-mono bg-neutral-950 p-2.5 rounded border border-neutral-800">
+                  {activeVariation.metadata.caption}
+                </p>
+              </div>
+              <div>
+                <span className="text-neutral-500">Optimized Hashtags:</span>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {activeVariation.metadata.hashtags.map((tag, i) => (
+                    <span
+                      key={i}
+                      className="px-2 py-1 rounded bg-neutral-950 border border-neutral-800 text-indigo-400 font-mono"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

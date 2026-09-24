@@ -188,6 +188,25 @@ export function ClipCard({
             CLIP {clip.clipIndex} OF {clip.totalClips} (10s)
           </span>
 
+          {clip.sceneNumber && (
+            <span className="px-2 py-0.5 text-[11px] font-bold rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+              📍 Scene {clip.sceneNumber}
+            </span>
+          )}
+
+          {clip.eyelineDirection && (
+            <span
+              className={`px-2 py-0.5 text-[11px] font-bold rounded flex items-center gap-1 border ${
+                clip.eyelineDirection === 'screen-right'
+                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                  : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+              }`}
+              title="180-degree cinema match: guarantees characters face each other across cuts"
+            >
+              {clip.eyelineDirection === 'screen-right' ? '➔ Screen-Right Eyeline' : '⬅ Screen-Left Eyeline'}
+            </span>
+          )}
+
           {clip.continuityRole === 'master_anchor' || clip.clipIndex === 1 ? (
             <span className="px-2 py-0.5 text-[11px] font-bold rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
               🎯 Master Anchor Keyframe
@@ -503,10 +522,10 @@ export function ClipCard({
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
               <Video className="w-4 h-4 text-blue-400" />
-              Step 2: 10s Video Motion Directive (Google Flow Veo)
+              Step 2: 10s Video Motion Directive (Gemini Omni Flash 1.1 / Google Flow)
             </label>
             <p className="text-[11px] text-neutral-400 mt-0.5">
-              Upload Step 1&apos;s generated frame image as starting frame, then paste this motion directive.
+              Upload Clean Location Plate as Start Frame, then paste this lean camera & dialogue directive.
             </p>
           </div>
           <button
