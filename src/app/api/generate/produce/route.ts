@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     const unvalidated = {
       id: variationId || `day-${dayNumber}-${variationType.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-      variationLabel: existingVariation?.variationLabel || (`Variation (${variationType})` as any),
+      variationLabel: existingVariation?.variationLabel || 'Canonical Episode',
       title: produced.title,
       hookDescription: produced.hookDescription,
       characterAnchors: produced.characterAnchors,
