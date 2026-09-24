@@ -261,13 +261,17 @@ export interface OmniFlash11Params {
 export function buildOmniFlash11Directive(params: OmniFlash11Params): string {
   const audioCue = params.foleyAndAudio
     ? `${params.foleyAndAudio}, realistic room acoustic ambience.`
-    : 'natural room reverberation, subtle background tension drone, zero audio overlap.';
+    : 'natural room reverberation, subtle background tension drone, zero speech overlap.';
+
+  const counterpartSilence = params.counterpartName
+    ? `[${params.counterpartName.toUpperCase()}: 100% SILENT, LIPS SEALED, LISTENING REACTION]. `
+    : '';
 
   return `[GEMINI OMNI FLASH 1.1 - 10s DIRECTIVE | CLIP ${params.clipIndex}/${params.totalClips} | ${params.sceneName.toUpperCase()}]
 Camera: ${params.cameraFramingAndMotion}
 Style: ${params.lensAndStyle}, 9:16 vertical video (Shorts/Reels/TikTok), 24fps motion cadence, ultra-realistic skin micro-texture.
 Lighting: ${params.lightingTheme}
-Setting: ${params.locationName}. [START-FRAME PIN: Anchored to clean location plate with identical lighting & shadows].
-Subject & Action: ${params.speakerName} wearing ${params.wardrobe}. ${params.eyelineDirective}. ${params.actionAndMicroExpression}
-Audio & Lip-Sync: Native synchronized speech: "${params.dialogue}". Realistic mouth and facial muscle articulation, ${audioCue}`;
+Setting: [LOCATION ANCHOR: ${params.locationName}]. [START-FRAME PIN: Anchored to clean location plate with identical lighting & shadows].
+Subject & Action: ${params.speakerName} wearing ${params.wardrobe}. ${params.eyelineDirective}. ${counterpartSilence}${params.actionAndMicroExpression}
+Audio & Lip-Sync: Native synchronized speech: "${params.dialogue}". Realistic mouth and facial muscle articulation, zero speech overlap, ${audioCue}`;
 }
