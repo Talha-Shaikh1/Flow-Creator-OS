@@ -21,6 +21,7 @@ import {
   Sliders,
   Layers,
   Lock,
+  MapPin,
 } from 'lucide-react';
 import { getStoredAIConfig } from '@/lib/ai/ai-settings';
 
@@ -45,6 +46,7 @@ export function ClipCard({
 }: Props) {
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedFrameImage, setCopiedFrameImage] = useState(false);
+  const [copiedLocationPlate, setCopiedLocationPlate] = useState(false);
   const [copiedDialogue, setCopiedDialogue] = useState(false);
   const [copiedNegative, setCopiedNegative] = useState(false);
   const [copiedClipBundle, setCopiedClipBundle] = useState(false);
@@ -84,7 +86,7 @@ export function ClipCard({
 
   const handleCopy = (
     text: string,
-    type: 'prompt' | 'frameImage' | 'dialogue' | 'negative' | 'bundle'
+    type: 'prompt' | 'frameImage' | 'locationPlate' | 'dialogue' | 'negative' | 'bundle'
   ) => {
     navigator.clipboard.writeText(text);
     if (type === 'prompt') {
@@ -93,6 +95,9 @@ export function ClipCard({
     } else if (type === 'frameImage') {
       setCopiedFrameImage(true);
       setTimeout(() => setCopiedFrameImage(false), 2000);
+    } else if (type === 'locationPlate') {
+      setCopiedLocationPlate(true);
+      setTimeout(() => setCopiedLocationPlate(false), 2000);
     } else if (type === 'dialogue') {
       setCopiedDialogue(true);
       setTimeout(() => setCopiedDialogue(false), 2000);
@@ -109,11 +114,15 @@ export function ClipCard({
     const bundleText =
       `=== CLIP ${clip.clipIndex} PRODUCTION BUNDLE ===\n` +
       `[SCENE]: ${clip.sceneName} (${clip.shotType})\n` +
+      `[LOCATION]: ${clip.sceneLocation || clip.locationAnchor}\n` +
       `[ACTIVE SPEAKER]: ${clip.speakerIsolation.activeSpeaker}\n` +
       `[DIALOGUE]: "${clip.speakerIsolation.speakingDialogue}"\n\n` +
-      `--- STEP 1: STARTING FRAME IMAGE PROMPT ---\n` +
+      (clip.cleanPlateStartFramePrompt
+        ? `--- STEP 1: CLEAN LOCATION PLATE PROMPT (ZERO HUMANS) ---\n${clip.cleanPlateStartFramePrompt}\n\n`
+        : '') +
+      `--- STEP 2: STARTING FRAME IMAGE PROMPT (CHARACTERS & WARDROBE) ---\n` +
       `${getEnrichedFramePrompt()}\n\n` +
-      `--- STEP 2: GOOGLE FLOW VEO MOTION PROMPT ---\n` +
+      `--- STEP 3: GOOGLE FLOW / OMNI FLASH 1.1 VIDEO MOTION DIRECTIVE ---\n` +
       `${getEnrichedFlowPrompt()}\n\n` +
       `--- NEGATIVE PROMPT DIRECTIVES ---\n` +
       `${clip.negativePromptDirectives || 'morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching'}\n\n` +
@@ -426,7 +435,41 @@ export function ClipCard({
         </div>
       </div>
 
-      {/* STEP 1: Video Frame Image Prompt */}
+      {/* STEP 1: Clean Location Plate Prompt (Zero Humans) */}
+      {clip.cleanPlateStartFramePrompt && (
+        <div className="bg-neutral-950/90 border border-teal-500/30 rounded-xl p-4 space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-teal-400 flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-teal-400" />
+                Step 1: Location Plate Prompt (Zero Humans / Clean Background Anchor)
+              </label>
+              <p className="text-[11px] text-neutral-400 mt-0.5">
+                Generate this empty architectural room/plate in Midjourney / Flux first to lock 100% room geometry and lighting.
+              </p>
+            </div>
+            <button
+              onClick={() => handleCopy(clip.cleanPlateStartFramePrompt || '', 'locationPlate')}
+              className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition shadow-sm ${
+                copiedLocationPlate
+                  ? 'bg-emerald-500 text-white shadow-emerald-500/20'
+                  : 'bg-teal-600 hover:bg-teal-500 text-white shadow-teal-600/20'
+              }`}
+            >
+              {copiedLocationPlate ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copiedLocationPlate ? 'Copied Location Plate!' : '1-Click Copy Location Prompt'}
+            </button>
+          </div>
+          <pre className="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-xs text-teal-100 font-mono whitespace-pre-wrap leading-relaxed max-h-36 overflow-y-auto">
+            {clip.cleanPlateStartFramePrompt}
+          </pre>
+          <span className="text-[11px] text-teal-300/80 block">
+            📍 <strong>Master Clean Plate:</strong> 100% human-free scene backdrop. Guarantees the vault, penthouse, or kitchen has zero furniture distortion across all 7 episodes!
+          </span>
+        </div>
+      )}
+
+      {/* STEP 2: Video Frame Image Prompt (Characters & Wardrobe) */}
       {isPodcastSingleFrame ? (
         <div className="bg-neutral-950/80 border border-amber-500/20 rounded-xl p-3.5 space-y-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -436,7 +479,7 @@ export function ClipCard({
               </span>
               <div className="text-xs">
                 <span className="font-semibold text-amber-300">
-                  Step 1: Uses Day {dayNumber || 1} Master Starting Keyframe 👆
+                  Step 2: Uses Day {dayNumber || 1} Master Starting Keyframe 👆
                 </span>
                 <p className="text-[11px] text-neutral-400">
                   Reusing the single studio keyframe from above for 100% face and room consistency.
@@ -477,10 +520,10 @@ export function ClipCard({
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
                 <ImageIcon className="w-4 h-4 text-amber-400" />
-                Step 1: Generate Starting Frame Image (Midjourney / Flux)
+                Step 2: Generate Starting Frame Image (Midjourney / Flux)
               </label>
               <p className="text-[11px] text-neutral-400 mt-0.5">
-                Paste this prompt in Midjourney. Attach Character DNA Reference Image to lock face & clothes.
+                Paste this prompt in Midjourney / Flux. Characters are placed inside the exact room geometry with locked wardrobe.
               </p>
             </div>
             <button
@@ -516,16 +559,16 @@ export function ClipCard({
         </div>
       )}
 
-      {/* STEP 2: Google Flow Video Motion Prompt */}
+      {/* STEP 3: Google Flow Video Motion Prompt */}
       <div className="bg-neutral-950/90 border border-blue-500/20 rounded-xl p-4 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
               <Video className="w-4 h-4 text-blue-400" />
-              Step 2: 10s Video Motion Directive (Gemini Omni Flash 1.1 / Google Flow)
+              Step 3: 10s Video Motion Directive (Gemini Omni Flash 1.1 / Google Flow)
             </label>
             <p className="text-[11px] text-neutral-400 mt-0.5">
-              Upload Clean Location Plate as Start Frame, then paste this lean camera & dialogue directive.
+              Upload Step 2 Keyframe (or Step 1 Plate) as Start Frame into Google Flow, paste this lean camera & dialogue directive.
             </p>
           </div>
           <button
@@ -545,7 +588,7 @@ export function ClipCard({
         </pre>
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           <span className="text-[11px] text-blue-300/90 block">
-            🎬 <strong>Google Flow Instruction:</strong> Upload the image from Step 1, paste this prompt, and render 10s video.
+            🎬 <strong>Google Flow Instruction:</strong> Upload the keyframe from Step 2, paste this prompt, and render 10s video.
           </span>
           {clip.negativePromptDirectives && (
             <button

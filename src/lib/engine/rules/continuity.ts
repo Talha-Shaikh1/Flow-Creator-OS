@@ -228,7 +228,7 @@ export function resolveEpisodeContinuity(
     format: 'character_drama',
     timeOfDay: `Episode ${dayNum} High-Stakes Scene Setting`,
     lightingSetup: dayScheme.lighting,
-    roomGeography: `${location}: Floor-to-ceiling panoramic glass windows overlooking city skyline, polished mahogany conference table, leather executive chairs, warm practical desk lamps`,
+    roomGeography: `${location}: Architectural environment details, spatial depth, atmospheric room elements, and practical scene lighting matching this location setting`,
     wardrobeLocks,
     colorPaletteGrade: 'ARRI Alexa LF, 85mm Panavision Anamorphic T1.5 prime lens, Kodak Vision3 500T 5219 texture, master cinematic chiaroscuro grade',
     masterAnchorPrompt: `[MASTER EPISODE ANCHOR]: ${location}. ${heroName} in ${dayScheme.hero}. ${villainName} in ${dayScheme.villain}. Lighting: ${dayScheme.lighting}. Lock 100% across all clips.`,
