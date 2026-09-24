@@ -734,23 +734,36 @@ export function generateDualCrossPlatformMetadata(params: {
 
   const episodeYoutubeDescription = `Watch Episode ${params.dayNum} of "${params.seriesTitle}" (Season ${params.seasonNumber})!
 
+📖 EPISODE SYNOPSIS & STORYLINE:
 ${params.hook}
-When the audit records are exposed, ${params.char1Name} and ${params.char2Name} face an explosive three-scene showdown that changes everything.
+When high-stakes confidential corporate audit records are unsealed at midnight, ${params.char1Name} and ${params.char2Name} are forced into an irreversible psychological and physical confrontation. Across three dynamic cinematic locations, dark secrets regarding forged company shares, shadow accounts, and offshore wiretaps explode into the open. As loyalties fracture and federal countdowns tick down, neither character can afford a single misstep without losing their life, their freedom, or their legacy.
 
-⏱️ EPISODE SCENE TIMESTAMPS:
-${ts1} - Scene 1: The Confrontation (${params.scenes[0]?.locationName || 'Penthouse Study'})
-${ts2} - Scene 2: The Secret Signal (${params.scenes[1]?.locationName || 'Glass Elevator'})
-${ts3} - Scene 3: The Climax Standoff (${params.scenes[2]?.locationName || 'Underground Garage'})
+⏱️ EXACT SCENE-BY-SCENE TIMESTAMPS:
+${ts1} - Scene 1: The Inciting Confrontation (${params.scenes[0]?.locationName || 'Penthouse Study'})
+${ts2} - Scene 2: The Secret Signal & Escalation (${params.scenes[1]?.locationName || 'Glass Elevator'})
+${ts3} - Scene 3: The Climax Standoff & Cliffhanger (${params.scenes[2]?.locationName || 'Underground Garage'})
 
-🎬 CAST & CREDITS:
-• ${params.char1Name} as The Lead Attorney / Heir
-• ${params.char2Name} as The Ruthless Corporate Partner
-Produced with Gemini Omni Flash 1.1 by FlowCreator OS Studio.
+🎭 CAST & CHARACTERS:
+• ${params.char1Name} — The Determined Lead Attorney / Heir fighting betrayal from within
+• ${params.char2Name} — The Cold, Calculating Corporate Partner orchestrating the hostile takeover
+Directed & produced with Gemini Omni Flash 1.1 camera-first directives via FlowCreator OS Studio.
 
-💬 TODAY'S BIG QUESTION:
-Agar aap ${params.char1Name} ki jagah hotay to kya aap police ko call karte ya badla khud lete? Comment your choice below! 👇
+🎥 PRODUCTION & CINEMATOGRAPHY SPECIFICATIONS:
+• Camera: ARRI Alexa Mini LF paired with Panavision Anamorphic T1.5 Primes
+• Lighting: Chiaroscuro high-contrast volumetric keys with soft background bokeh
+• Ratio: 9:16 Vertical Cinema Composition (Shorts / Reels / TikTok)
+• Motion: 24fps cinema cadence with strict 180-degree eyeline blocking
 
-🔔 SUBSCRIBE & TURN ON NOTIFICATIONS for Episode ${(params.dayNum % 7) + 1} releasing tomorrow! Don't miss the shocking season twist!`;
+🔍 TARGETED SEARCH KEYWORDS & TOPICS:
+drama series 2026, web series, revenge thriller, full episode, corporate betrayal drama, best short drama, pakistani drama latest episode, hindi web series, high tension suspense, micro drama episode, trending series, dramatic showdown, legal thriller, betrayal story, cinematic shorts, episode ${params.dayNum}
+
+💬 AUDIENCE DEBATE POLL — COMMENT BELOW:
+Agar aap ${params.char1Name} ki jagah hotay to kya karte:
+1️⃣ Police aur federal prosecutors ko inform karte?
+2️⃣ Badla khud lete aur syndicate ko expose karte?
+Drop your vote 1 ya 2 below! 👇
+
+🔔 SUBSCRIBE & TURN ON BELL NOTIFICATIONS for Episode ${(params.dayNum % 7) + 1} releasing tomorrow! Don't miss the shocking season twist!`;
 
   const episodeYoutubeTags = [
     'drama series',
@@ -764,12 +777,18 @@ Agar aap ${params.char1Name} ki jagah hotay to kya aap police ko call karte ya b
     'mystery series',
     'pakistani drama',
     'hindi drama',
-    'web series episode 1',
+    'web series episode',
     'thriller shorts',
     'omni flash video',
+    'revenge thriller',
+    'legal drama',
+    'high tension',
+    'storytelling',
+    'viral series',
+    'hollywood noir',
   ];
 
-  const episodeSocialCaption = `“${params.lastCliffhangerDialogue.slice(0, 80)}...” 🥶\n\nEp ${params.dayNum} out now! Agar aap ${params.char1Name} ki jagah hotay to kya karte?\n\n1️⃣ Seedha arrest karwate\n2️⃣ Khud hisaab chukate 👇`.slice(0, 300);
+  const episodeSocialCaption = `“${params.lastCliffhangerDialogue.slice(0, 75)}...” 🥶\n\nEp ${params.dayNum} out now! Jab saboot samne aaya to sab badal gaya. Agar aap ${params.char1Name} ki jagah hotay to kya karte?\n\n1️⃣ Seedha arrest karwate\n2️⃣ Badla khud lete\n\nDrop 1 ya 2 in comments! 👇`.slice(0, 300);
 
   const episodeSocialHashtags = [
     '#dramaseries',
@@ -797,6 +816,9 @@ From rigging the ARRI Alexa Mini LF on the Steadicam to locking the 180-degree e
 • Lighting: Diffused softbox grid & high-contrast chiaroscuro keys
 • Sound: Sennheiser MKH 416 boom mic with isolated dialogue capture
 
+🔍 BTS SEARCH KEYWORDS & TOPICS:
+behind the scenes filmmaking, movie set lighting, arri alexa mini lf, steadicam operator, actor rehearsal, cinematic lighting setup, short film production, direct cinematography, ai filmmaking workflow
+
 💬 BTS QUESTION:
 Did the lighting in the underground scene make you feel the tension? Tell us what you loved most about today's episode!
 
@@ -814,6 +836,9 @@ Did the lighting in the underground scene make you feel the tension? Tell us wha
     'cinematography lighting',
     'drama series bts',
     'film production',
+    'camera rig',
+    'lighting tutorial',
+    'movie magic',
   ];
 
   const btsSocialCaption = `Camera off, smiles on! 😄 Set par ${params.char1Name} aur ${params.char2Name} jhagadte hain, lekin off-screen yeh scene 5 takes me shoot hua! Kiska acting sab se realistic laga? Comment 1 or 2! 👇`.slice(0, 300);

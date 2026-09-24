@@ -311,8 +311,9 @@ export function generateWeeklyBatch(
         break;
     }
 
-    // If mind-maps mode (Stage 1), do NOT build full clip prompts yet (saves 75% tokens!)
-    const clips = isMindMapOnly
+    // For Character Drama & Pet Comedy, always produce full 9 clips (90s) & clean plates upfront!
+    const forceFullProduction = spec.format === 'character_drama' || spec.format === 'pet_comedy' || !isMindMapOnly;
+    const clips = !forceFullProduction
       ? []
       : builtOutput.clips.map((c) => ({
           ...c,
@@ -329,15 +330,15 @@ export function generateWeeklyBatch(
       variationLabel: `Episode ${dayNum}` as any,
       title: builtOutput.title,
       hookDescription: builtOutput.hookDescription,
-      masterFrameImagePrompt: isMindMapOnly
+      masterFrameImagePrompt: !forceFullProduction
         ? undefined
         : (builtOutput as any).masterFrameImagePrompt || builtOutput.clips[0]?.frameImagePrompt,
-      characterAnchors: isMindMapOnly ? [] : builtOutput.characterAnchors,
-      locationAnchors: isMindMapOnly ? [] : builtOutput.locationAnchors,
+      characterAnchors: !forceFullProduction ? [] : builtOutput.characterAnchors,
+      locationAnchors: !forceFullProduction ? [] : builtOutput.locationAnchors,
       clips,
       dialogueScript: builtOutput.dialogueScript,
       seriesContinuityRecap: `Day ${dayNum} Continuity: ${arc.dailyEmotion}. Culminates in a psychological cliffhanger leading into Day ${(dayNum % 7) + 1}.`,
-      cleanLocationPlates: isMindMapOnly ? [] : (builtOutput as any).cleanLocationPlates,
+      cleanLocationPlates: !forceFullProduction ? [] : (builtOutput as any).cleanLocationPlates,
       dualMetadata: (builtOutput as any).dualMetadata,
       metadata: (builtOutput as any).dualMetadata?.episode?.social
         ? {
@@ -350,7 +351,7 @@ export function generateWeeklyBatch(
             hashtags: ['#GoogleFlow', '#Veo', '#AIFilmmaking', '#ShortFilm', '#CreatorEconomy'],
             audioVibe: spec.tone,
           },
-      isProduced: !isMindMapOnly,
+      isProduced: forceFullProduction,
       inUniversePosts: (builtOutput as any).inUniversePosts,
       sceneContinuityLock: (builtOutput as any).sceneContinuityLock,
     };

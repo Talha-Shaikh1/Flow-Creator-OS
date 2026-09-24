@@ -32,6 +32,9 @@ import {
   CheckCheck,
   History,
   Lock,
+  Film,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { ContentCalendarModal } from '@/components/calendar/ContentCalendarModal';
 import { GenerationHistoryModal } from './GenerationHistoryModal';
@@ -70,6 +73,8 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
   const [copiedYtDesc, setCopiedYtDesc] = useState(false);
   const [copiedYtTags, setCopiedYtTags] = useState(false);
   const [copiedSocialCaption, setCopiedSocialCaption] = useState(false);
+  const [isStoryArcExpanded, setIsStoryArcExpanded] = useState(true);
+  const [isProducingAll, setIsProducingAll] = useState(false);
 
   // Track generated clips: key is `${dayNumber}-${variationId}-clip-${clipIndex}`
   const [generatedClips, setGeneratedClips] = useState<Record<string, boolean>>({});
@@ -280,6 +285,86 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
       alert(`Network error: ${err.message || 'Failed to connect to AI engine'}`);
     } finally {
       setIsProducing(false);
+    }
+  };
+
+  const handleProduceAllEpisodes = async () => {
+    setIsProducingAll(true);
+    try {
+      const aiConfig = getStoredAIConfig();
+      const updatedDays = [...batch.days];
+      for (let i = 0; i < updatedDays.length; i++) {
+        const d = updatedDays[i];
+        const v = d.variations[0];
+        if (!v || !v.isProduced || !v.clips || v.clips.length === 0) {
+          const res = await fetch('/api/generate/produce', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              spec: batch.spec,
+              dayNumber: d.dayNumber,
+              variationType: 'High Tension',
+              variationId: v?.id || `day-${d.dayNumber}-v1`,
+              existingVariation: v,
+              forceFresh: true,
+              aiConfig,
+            }),
+          });
+          const data = await res.json();
+          if (res.ok && data.success && data.produced) {
+            const updatedVar: VideoVariation = {
+              ...v,
+              title: data.produced.title || v?.title,
+              hookDescription: data.produced.hookDescription || v?.hookDescription,
+              dialogueScript: data.produced.dialogueScript || v?.dialogueScript,
+              masterFrameImagePrompt: data.produced.masterFrameImagePrompt,
+              characterAnchors: data.produced.characterAnchors,
+              locationAnchors: data.produced.locationAnchors,
+              clips: data.produced.clips,
+              cleanLocationPlates: data.produced.cleanLocationPlates,
+              dualMetadata: data.produced.dualMetadata,
+              inUniversePosts: data.produced.inUniversePosts,
+              critique: data.produced.critique || v?.critique,
+              sceneContinuityLock: data.produced.sceneContinuityLock,
+              isProduced: true,
+            };
+            updatedDays[i] = {
+              ...d,
+              variations: [updatedVar],
+            };
+          }
+        }
+      }
+
+      // Sync promo cards
+      for (let i = 0; i < updatedDays.length; i++) {
+        const nextDayPkg = updatedDays[i + 1];
+        const promo = buildNextEpisodePromo(
+          batch.spec,
+          updatedDays[i].dayNumber,
+          updatedDays[i].variations[0],
+          nextDayPkg
+        );
+        updatedDays[i].nextEpisodePromo = promo;
+        if (updatedDays[i].variations[0]) {
+          updatedDays[i].variations[0].nextEpisodePromo = promo;
+        }
+      }
+
+      const newBatch: WeeklyBatchDelivery = {
+        ...batch,
+        days: updatedDays,
+      };
+      onUpdateBatch(newBatch);
+      try {
+        localStorage.setItem('flowcreator_latest_batch', JSON.stringify(newBatch));
+        saveBatchToLocalHistory(newBatch);
+      } catch {}
+    } catch (e: any) {
+      console.error('Failed to produce all episodes:', e);
+      alert('Failed to produce some episodes. Please check your connection.');
+    } finally {
+      setIsProducingAll(false);
     }
   };
 
@@ -687,7 +772,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
             </button>
             <div className="text-right hidden sm:block">
               <span className="text-[11px] text-neutral-400">Continuous Arc</span>
-              <div className="text-xs text-amber-300 font-medium">Days 1–7 • Dynamic Arc (30s–50s / Episode)</div>
+              <div className="text-xs text-amber-300 font-medium">Days 1–7 • 90s Multi-Scene Hollywood Arc (9 Clips × 10s)</div>
             </div>
           </div>
         </div>
@@ -701,6 +786,138 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
           seriesLogline={batch.spec.customStoryIdea}
         />
       )}
+
+      {/* 7-Episode Master Story Arc Deck (Pori 7 Episodes Ki Storyline) */}
+      <div className="rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-neutral-900 via-indigo-950/20 to-neutral-950 p-5 shadow-2xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-500/20 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 font-bold shrink-0">
+              <Film className="w-5 h-5 text-indigo-300" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-white tracking-wide">
+                  7-Episode Master Story Arc (Pori 7 Episodes Ki Complete Storyline)
+                </h3>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wider font-mono">
+                  90s / Episode (9 Clips × 10s)
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400 mt-0.5">
+                Episode 1 se Episode 7 tak ka complete multi-scene plot, dynamic 3-room location progression, aur high-stakes cliffhangers.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+            {batch.days.some((d) => !d.variations[0]?.isProduced || !d.variations[0]?.clips?.length) && (
+              <button
+                type="button"
+                onClick={handleProduceAllEpisodes}
+                disabled={isProducingAll}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-neutral-950 hover:text-white transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20 disabled:opacity-50"
+              >
+                <Zap className={`w-3.5 h-3.5 ${isProducingAll ? 'animate-spin' : ''}`} />
+                <span>{isProducingAll ? 'Producing All 7 Episodes...' : '⚡ Produce All 7 Episodes (90s)'}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsStoryArcExpanded(!isStoryArcExpanded)}
+              className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-xs font-medium border border-neutral-700 transition flex items-center gap-1.5"
+            >
+              <span>{isStoryArcExpanded ? 'Collapse Story Arc' : 'Expand Full 7-Ep Story'}</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isStoryArcExpanded ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+        </div>
+
+        {isStoryArcExpanded && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-7 gap-3 pt-2">
+            {batch.days.map((d, dIdx) => {
+              const v = d.variations[0];
+              const isSelectedDay = activeDayIndex === dIdx;
+              const scenes = v?.cleanLocationPlates || [];
+              const epTitle = v?.title || d.episodeTitle || `Episode ${d.dayNumber}`;
+              const hook = v?.hookDescription || `${d.dayName} high-stakes escalation`;
+              const clipCount = v?.clips?.length || (batch.spec.clipDurationSeconds === 60 ? 6 : 9);
+
+              return (
+                <div
+                  key={d.dayNumber}
+                  onClick={() => {
+                    setActiveDayIndex(dIdx);
+                    setActiveVariationIndex(0);
+                  }}
+                  className={`p-3.5 rounded-xl border text-left transition flex flex-col justify-between cursor-pointer group ${
+                    isSelectedDay
+                      ? 'bg-neutral-800/95 border-indigo-500 ring-1 ring-indigo-500/50 shadow-lg shadow-indigo-500/10'
+                      : 'bg-neutral-950/70 border-neutral-800/80 hover:border-neutral-700 hover:bg-neutral-900/60'
+                  }`}
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
+                        d.dayNumber === 7
+                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                          : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                      }`}>
+                        {d.dayNumber === 7 ? 'FINALE • DAY 7' : `EPISODE ${d.dayNumber}`}
+                      </span>
+                      <span className="text-[10px] text-neutral-500 font-medium">
+                        {d.dayName}
+                      </span>
+                    </div>
+
+                    <h4 className="text-xs font-bold text-white line-clamp-2 group-hover:text-indigo-300 transition">
+                      {epTitle}
+                    </h4>
+
+                    <p className="text-[11px] text-neutral-400 line-clamp-3 leading-relaxed">
+                      {hook}
+                    </p>
+
+                    {/* 3 Scenes Progression Tag */}
+                    <div className="pt-2 border-t border-neutral-800/70 space-y-1 text-[10px]">
+                      <div className="text-neutral-500 font-mono font-semibold flex items-center justify-between">
+                        <span>3-Scene Arc:</span>
+                        <span className="text-amber-400 font-bold">90s ({clipCount} Clips)</span>
+                      </div>
+                      {scenes.length >= 3 ? (
+                        <div className="space-y-0.5 font-mono text-[9.5px]">
+                          <div className="text-neutral-300 truncate" title={scenes[0]?.locationName}>
+                            <span className="text-indigo-400 font-bold">0-30s:</span> {scenes[0]?.locationName}
+                          </div>
+                          <div className="text-neutral-300 truncate" title={scenes[1]?.locationName}>
+                            <span className="text-indigo-400 font-bold">30-60s:</span> {scenes[1]?.locationName}
+                          </div>
+                          <div className="text-neutral-300 truncate" title={scenes[2]?.locationName}>
+                            <span className="text-indigo-400 font-bold">60-90s:</span> {scenes[2]?.locationName}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-neutral-500 italic text-[10px]">
+                          3 Dynamic Scenes across 9 clips
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-3 mt-2 border-t border-neutral-800/60 flex items-center justify-between">
+                    <span className={`text-[10px] font-bold ${
+                      v?.isProduced && v?.clips?.length > 0 ? 'text-emerald-400' : 'text-amber-400'
+                    }`}>
+                      {v?.isProduced && v?.clips?.length > 0 ? `✓ ${v.clips.length} Clips Ready` : '📋 Mind Map'}
+                    </span>
+                    <span className="text-[10px] font-semibold text-indigo-400 group-hover:underline">
+                      {isSelectedDay ? 'Viewing ➔' : 'Select'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* 7-Day Horizontal Arc Tabs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
@@ -1366,7 +1583,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
                       <span className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
                         🔴 YouTube (Shorts & VOD SEO)
                       </span>
-                      <span className="text-[10px] text-neutral-500">Up to 1,000 Chars • Timestamps Included</span>
+                      <span className="text-[10px] text-neutral-500">1,500 Chars • Timestamps, Specs & Keywords</span>
                     </div>
 
                     <div>
@@ -1389,7 +1606,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
 
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[11px] text-neutral-400">SEO Description (1,000 Chars):</span>
+                        <span className="text-[11px] text-neutral-400">SEO Description (1,500 Chars with Keywords):</span>
                         <button
                           type="button"
                           onClick={() => {
@@ -1440,7 +1657,7 @@ export function WeeklyBatchView({ batch, onReset, onUpdateBatch }: Props) {
                       <span className="text-xs font-bold text-pink-400 uppercase tracking-wider flex items-center gap-1.5">
                         📱 Instagram • TikTok • Facebook Reels
                       </span>
-                      <span className="text-[10px] text-neutral-500">&lt;300 Chars • Comment Debate Trigger</span>
+                      <span className="text-[10px] text-neutral-500">250–300 Chars • Hook & Comment Debate Trigger</span>
                     </div>
 
                     <div>

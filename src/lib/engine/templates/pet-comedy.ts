@@ -809,24 +809,37 @@ export function generateDualCrossPlatformPetMetadata(params: {
 
   const episodeYoutubeDescription = `Watch Episode ${params.dayNum} of "${params.seriesTitle}" (Season ${params.seasonNumber})!
 
+🐱🐶 EPISODE SYNOPSIS & PET COMEDY STORY:
 ${params.hook}
-When household chaos strikes, Joe the British Shorthair cat and Nova the Corgi team up to drive their human owner Zara completely crazy across three hilarious scenes.
+When human owner Zara leaves the pantry door unlocked for thirty seconds, master planner Joe the British Shorthair cat and his hyperactive corgi accomplice Nova launch an audacious household heist. Moving across three distinct rooms—from the high kitchen marble island to the living room fireplace and sunlit French garden patio—their hilarious bantering and synchronized speaking lips reveal the secret comedy life pets live when humans look away.
 
-⏱️ EPISODE SCENE TIMESTAMPS:
-${ts1} - Scene 1: The Kitchen Heist (${params.scenes[0]?.locationName || 'Kitchen Island'})
-${ts2} - Scene 2: The Living Room Standoff (${params.scenes[1]?.locationName || 'Living Room'})
-${ts3} - Scene 3: The Garden Patio Verdict (${params.scenes[2]?.locationName || 'Garden Patio'})
+⏱️ EXACT SCENE-BY-SCENE TIMESTAMPS:
+${ts1} - Scene 1: The Treat Pantry Infiltration (${params.scenes[0]?.locationName || 'Kitchen Island'})
+${ts2} - Scene 2: The Fireplace Living Room Interrogation (${params.scenes[1]?.locationName || 'Living Room'})
+${ts3} - Scene 3: The Garden Patio Getaway Standoff (${params.scenes[2]?.locationName || 'Garden Patio'})
 
-🐾 STARRING:
-• Joe as The Deadpan Mastermind Cat (British Shorthair)
-• Nova as The Innocent Chaos Corgi (Red Bowtie)
-• Zara as The Bewildered Pet Parent
-Produced with Gemini Omni Flash 1.1 by FlowCreator OS Studio.
+🐾 CAST & VOICE CHARACTERS:
+• Joe — Sarcastic British Shorthair Cat Mastermind (Orange Eyes, Distressed Leather Collar)
+• Nova — Chaotic Cream Corgi Accomplice (Scarlet Bowtie, Infinite Zoomies)
+• Zara — Loving, Exhausted Human Owner Caught in the Crossfire
+Directed with Gemini Omni Flash 1.1 native speech synchronization & micro-expressions.
 
-💬 TODAY'S BIG DEBATE:
-Whose side are you on today? Team Joe 🐱 (The Mastermind) or Team Nova 🐶 (The Innocent Chaos)? Drop your vote in the comments below! 👇
+🎥 PRODUCTION & CAMERA GEAR BREAKDOWN:
+• Camera: ARRI Alexa Mini LF on low-angle floor skater dolly (pet eye-level)
+• Lenses: 85mm Macro & 50mm Prime with shallow f/1.8 depth of field
+• Ratio: 9:16 Vertical Video (YouTube Shorts / Reels / TikTok)
+• Motion: 24fps motion cadence with locked 180-degree eyeline matching
 
-🔔 SUBSCRIBE & TURN ON NOTIFICATIONS for Episode ${(params.dayNum % 7) + 1} releasing tomorrow!`;
+🔍 TARGETED SEARCH KEYWORDS & TOPICS:
+talking pets, funny cat videos, talking dog, funny animals 2026, pet comedy episode, corgi comedy, british shorthair cat, pets caught on camera, animal voiceover, funny pet shorts, pet bloopers, talking animal series, comedy shorts, episode ${params.dayNum}
+
+💬 AUDIENCE DEBATE POLL — COMMENT BELOW:
+Whose side are you on in today's heist?
+🐱 Team Joe (The Mastermind Cat)
+🐶 Team Nova (The Chaotic Corgi)
+Drop your vote in the comments below! 👇
+
+🔔 SUBSCRIBE & HIT THE BELL ICON for tomorrow's Episode ${(params.dayNum % 7) + 1}! New hilarious talking pet adventures daily!`;
 
   const episodeYoutubeTags = [
     'pet comedy',
@@ -834,7 +847,7 @@ Whose side are you on today? Team Joe 🐱 (The Mastermind) or Team Nova 🐶 (T
     'funny pets 2026',
     'talking cat',
     'talking dog',
-    'corgi funny',
+    'corgi comedy',
     'british shorthair',
     'joe and nova',
     'funny animal video',
@@ -843,9 +856,15 @@ Whose side are you on today? Team Joe 🐱 (The Mastermind) or Team Nova 🐶 (T
     'pet drama',
     'viral pet reels',
     'omni flash video',
+    'animal bloopers',
+    'cute animals',
+    'cat vs dog',
+    'talking corgi',
+    'viral animals',
+    'pet series',
   ];
 
-  const episodeSocialCaption = `“Accusations without evidence are pure slander, Zara.” 🐱🤣 Joe and Nova struck again in Ep ${params.dayNum}! Who was really guilty: Team Joe or Team Nova? Vote below! 👇`.slice(0, 300);
+  const episodeSocialCaption = `Joe: "Act natural!" 😼 Nova: *knocks over entire treat jar* 🐶 Ep ${params.dayNum} out now! When Zara turned her back, the kitchen syndicate struck! Whose side are you on: Team Joe 🐱 or Team Nova 🐶? Drop your vote below! 👇`.slice(0, 300);
 
   const episodeSocialHashtags = [
     '#PetComedy',
@@ -874,6 +893,9 @@ Take a look at our on-set production setup:
 🍿 ON-SET BLOOPER HIGHLIGHT:
 Joe refused to do take 3 until his salmon treat was handed to him directly on a porcelain saucer! 😂
 
+🔍 BTS SEARCH KEYWORDS & TOPICS:
+pet film set, animal trainer bts, arri alexa mini lf, how to film pets, talking pet bloopers, corgi bloopers, cat bloopers, animal acting tips, filmmaking tutorial
+
 🔔 Subscribe for daily behind-the-scenes film tricks and pet comedy secrets!`;
 
   const btsYoutubeTags = [
@@ -887,6 +909,10 @@ Joe refused to do take 3 until his salmon treat was handed to him directly on a 
     'ai filmmaking',
     'omni flash 1.1',
     'bloopers 2026',
+    'cat bloopers',
+    'dog bloopers',
+    'behind the scenes',
+    'animal actors',
   ];
 
   const btsSocialCaption = `Director: "Action!" 🎬 Joe: "Not until I get my salmon treats." 😼 Ever wonder what filming talking pets actually looks like? Here is our on-set trainer getting the perfect take! 😂`.slice(0, 300);

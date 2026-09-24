@@ -22,8 +22,12 @@ export async function POST(req: NextRequest) {
     }
 
     const spec = parseResult.data;
+    if ((spec.format === 'character_drama' || spec.format === 'pet_comedy') && !spec.clipDurationSeconds) {
+      spec.clipDurationSeconds = 90;
+    }
+
     const batch = await generateWeeklyBatchWithGemini(spec, {
-      mode: 'mind_maps',
+      mode: (spec.format === 'character_drama' || spec.format === 'pet_comedy') ? 'full' : 'mind_maps',
       aiConfig,
     });
 

@@ -6,6 +6,8 @@ import { generateDailyPhotoPosts } from './rules/photos';
 import { createTokenReport, estimateTokenCount } from './tokens';
 import { callUniversalLLM, AIProviderConfig } from './llm-provider';
 import { buildNextEpisodePromo, buildSeasonTrailer } from './rules/promo';
+import { buildCharacterDramaClips } from './templates/character-drama';
+import { buildPetComedyClips } from './templates/pet-comedy';
 
 function extractDaysArray(data: any): any[] {
   if (!data || typeof data !== 'object') return [];
@@ -306,6 +308,46 @@ Generate a complete 7-Day production delivery package with exactly 1 solid canon
       const rawVarList = Array.isArray(rawVars) && rawVars.length > 0 ? [rawVars[0]] : [];
       let variations: VideoVariation[] = rawVarList.map((v: any, vIdx: number) => {
         const vLabel = 'Canonical Episode';
+
+        // For Character Drama & Pet Comedy, always use the 7-day multi-scene engine!
+        if (spec.format === 'character_drama' || spec.format === 'pet_comedy') {
+          const builtDrama = spec.format === 'character_drama'
+            ? buildCharacterDramaClips(spec, arc.dailyEmotion, 'High Tension', dayIdx + 1, v)
+            : buildPetComedyClips(spec, arc.dailyEmotion, 'High Tension', dayIdx + 1, v);
+
+          const unval = {
+            id: `day-${dayIdx + 1}-v1`,
+            variationLabel: vLabel as any,
+            title: builtDrama.title,
+            hookDescription: builtDrama.hookDescription,
+            masterFrameImagePrompt: builtDrama.clips[0]?.frameImagePrompt,
+            characterAnchors: builtDrama.characterAnchors,
+            locationAnchors: builtDrama.locationAnchors,
+            clips: builtDrama.clips,
+            cleanLocationPlates: builtDrama.cleanLocationPlates,
+            dualMetadata: builtDrama.dualMetadata,
+            inUniversePosts: builtDrama.inUniversePosts,
+            dialogueScript: builtDrama.dialogueScript,
+            seriesContinuityRecap: `Day ${dayIdx + 1} Continuity: ${arc.dailyEmotion}. Culminates in a psychological cliffhanger.`,
+            metadata: builtDrama.dualMetadata?.episode?.social
+              ? {
+                  caption: builtDrama.dualMetadata.episode.social.caption,
+                  hashtags: builtDrama.dualMetadata.episode.social.hashtags,
+                  audioVibe: spec.tone,
+                }
+              : {
+                  caption: `${builtDrama.title} 🎬 #GoogleFlow #OmniFlash #Shorts`,
+                  hashtags: ['#GoogleFlow', '#Veo', '#AICinema'],
+                  audioVibe: spec.tone,
+                },
+            isProduced: true,
+          };
+
+          return {
+            ...unval,
+            critique: evaluatePromptCritique(unval as any),
+          };
+        }
 
         // Build character anchors dynamically for all characters in the actual cast
         const dynamicCharAnchors = effectiveCast.map((c: CastMember) => ({
