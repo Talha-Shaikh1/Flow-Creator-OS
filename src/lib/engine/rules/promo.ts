@@ -78,19 +78,24 @@ export function buildNextEpisodePromo(
           }
         : undefined);
 
+    const cleanPlateObj = nextVar.cleanLocationPlates?.[0];
     const locAnchorObj = nextVar.locationAnchors?.[0];
     const locationName =
+      cleanPlateObj?.locationName ||
       locAnchorObj?.locationName ||
       nextVar.clips?.[0]?.locationAnchor ||
       spec.locationSettings?.[0] ||
       'Main Location';
     const locAnchorPrompt =
+      cleanPlateObj?.cleanPlatePrompt ||
       locAnchorObj?.anchorPrompt ||
       `[LOCATION MASTER FRAME ANCHOR]: ${locationName}. ${spec.visualStyle}`;
 
-    const startingFramePrompt = nextVar.clips?.[0]?.frameImagePrompt
-      ? `[10s SNEAK PEEK PROMO FRAME - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]:\n${nextVar.clips[0].frameImagePrompt}\n[CINEMATOGRAPHY]: Cinematic teaser grade, intense rim lighting, 9:16 vertical composition.`
-      : `[10s SNEAK PEEK PROMO FRAME - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]:\n${charAnchorObj ? charAnchorObj.anchorPrompt : `[MASTER CHARACTER ANCHOR]: ${upcomingSpeaker} DNA Lock. ${spec.visualStyle}`}\n${locAnchorPrompt}\n[IMAGE REFERENCE ANCHOR]: Attach Master Reference Image of ${upcomingSpeaker}. Maintain 100% exact facial geometry, cheekbone structure, eyes, and styling without alteration.\n[SCENE BLOCKING]: ${upcomingSpeaker} positioned in dynamic foreground at ${locationName}, caught in high dramatic tension.\n[CINEMATOGRAPHY & LIGHTING]: Shot on ARRI Alexa LF, 85mm Panavision Anamorphic T1.5 prime lens, f/1.8 shallow depth of field. ${spec.visualStyle}, chiaroscuro key lighting, atmospheric haze. 8K photorealistic film still, 9:16 vertical composition.`;
+    const startingFramePrompt = cleanPlateObj
+      ? `[10s SNEAK PEEK PROMO START-FRAME - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]:\n${cleanPlateObj.cleanPlatePrompt}\n[START-FRAME MATCH]: 100% exact match with Episode ${targetDayNumber} Scene 1 Clean Plate. Upload as Start Frame in Gemini Omni Flash 1.1.`
+      : (nextVar.clips?.[0]?.frameImagePrompt
+        ? `[10s SNEAK PEEK PROMO FRAME - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]:\n${nextVar.clips[0].frameImagePrompt}\n[CINEMATOGRAPHY]: Cinematic teaser grade, intense rim lighting, 9:16 vertical composition.`
+        : `[10s SNEAK PEEK PROMO FRAME - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]:\n${charAnchorObj ? charAnchorObj.anchorPrompt : `[MASTER CHARACTER ANCHOR]: ${upcomingSpeaker} DNA Lock. ${spec.visualStyle}`}\n${locAnchorPrompt}\n[IMAGE REFERENCE ANCHOR]: Attach Master Reference Image of ${upcomingSpeaker}. Maintain 100% exact facial geometry, cheekbone structure, eyes, and styling without alteration.\n[SCENE BLOCKING]: ${upcomingSpeaker} positioned in dynamic foreground at ${locationName}, caught in high dramatic tension.\n[CINEMATOGRAPHY & LIGHTING]: Shot on ARRI Alexa LF, 85mm Panavision Anamorphic T1.5 prime lens, f/1.8 shallow depth of field. ${spec.visualStyle}, chiaroscuro key lighting, atmospheric haze. 8K photorealistic film still, 9:16 vertical composition.`);
 
     // Extract key highlights / jhalkiyan of the entire upcoming episode
     const dialogueLines = nextVar.dialogueScript || [];
@@ -109,9 +114,11 @@ export function buildNextEpisodePromo(
       teaserHighlights.push(`Cliffhanger Cutoff: Final decisive ultimatum`);
     }
 
-    const flowMotionPrompt = nextVar.clips?.[0]?.flowPromptText
-      ? `[PROMO TEASER SHOT - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]: 9:16 vertical video.\n${nextVar.clips[0].flowPromptText}\n[PROMO POST-HOOK]: At 0:09.2s, the camera snaps rapidly into darkness with a suspended cliffhanger breath. Sound design: ${soundDesignCue}`
-      : `[PROMO TEASER SHOT - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]: 9:16 vertical video.\n[LOCATION MASTER ANCHOR]: ${locationName}.\n[CHARACTER REFERENCE ANCHORS]: Active Speaker: ${upcomingSpeaker} [ATTACH MASTER REFERENCE IMAGE 1 - ${upcomingSpeaker.toUpperCase()}]. Counterpart: ${counterpartSpeaker} [ATTACH MASTER REFERENCE IMAGE 2 - ${counterpartSpeaker.toUpperCase()}], 100% silent, lips sealed.\n[ACTION]: ${visualAction}\n[SPOKEN DIALOGUE]: "${nextDialogue}" (crisp syllable lip-sync articulation).\n[CADENCE & SFX]: Fast 24fps motion, high cinematic contrast. At 0:09.2s, the camera snaps rapidly into darkness with a suspended cliffhanger breath. Sound design: ${soundDesignCue}`;
+    const flowMotionPrompt = nextVar.clips?.[0]?.omniFlash11Prompt
+      ? `${nextVar.clips[0].omniFlash11Prompt}\n[PROMO POST-HOOK]: At 0:09.2s, the camera snaps rapidly into darkness with a suspended cliffhanger breath. Sound design: ${soundDesignCue}`
+      : (nextVar.clips?.[0]?.flowPromptText
+        ? `[PROMO TEASER SHOT - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]: 9:16 vertical video.\n${nextVar.clips[0].flowPromptText}\n[PROMO POST-HOOK]: At 0:09.2s, the camera snaps rapidly into darkness with a suspended cliffhanger breath. Sound design: ${soundDesignCue}`
+        : `[PROMO TEASER SHOT - NEXT ON ${seriesTitle.toUpperCase()} (EPISODE ${targetDayNumber})]: 9:16 vertical video.\n[LOCATION MASTER ANCHOR]: ${locationName}.\n[CHARACTER REFERENCE ANCHORS]: Active Speaker: ${upcomingSpeaker} [ATTACH MASTER REFERENCE IMAGE 1 - ${upcomingSpeaker.toUpperCase()}]. Counterpart: ${counterpartSpeaker} [ATTACH MASTER REFERENCE IMAGE 2 - ${counterpartSpeaker.toUpperCase()}], 100% silent, lips sealed.\n[ACTION]: ${visualAction}\n[SPOKEN DIALOGUE]: "${nextDialogue}" (crisp syllable lip-sync articulation).\n[CADENCE & SFX]: Fast 24fps motion, high cinematic contrast. At 0:09.2s, the camera snaps rapidly into darkness with a suspended cliffhanger breath. Sound design: ${soundDesignCue}`);
 
     return {
       targetDayNumber,
@@ -211,15 +218,39 @@ export function buildSeasonTrailer(
     ];
   }
 
-  // 2. 4 Trailer Clips Montage
-  const clip1Prompt = day1?.variations[0]?.clips[0]?.frameImagePrompt ||
-    `[TRAILER SHOT 1/4 - INCITING INCIDENT]: Cinematic establishing shot of ${spec.locationSettings?.[0] || 'Executive Penthouse'}, moody atmospheric lighting, 9:16 vertical composition.`;
+  // 2. 4 Trailer Clips Montage (100% Matched with Episode Clean Plates & Omni Flash 1.1)
+  const cleanPlateDay1 = day1?.variations[0]?.cleanLocationPlates?.[0]?.cleanPlatePrompt;
+  const clip1Prompt = cleanPlateDay1
+    ? `[SEASON ${seasonNum} TRAILER START-FRAME (100% CLEAN PLATE MATCH)]:\n${cleanPlateDay1}\n[CINEMATOGRAPHY]: 9:16 vertical composition, moody atmospheric lighting.`
+    : (day1?.variations[0]?.clips[0]?.frameImagePrompt ||
+      `[TRAILER SHOT 1/4 - INCITING INCIDENT]: Cinematic establishing shot of ${spec.locationSettings?.[0] || 'Executive Penthouse'}, moody atmospheric lighting, 9:16 vertical composition.`);
 
-  const clip2Prompt = day3?.variations[0]?.clips[1]?.frameImagePrompt ||
-    `[TRAILER SHOT 2/4 - MID-SEASON BETRAYAL]: Intense shot-reverse-shot confrontation between ${heroName} and ${villainName}, deep chiaroscuro lighting, intense gaze.`;
+  const cleanPlateDay3 = day3?.variations[0]?.cleanLocationPlates?.[1]?.cleanPlatePrompt || day3?.variations[0]?.cleanLocationPlates?.[0]?.cleanPlatePrompt;
+  const clip2Prompt = cleanPlateDay3
+    ? `[SEASON ${seasonNum} TRAILER START-FRAME 2 (100% CLEAN PLATE MATCH)]:\n${cleanPlateDay3}\n[SCENE BLOCKING]: Intense confrontation between ${heroName} and ${villainName}, deep chiaroscuro lighting.`
+    : (day3?.variations[0]?.clips[1]?.frameImagePrompt ||
+      `[TRAILER SHOT 2/4 - MID-SEASON BETRAYAL]: Intense shot-reverse-shot confrontation between ${heroName} and ${villainName}, deep chiaroscuro lighting, intense gaze.`);
 
-  const clip3Prompt = day6?.variations[0]?.clips[day6.variations[0].clips.length - 1]?.frameImagePrompt ||
-    `[TRAILER SHOT 3/4 - CLIMAX STANDOFF]: Extreme close-up of ${heroName} delivering a final ultimatum under rain-streaked window reflections, cold rim lighting.`;
+  const cleanPlateDay6 = day6?.variations[0]?.cleanLocationPlates?.[2]?.cleanPlatePrompt || day6?.variations[0]?.cleanLocationPlates?.[0]?.cleanPlatePrompt;
+  const clip3Prompt = cleanPlateDay6
+    ? `[SEASON ${seasonNum} TRAILER START-FRAME 3 (100% CLEAN PLATE MATCH)]:\n${cleanPlateDay6}\n[SCENE BLOCKING]: Extreme close-up of ${heroName} delivering a final ultimatum under rain-streaked window reflections.`
+    : (day6?.variations[0]?.clips[day6.variations[0].clips.length - 1]?.frameImagePrompt ||
+      `[TRAILER SHOT 3/4 - CLIMAX STANDOFF]: Extreme close-up of ${heroName} delivering a final ultimatum under rain-streaked window reflections, cold rim lighting.`);
+
+  const omniFlash1 = day1?.variations[0]?.clips[0]?.omniFlash11Prompt;
+  const flow1 = omniFlash1
+    ? `${omniFlash1}\n[TRAILER VOICEOVER DIRECTIVE]: Cinematic narrator voiceover delivered over atmospheric opening: "${voScript[0]}". Sound design: Low sub-bass drone, ticking pocket watch echo.`
+    : `[TRAILER MOTION 1/4]: 9:16 vertical video. Slow gliding forward tracking shot (24fps). Atmosphere is dense and cinematic. Voiceover: "${voScript[0]}". Sound design: Low sub-bass rumble, ticking pocket watch echo.`;
+
+  const omniFlash2 = day3?.variations[0]?.clips[1]?.omniFlash11Prompt;
+  const flow2 = omniFlash2
+    ? `${omniFlash2}\n[TRAILER VOICEOVER DIRECTIVE]: High-tension eye contact, jaw muscles flexing. Voiceover: "${voScript[1]}". Sound design: Sharp orchestral string riser, metallic blade touch.`
+    : `[TRAILER MOTION 2/4]: 9:16 vertical video. Sharp camera push-in. High-tension eye contact, jaw muscles flexing. Voiceover: "${voScript[1]}". Sound design: Sharp orchestral string riser, metallic blade touch.`;
+
+  const omniFlash3 = day6?.variations[0]?.clips[day6.variations[0].clips.length - 1]?.omniFlash11Prompt;
+  const flow3 = omniFlash3
+    ? `${omniFlash3}\n[TRAILER VOICEOVER DIRECTIVE]: Camera shudders subtly with tension, shallow depth of field. Delivery of decisive line: "${voScript[2]}". At 0:09.5s, rapid whoosh into pure black.`
+    : `[TRAILER MOTION 3/4]: 9:16 vertical video. Camera shudders subtly with tension, shallow depth of field. Delivery of decisive line: "${voScript[2]}". At 0:09.5s, rapid whoosh into pure black.`;
 
   const titleCardPrompt =
     `[TRAILER SHOT 4/4 - OFFICIAL TITLE CARD]: Dark obsidian minimalist cinematic background, volumetric mist, volumetric amber back-light. In bold chiseled metallic platinum serif typography: "${seriesTitle.toUpperCase()}". Subtitle below in crisp gold sans-serif: "SEASON ${seasonNum}: ${seasonTitle.toUpperCase()}". 9:16 vertical cinema poster composition, 8k photorealistic.`;
@@ -232,7 +263,7 @@ export function buildSeasonTrailer(
       visualAction: 'Slow steady camera push through atmospheric space. Atmosphere thickens as opening voiceover delivers the world premise.',
       dialogueOrVoiceover: voScript[0],
       frameImagePrompt: `[SEASON ${seasonNum} TRAILER SHOT 1/4 (THE HOOK)]: ${clip1Prompt}`,
-      flowMotionPrompt: `[TRAILER MOTION 1/4]: 9:16 vertical video. Slow gliding forward tracking shot (24fps). Atmosphere is dense and cinematic. Voiceover: "${voScript[0]}". Sound design: Low sub-bass rumble, ticking pocket watch echo.`,
+      flowMotionPrompt: flow1,
       soundDesignCue: 'Low sub-bass drone, ticking pocket watch echo, warm atmospheric ambience.',
     },
     {
@@ -242,7 +273,7 @@ export function buildSeasonTrailer(
       visualAction: 'Fast dynamic camera cut into an intense confrontation. Micro-expressions tighten as stakes escalate.',
       dialogueOrVoiceover: voScript[1],
       frameImagePrompt: `[SEASON ${seasonNum} TRAILER SHOT 2/4 (THE BETRAYAL)]: ${clip2Prompt}`,
-      flowMotionPrompt: `[TRAILER MOTION 2/4]: 9:16 vertical video. Sharp camera push-in. High-tension eye contact, jaw muscles flexing. Voiceover: "${voScript[1]}". Sound design: Sharp orchestral string riser, metallic blade touch.',`,
+      flowMotionPrompt: flow2,
       soundDesignCue: 'Sharp orchestral string riser, metallic blade scrape, rising heartbeat tempo.',
     },
     {
@@ -252,7 +283,7 @@ export function buildSeasonTrailer(
       visualAction: 'Extreme high-tension close-up on eye catchlights, rapid rhythmic flashes of the week’s peak moments.',
       dialogueOrVoiceover: voScript[2],
       frameImagePrompt: `[SEASON ${seasonNum} TRAILER SHOT 3/4 (CLIMAX)]: ${clip3Prompt}`,
-      flowMotionPrompt: `[TRAILER MOTION 3/4]: 9:16 vertical video. Camera shudders subtly with tension, shallow depth of field. Delivery of decisive line: "${voScript[2]}". At 0:09.5s, rapid whoosh into pure black.',`,
+      flowMotionPrompt: flow3,
       soundDesignCue: 'Massive Inception brass braam horn, explosive sub-drop, immediate total silence.',
     },
     {

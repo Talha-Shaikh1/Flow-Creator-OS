@@ -30,6 +30,7 @@ import {
   MapPin,
   Plus,
   X,
+  Clock,
 } from 'lucide-react';
 
 
@@ -115,6 +116,7 @@ export function SpecWizard({ onGenerate, isLoading }: Props) {
   const [tone, setTone] = useState<ContentTone>('Intense / Suspenseful');
   const [visualStyle, setVisualStyle] = useState<VisualStylePreset>('Moody Film Noir');
   const [formatLength, setFormatLength] = useState<'single_video' | 'multi_episode_series'>('multi_episode_series');
+  const [selectedDuration, setSelectedDuration] = useState<60 | 90>(90);
   const [autonomousCast, setAutonomousCast] = useState<boolean>(true);
   const [castCount, setCastCount] = useState<number>(3);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([
@@ -346,6 +348,7 @@ export function SpecWizard({ onGenerate, isLoading }: Props) {
       cast: activeCast,
       visualStyle,
       formatLength,
+      clipDurationSeconds: selectedDuration,
       episodeCount: formatLength === 'multi_episode_series' ? 7 : 1,
       locationSettings: selectedLocations.length > 0 ? selectedLocations : defaultLocations,
       customStoryIdea: customStoryIdea.trim() || undefined,
@@ -816,6 +819,67 @@ export function SpecWizard({ onGenerate, isLoading }: Props) {
             Single Episode
           </button>
         </div>
+
+        {/* Episode Target Duration (Omni Flash 1.1 Optimized: 60s vs 90s) */}
+        {format === 'character_drama' && (
+          <div className="space-y-2 pt-2 border-t border-neutral-800/60">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-neutral-300 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                Episode Target Duration (Gemini Omni Flash 1.1):
+              </span>
+              <span className="text-[11px] text-amber-400 font-mono">
+                {selectedDuration === 90 ? '9 Clips × 10s • 3 Scenes' : '6 Clips × 10s • 3 Scenes'}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => setSelectedDuration(90)}
+                className={`p-3 rounded-xl border text-left transition relative flex flex-col justify-between ${
+                  selectedDuration === 90
+                    ? 'bg-amber-500/15 border-amber-500 text-white shadow-lg shadow-amber-500/10'
+                    : 'bg-neutral-950/60 border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                      <span>90 Seconds Arc</span>
+                      <span className="px-1.5 py-0.2 text-[9px] rounded bg-amber-500/30 text-amber-300 uppercase font-mono">
+                        VIP Recommended
+                      </span>
+                    </span>
+                    {selectedDuration === 90 && <Check className="w-3.5 h-3.5 text-amber-400" />}
+                  </div>
+                  <p className="text-[11px] text-neutral-300 leading-relaxed">
+                    9 clips × 10s across 3 scenes (30s each). Maximizes character micro-expressions, dramatic tension pauses, and intense confrontations.
+                  </p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedDuration(60)}
+                className={`p-3 rounded-xl border text-left transition relative flex flex-col justify-between ${
+                  selectedDuration === 60
+                    ? 'bg-indigo-600/15 border-indigo-500 text-white shadow-lg shadow-indigo-500/10'
+                    : 'bg-neutral-950/60 border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold text-indigo-300">60 Seconds Arc</span>
+                    {selectedDuration === 60 && <Check className="w-3.5 h-3.5 text-indigo-400" />}
+                  </div>
+                  <p className="text-[11px] text-neutral-300 leading-relaxed">
+                    6 clips × 10s across 3 scenes (20s each). Fast-paced viral hooks optimized for rapid TikTok, Reels, & Shorts engagement.
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Action Footer */}

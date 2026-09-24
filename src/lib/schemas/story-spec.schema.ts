@@ -68,7 +68,7 @@ export const StorySpecSchema = z.object({
   stakesTier: z.string().optional(),
   previousSeasonRecap: z.string().optional(),
   unresolvedMysteries: z.array(z.string()).optional(),
-  clipDurationSeconds: z.union([z.literal(30), z.literal(45), z.literal(60)]).optional(),
+  clipDurationSeconds: z.union([z.literal(30), z.literal(45), z.literal(60), z.literal(90)]).optional(),
   autonomousCast: z.boolean().optional(),
   createdAt: z.string(),
 });

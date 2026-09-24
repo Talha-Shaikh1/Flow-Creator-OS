@@ -35,12 +35,21 @@ export async function POST(req: NextRequest) {
       clips: produced.clips,
       dialogueScript: produced.dialogueScript,
       masterFrameImagePrompt: produced.masterFrameImagePrompt,
+      cleanLocationPlates: produced.cleanLocationPlates,
+      dualMetadata: produced.dualMetadata,
+      inUniversePosts: produced.inUniversePosts,
       isProduced: true,
-      metadata: existingVariation?.metadata || {
-        caption: `${produced.title} 🎬 Generated with FlowCreator OS. #AIcinema #GoogleFlow`,
-        hashtags: ['#GoogleFlow', '#Veo', '#AIFilmmaking', '#ShortFilm'],
-        audioVibe: spec.tone,
-      },
+      metadata: produced.dualMetadata?.episode?.social
+        ? {
+            caption: produced.dualMetadata.episode.social.caption,
+            hashtags: produced.dualMetadata.episode.social.hashtags,
+            audioVibe: spec.tone,
+          }
+        : (existingVariation?.metadata || {
+            caption: `${produced.title} 🎬 Generated with FlowCreator OS. #AIcinema #GoogleFlow`,
+            hashtags: ['#GoogleFlow', '#Veo', '#AIFilmmaking', '#ShortFilm'],
+            audioVibe: spec.tone,
+          }),
     };
 
     const critique = evaluatePromptCritique(unvalidated);

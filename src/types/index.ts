@@ -89,7 +89,7 @@ export interface StorySpec {
   stakesTier?: string; // e.g. "Criminal Blackmail & Federal Stakes"
   previousSeasonRecap?: string; // Continuity plot recap carried from previous season Day 7 finale
   unresolvedMysteries?: string[]; // Loose ends / clues carried forward into this season
-  clipDurationSeconds?: 30 | 45 | 60; // Desired episode length
+  clipDurationSeconds?: 30 | 45 | 60 | 90; // Desired episode length (60s = 6 clips, 90s = 9 clips)
   autonomousCast?: boolean; // True when AI Director dynamically casts characters based on story premise
   createdAt: string;
 }

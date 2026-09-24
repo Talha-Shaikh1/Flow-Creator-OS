@@ -88,36 +88,45 @@ export function resolve7DayMultiScenePlot(
   };
 
   const [loc1, loc2, loc3] = getSceneLocations(dayNum);
+  const is90s = spec.clipDurationSeconds === 90;
 
-  // 3 Dynamic Scenes
+  // 3 Dynamic Scenes (Scaled for 60s or 90s)
   const scenes: MultiSceneBeat[] = [
     {
       sceneNumber: 1,
-      sceneName: `Scene 1: The Reveal & Confrontation (00s - 20s)`,
+      sceneName: is90s
+        ? `Scene 1: The Reveal & Confrontation (00s - 30s)`
+        : `Scene 1: The Reveal & Confrontation (00s - 20s)`,
       locationName: loc1,
-      timeRange: '00s - 20s',
+      timeRange: is90s ? '00s - 30s' : '00s - 20s',
       lightingTheme: 'Moody chiaroscuro key lighting, Venetian blind shadows, cool blue rim light matching glass window reflections',
     },
     {
       sceneNumber: 2,
-      sceneName: `Scene 2: Transit & Hidden Conspiracy (20s - 40s)`,
+      sceneName: is90s
+        ? `Scene 2: Transit & Hidden Conspiracy (30s - 60s)`
+        : `Scene 2: Transit & Hidden Conspiracy (20s - 40s)`,
       locationName: loc2,
-      timeRange: '20s - 40s',
+      timeRange: is90s ? '30s - 60s' : '20s - 40s',
       lightingTheme: 'Dynamic passing neon lights, rhythmic moving shadows, tinted glass interior ambience, high-contrast reflections',
     },
     {
       sceneNumber: 3,
-      sceneName: `Scene 3: The Climax & Irreversible Ultimatum (40s - 60s)`,
+      sceneName: is90s
+        ? `Scene 3: The Climax & Irreversible Ultimatum (60s - 90s)`
+        : `Scene 3: The Climax & Irreversible Ultimatum (40s - 60s)`,
       locationName: loc3,
-      timeRange: '40s - 60s',
+      timeRange: is90s ? '60s - 90s' : '40s - 60s',
       lightingTheme: 'High-contrast noir shadows, flickering industrial fluorescent tube lights, wet reflective asphalt puddles',
     },
   ];
 
-  // 7-Day Script Arcs (6 clips per episode: Clips 1-2 in Scene 1, Clips 3-4 in Scene 2, Clips 5-6 in Scene 3)
+  // 7-Day Script Arcs: 9 beats per day across 3 dynamic scenes (3 beats per scene)
+  // For 90s: All 9 beats are used (Clips 1-3 in Scene 1, 4-6 in Scene 2, 7-9 in Scene 3).
+  // For 60s: Slices to 6 core beats (Clips 1-2 in Scene 1, 4-5 in Scene 2, 7 & 9 in Scene 3).
   const defaultDialogueMatrix: Record<number, Array<{ speaker: string; dialogue: string; action: string; shotType: any; sceneNum: 1 | 2 | 3 }>> = {
     1: [
-      // Scene 1: Penthouse Study (0-20s)
+      // Scene 1: Penthouse Study (0-20s or 0-30s)
       {
         speaker: char1.name,
         dialogue: `At exactly 03:00 UTC, forty percent of company equity was transferred... and the digital signature is yours, ${char2.name}.`,
@@ -132,7 +141,14 @@ export function resolve7DayMultiScenePlot(
         shotType: 'Shot-Reverse-Shot Close-Up',
         sceneNum: 1,
       },
-      // Scene 2: Glass Elevator / Transit (20-40s)
+      {
+        speaker: char1.name,
+        dialogue: `Then explain why the encrypted server ledger shows the transfer was confirmed from inside this exact room fifteen minutes ago.`,
+        action: `Over-the-shoulder dramatic standoff. ${char1.name} slams the illuminated audit tablet onto mahogany, staring intently screen-right.`,
+        shotType: 'Over-the-Shoulder',
+        sceneNum: 1,
+      },
+      // Scene 2: Glass Elevator / Transit (20-40s or 30-60s)
       {
         speaker: char1.name,
         dialogue: `Then why are the offshore bank confirmation codes pinging your personal satellite phone right now?`,
@@ -147,7 +163,14 @@ export function resolve7DayMultiScenePlot(
         shotType: 'Shot-Reverse-Shot Close-Up',
         sceneNum: 2,
       },
-      // Scene 3: Underground Garage (40-60s)
+      {
+        speaker: char1.name,
+        dialogue: `Look down at the lobby display... our company access privileges were wiped thirty seconds after the elevator doors closed!`,
+        action: `Reverse angle on ${char1.name} pointing down at the flashing red terminal in the elevator wall, looking screen-left with rising dread.`,
+        shotType: 'Shot-Reverse-Shot Close-Up',
+        sceneNum: 2,
+      },
+      // Scene 3: Underground Garage (40-60s or 60-90s)
       {
         speaker: char1.name,
         dialogue: `Look at the surveillance feed downstairs, ${char2.name}. Your personal driver is waiting with an armed escort.`,
@@ -158,7 +181,14 @@ export function resolve7DayMultiScenePlot(
       {
         speaker: char2.name,
         dialogue: `That's not my driver, ${char1.name}... that's the hit squad our father hired before he died!`,
-        action: `Extreme close-up on ${char2.name} in the garage shadows. Eyeline locked screen-left, chilling realization before abrupt cut to black.`,
+        action: `Extreme close-up on ${char2.name} in the garage shadows. Eyeline locked screen-left, chilling realization before abrupt cut.`,
+        shotType: 'Shot-Reverse-Shot Close-Up',
+        sceneNum: 3,
+      },
+      {
+        speaker: char1.name,
+        dialogue: `Get behind the reinforced pillar right now, ${char2.name}... because their lead SUV just racked a round into the chamber!`,
+        action: `Tight reverse close-up on ${char1.name} grabbing ${char2.name}'s sleeve and pulling her into deep shadow, facing screen-right. Gunshot echoes, abrupt blackout!`,
         shotType: 'Shot-Reverse-Shot Close-Up',
         sceneNum: 3,
       },
@@ -181,6 +211,13 @@ export function resolve7DayMultiScenePlot(
       },
       {
         speaker: char2.name,
+        dialogue: `I tried to warn you in Geneva! But you were too blind with ambition to see the federal net closing around us!`,
+        action: `Over-the-shoulder intense standoff. ${char2.name} slams the door shut, locking eyes screen-right as headlights sweep the glass.`,
+        shotType: 'Over-the-Shoulder',
+        sceneNum: 1,
+      },
+      {
+        speaker: char2.name,
         dialogue: `I signed the exact same contract, ${char1.name}. The moment either of us goes to the police, the trust detonates.`,
         action: `Interior medium shot inside the moving car. Passing streetlights flickering across ${char2.name}'s face, looking screen-right.`,
         shotType: 'Shot-Reverse-Shot Close-Up',
@@ -195,6 +232,13 @@ export function resolve7DayMultiScenePlot(
       },
       {
         speaker: char2.name,
+        dialogue: `Their chase vehicles just crossed the bridge behind us! Turn off the headlights and take the freight tunnel now!`,
+        action: `Low-angle tracking shot inside the dark vehicle. Passing emergency tunnel tiles reflecting across ${char2.name}'s eyes, looking screen-right.`,
+        shotType: 'Dynamic Tracking',
+        sceneNum: 2,
+      },
+      {
+        speaker: char2.name,
         dialogue: `The vault requires two simultaneous retinal scans. If one of us betrays the other inside, the room seals forever.`,
         action: `Atmospheric low-angle shot outside the reinforced vault door. ${char2.name} stands under buzzing security lights, facing screen-right.`,
         shotType: 'Master Wide',
@@ -203,7 +247,14 @@ export function resolve7DayMultiScenePlot(
       {
         speaker: char1.name,
         dialogue: `Then pray neither of us blinks... because the timer just hit thirty seconds.`,
-        action: `Extreme tight close-up on ${char1.name}'s eye reflecting the amber countdown diode, facing screen-left. Cut to black!`,
+        action: `Extreme tight close-up on ${char1.name}'s eye reflecting the amber countdown diode, facing screen-left.`,
+        shotType: 'Shot-Reverse-Shot Close-Up',
+        sceneNum: 3,
+      },
+      {
+        speaker: char2.name,
+        dialogue: `Retinal match confirmed... step inside before the halon gas suppression seals the airlock!`,
+        action: `Tight reverse close-up on ${char2.name} crossing the heavy vault threshold as pneumatic sirens begin wailing. Screen snaps to black!`,
         shotType: 'Shot-Reverse-Shot Close-Up',
         sceneNum: 3,
       },
@@ -226,6 +277,13 @@ export function resolve7DayMultiScenePlot(
       },
       {
         speaker: char1.name,
+        dialogue: `Listen to the background frequency on the recording... that's the private encrypted line of the federal courthouse.`,
+        action: `Over-the-shoulder focus on the glowing audio waveform display. ${char1.name} leans in with razor focus, facing screen-right.`,
+        shotType: 'Over-the-Shoulder',
+        sceneNum: 1,
+      },
+      {
+        speaker: char1.name,
         dialogue: `Listen to this voice... that's not our father on the tape. That's the Federal District Attorney.`,
         action: `Tracking medium shot along the steel stairwell. ${char1.name} holds the speaker to his ear, looking screen-right in shock.`,
         shotType: 'Dynamic Tracking',
@@ -240,6 +298,13 @@ export function resolve7DayMultiScenePlot(
       },
       {
         speaker: char1.name,
+        dialogue: `He's not building a prosecution case... he's liquidating our family assets to fund his own political syndicate!`,
+        action: `Close-up on ${char1.name} on the rain-swept stairwell landing, phone screen reflecting transfer sums, facing screen-right.`,
+        shotType: 'Shot-Reverse-Shot Close-Up',
+        sceneNum: 2,
+      },
+      {
+        speaker: char1.name,
         dialogue: `Look up at the helipad... the federal helicopter just touched down, and they aren't carrying arrest warrants.`,
         action: `Dramatic wide shot on the wind-swept rooftop helipad. Rotors whipping through midnight fog, ${char1.name} facing screen-right.`,
         shotType: 'Master Wide',
@@ -248,7 +313,14 @@ export function resolve7DayMultiScenePlot(
       {
         speaker: char2.name,
         dialogue: `They came to burn the evidence, ${char1.name}. And we're the only evidence left standing.`,
-        action: `Tight close-up on ${char2.name}'s face illuminated by sweeping searchlights, facing screen-left. Sudden blackout cut!`,
+        action: `Tight close-up on ${char2.name}'s face illuminated by sweeping searchlights, facing screen-left with unflinching defiance.`,
+        shotType: 'Shot-Reverse-Shot Close-Up',
+        sceneNum: 3,
+      },
+      {
+        speaker: char1.name,
+        dialogue: `Pocket the titanium drive and grab the emergency flare... we drop through the service chute before they breach the roof!`,
+        action: `Extreme tight close-up on ${char1.name}'s hand igniting the crimson distress flare. Blinding red sparks shower the lens; cut to black!`,
         shotType: 'Shot-Reverse-Shot Close-Up',
         sceneNum: 3,
       },
@@ -271,6 +343,13 @@ export function resolve7DayMultiScenePlot(
       },
       {
         speaker: char2.name,
+        dialogue: `If you think I had anything to do with those wire transfers, check the forensic timestamps right now!`,
+        action: `Over-the-shoulder push-in. ${char2.name} spins the laptop screen around to show the live encrypted audit trace, looking screen-right.`,
+        shotType: 'Over-the-Shoulder',
+        sceneNum: 1,
+      },
+      {
+        speaker: char2.name,
         dialogue: `Don't look at me like that, ${char1.name}. My signature was forged with the same encrypted cipher they used on you!`,
         action: `Moving tracking shot down the marble corridor. ${char2.name} walking alongside ${char1.name}, facing screen-right.`,
         shotType: 'Dynamic Tracking',
@@ -286,6 +365,13 @@ export function resolve7DayMultiScenePlot(
       {
         speaker: char2.name,
         dialogue: `Arthur Vance died two years ago in a private plane crash in the Alps! That's mathematically impossible!`,
+        action: `Medium close-up on ${char2.name} clutching the marble archway, color completely draining from her cheeks, looking screen-right.`,
+        shotType: 'Shot-Reverse-Shot Close-Up',
+        sceneNum: 2,
+      },
+      {
+        speaker: char2.name,
+        dialogue: `If father is alive... then every funeral, every tear, and every stock crash was an orchestrated performance!`,
         action: `Medium shot in the sub-basement archive vault. ${char2.name} backs away against the metal door, facing screen-right.`,
         shotType: 'Master Wide',
         sceneNum: 3,
@@ -293,7 +379,14 @@ export function resolve7DayMultiScenePlot(
       {
         speaker: char1.name,
         dialogue: `Then explain why his private biometric transponder just logged into this building three minutes ago...`,
-        action: `Extreme tight close-up on the blinking red server status light reflecting in ${char1.name}'s eyes, facing screen-left. Cut to black!`,
+        action: `Extreme tight close-up on the blinking red server status light reflecting in ${char1.name}'s eyes, facing screen-left.`,
+        shotType: 'Shot-Reverse-Shot Close-Up',
+        sceneNum: 3,
+      },
+      {
+        speaker: char2.name,
+        dialogue: `Look at the elevator control bank... the master suite car was just called from the sub-level. He's coming up right now!`,
+        action: `Extreme close-up on the illuminated floor counter ticking upwards: 1... 2... 3... Ding! Sudden abrupt blackout cut!`,
         shotType: 'Shot-Reverse-Shot Close-Up',
         sceneNum: 3,
       },
@@ -316,6 +409,13 @@ export function resolve7DayMultiScenePlot(
       },
       {
         speaker: char1.name,
+        dialogue: `And we fell into every single trap he set for four long years, tearing this family apart for nothing.`,
+        action: `Over-the-shoulder shot on ${char1.name} leaning against the cracked window, rain streaming down the glass, facing screen-right.`,
+        shotType: 'Over-the-Shoulder',
+        sceneNum: 1,
+      },
+      {
+        speaker: char1.name,
         dialogue: `We spent two years destroying each other's lives for a prize that was never meant to be real.`,
         action: `Tracking medium shot along the deserted subway platform under yellow lights. ${char1.name} pacing, facing screen-right.`,
         shotType: 'Dynamic Tracking',
@@ -330,6 +430,13 @@ export function resolve7DayMultiScenePlot(
       },
       {
         speaker: char1.name,
+        dialogue: `The global broadcast will destroy our names, our family reputation, and every company share we own.`,
+        action: `Reverse medium close-up on ${char1.name} stopping in front of the rumbling subway tracks, eyes locked screen-right.`,
+        shotType: 'Shot-Reverse-Shot Close-Up',
+        sceneNum: 2,
+      },
+      {
+        speaker: char1.name,
         dialogue: `If we press broadcast, the federal strike team on the roof won't take us into custody... they will shoot on sight.`,
         action: `Wide shot on the high-rise observation deck amidst whistling midnight winds. ${char1.name} facing screen-right.`,
         shotType: 'Master Wide',
@@ -338,7 +445,14 @@ export function resolve7DayMultiScenePlot(
       {
         speaker: char2.name,
         dialogue: `Then take the second gun from my coat, ${char1.name}... because tonight, we stop playing defense.`,
-        action: `Tight close-up on ${char2.name} handing over the dark steel weapon, looking screen-left with fierce resolve. Cut to black!`,
+        action: `Tight close-up on ${char2.name} handing over the dark steel weapon, looking screen-left with fierce resolve.`,
+        shotType: 'Shot-Reverse-Shot Close-Up',
+        sceneNum: 3,
+      },
+      {
+        speaker: char1.name,
+        dialogue: `Cock the hammer and watch the fire door... they just blew the emergency hinges off the frame!`,
+        action: `Extreme close-up on ${char1.name}'s thumb pulling back the hammer with a sharp metallic click. Sound of door buckling; cut to black!`,
         shotType: 'Shot-Reverse-Shot Close-Up',
         sceneNum: 3,
       },
@@ -361,7 +475,14 @@ export function resolve7DayMultiScenePlot(
       },
       {
         speaker: char2.name,
-        dialogue: `Let them encircle us. The moment they breach the perimeter, our automated proxy leaks their bank records to the Swiss authorities.`,
+        dialogue: `Let them encircle us. Every second they spend on this runway is another gigabyte transferred to the Swiss auditors.`,
+        action: `Over-the-shoulder tracking. ${char2.name} locks the satellite uplink case onto the transport cart, facing screen-right.`,
+        shotType: 'Over-the-Shoulder',
+        sceneNum: 1,
+      },
+      {
+        speaker: char2.name,
+        dialogue: `The moment they breach the perimeter, our automated proxy leaks their bank records to the Swiss authorities.`,
         action: `Tracking medium shot along the sterile hospital corridor towards the emergency bay. ${char2.name} walking, facing screen-right.`,
         shotType: 'Dynamic Tracking',
         sceneNum: 2,
@@ -376,6 +497,13 @@ export function resolve7DayMultiScenePlot(
       {
         speaker: char2.name,
         dialogue: `Our father taught me one thing before he disappeared: when the wolves come, you don't run... you lock the gate behind them.`,
+        action: `Medium close-up on ${char2.name} looking screen-left with a chilling, triumphant smirk, chin held high.`,
+        shotType: 'Shot-Reverse-Shot Close-Up',
+        sceneNum: 2,
+      },
+      {
+        speaker: char2.name,
+        dialogue: `Look at the tarmac floodlights switching on... they are moving tactical units into position.`,
         action: `Wide cinematic shot on the midnight runway. Heavy rain whipping across yellow tarmac lights, ${char2.name} facing screen-right.`,
         shotType: 'Master Wide',
         sceneNum: 3,
@@ -383,7 +511,14 @@ export function resolve7DayMultiScenePlot(
       {
         speaker: char1.name,
         dialogue: `Look at the head SUV door opening, ${char2.name}... that isn't the District Attorney stepping out into the rain.`,
-        action: `Extreme tight close-up on ${char1.name}'s eyes widening in pure disbelief at the tarmac, facing screen-left. Cut to black!`,
+        action: `Extreme tight close-up on ${char1.name}'s eyes widening in pure disbelief at the tarmac, facing screen-left.`,
+        shotType: 'Shot-Reverse-Shot Close-Up',
+        sceneNum: 3,
+      },
+      {
+        speaker: char2.name,
+        dialogue: `The man stepping into the downpour... has our father's silver signet ring on his finger!`,
+        action: `Extreme close-up on a silver heirloom signet ring catching the harsh airfield floodlight. Thunder crack; instant cut to black!`,
         shotType: 'Shot-Reverse-Shot Close-Up',
         sceneNum: 3,
       },
@@ -407,6 +542,13 @@ export function resolve7DayMultiScenePlot(
       {
         speaker: char1.name,
         dialogue: `He's offering us twenty million each to hand over the drive and disappear into South America forever.`,
+        action: `Over-the-shoulder dramatic standoff on the observation point. Wind howling as ${char1.name} faces ${char2.name}, eyes locked screen-right.`,
+        shotType: 'Over-the-Shoulder',
+        sceneNum: 1,
+      },
+      {
+        speaker: char1.name,
+        dialogue: `He claims if we hand him the decryption key tonight, he will erase every criminal record linking us to the syndicate.`,
         action: `Tracking shot inside the industrial machine room as rotating ventilation fan shadows slice through the room. ${char1.name} facing screen-right.`,
         shotType: 'Dynamic Tracking',
         sceneNum: 2,
@@ -420,6 +562,13 @@ export function resolve7DayMultiScenePlot(
       },
       {
         speaker: char1.name,
+        dialogue: `Then we destroy the drive right here in front of him... and end this corrupt dynasty forever.`,
+        action: `Tight close-up on ${char1.name} stepping alongside ${char2.name}, hand locking over hers above the whirling turbine fans, looking screen-left.`,
+        shotType: 'Shot-Reverse-Shot Close-Up',
+        sceneNum: 2,
+      },
+      {
+        speaker: char1.name,
         dialogue: `His sniper on the bridge just raised his rifle, ${char2.name}! Make the call right now!`,
         action: `Dramatic wide shot on the stormy suspension bridge. Headlights piercing fog, rain crashing onto the metal railings. ${char1.name} facing screen-right.`,
         shotType: 'Master Wide',
@@ -428,16 +577,30 @@ export function resolve7DayMultiScenePlot(
       {
         speaker: char2.name,
         dialogue: `Press the broadcast key, ${char1.name}... let the entire world see what the Vance family is made of!`,
-        action: `Extreme close-up on ${char2.name}'s thumb slamming down onto the illuminated transmit trigger. Thunder crack, instant cut to black!`,
+        action: `Extreme close-up on ${char2.name}'s thumb slamming down onto the illuminated transmit trigger, eyes locked screen-left.`,
+        shotType: 'Shot-Reverse-Shot Close-Up',
+        sceneNum: 3,
+      },
+      {
+        speaker: char1.name,
+        dialogue: `Broadcast transmitted to four hundred global news networks! Welcome to the end of the empire!`,
+        action: `Extreme close-up on the green transmission bar reaching 100%. Thunder crack, deafening sniper crack, instant pitch black!`,
         shotType: 'Shot-Reverse-Shot Close-Up',
         sceneNum: 3,
       },
     ],
   };
 
-  const dayBeats = defaultDialogueMatrix[dayNum] || defaultDialogueMatrix[1];
+  const rawDayBeats = defaultDialogueMatrix[dayNum] || defaultDialogueMatrix[1];
 
-  // Map into 6 detailed clips with 180-degree cinema eyeline matching!
+  // Dynamically slice based on target episode duration:
+  // If 90s: use all 9 beats (3 clips per scene x 3 scenes = 9 clips x 10s = 90s)
+  // If 60s: use 6 beats (2 clips per scene x 3 scenes = 6 clips x 10s = 60s)
+  const dayBeats = is90s
+    ? rawDayBeats
+    : [rawDayBeats[0], rawDayBeats[1], rawDayBeats[3], rawDayBeats[4], rawDayBeats[6], rawDayBeats[8]];
+
+  // Map into detailed clips with 180-degree cinema eyeline matching!
   const clips = dayBeats.map((d, idx) => {
     const sceneDef = scenes.find((s) => s.sceneNumber === d.sceneNum) || scenes[0];
     const eyeline: 'screen-left' | 'screen-right' = idx % 2 === 0 ? 'screen-right' : 'screen-left';
@@ -564,15 +727,20 @@ export function generateDualCrossPlatformMetadata(params: {
   // 1. EPISODE METADATA
   const episodeYoutubeTitle = `HE CAUGHT HER RED-HANDED! 😱 | Ep ${params.dayNum}: ${cleanEpTitle}`.slice(0, 70);
 
+  const is90s = params.scenes[0]?.timeRange?.includes('30s');
+  const ts1 = '0:00';
+  const ts2 = is90s ? '0:30' : '0:20';
+  const ts3 = is90s ? '0:60' : '0:40';
+
   const episodeYoutubeDescription = `Watch Episode ${params.dayNum} of "${params.seriesTitle}" (Season ${params.seasonNumber})!
 
 ${params.hook}
 When the audit records are exposed, ${params.char1Name} and ${params.char2Name} face an explosive three-scene showdown that changes everything.
 
 ⏱️ EPISODE SCENE TIMESTAMPS:
-0:00 - Scene 1: The Confrontation (${params.scenes[0]?.locationName || 'Penthouse Study'})
-0:20 - Scene 2: The Secret Signal (${params.scenes[1]?.locationName || 'Glass Elevator'})
-0:40 - Scene 3: The Climax Standoff (${params.scenes[2]?.locationName || 'Underground Garage'})
+${ts1} - Scene 1: The Confrontation (${params.scenes[0]?.locationName || 'Penthouse Study'})
+${ts2} - Scene 2: The Secret Signal (${params.scenes[1]?.locationName || 'Glass Elevator'})
+${ts3} - Scene 3: The Climax Standoff (${params.scenes[2]?.locationName || 'Underground Garage'})
 
 🎬 CAST & CREDITS:
 • ${params.char1Name} as The Lead Attorney / Heir

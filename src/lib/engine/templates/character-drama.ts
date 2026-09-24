@@ -1418,6 +1418,8 @@ export function buildCharacterDramaClips(
   dialogueScript: { speaker: string; line: string; timing: string }[];
   inUniversePosts?: InUniversePostBundle;
   sceneContinuityLock?: SceneContinuityLock;
+  cleanLocationPlates?: CleanLocationPlate[];
+  dualMetadata?: { episode: PlatformSocialMetadata; bts: PlatformSocialMetadata };
 } {
   const noirDefaults = [
     {

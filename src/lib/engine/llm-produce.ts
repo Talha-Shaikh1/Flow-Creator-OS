@@ -13,6 +13,7 @@ import {
   buildContinuityFramePrompt,
   EpisodeSceneContinuity,
 } from './rules/continuity';
+import { buildCharacterDramaClips } from './templates/character-drama';
 
 function extractClipsArray(data: any): any[] {
   if (!data || typeof data !== 'object') return [];
@@ -230,6 +231,9 @@ export async function produceVariationWithLLM({
   clips: ClipPrompt[];
   tokenUsage?: any;
   sceneContinuityLock?: any;
+  cleanLocationPlates?: any[];
+  dualMetadata?: any;
+  inUniversePosts?: any;
 }> {
   // CRITICAL FIX: Only resolve autonomous cast if spec.cast is completely absent or empty!
   if (!spec.cast || spec.cast.length === 0) {
@@ -239,6 +243,40 @@ export async function produceVariationWithLLM({
   spec.seriesTitle = resolveSeriesTitle(spec);
 
   const arc = getWeeklyEmotionArc(dayNum);
+
+  // If character_drama format: produce using the scalable 60s/90s Multi-Scene Director Engine
+  if (spec.format === 'character_drama') {
+    const dramaOutput = buildCharacterDramaClips(
+      spec,
+      arc.dailyEmotion,
+      variationType,
+      dayNum,
+      existingVariation
+    );
+
+    const tokenUsage = createTokenReport(
+      380,
+      dramaOutput.clips.length * 90,
+      'gemini-omni-flash-1.1',
+      'google-flow'
+    );
+
+    return {
+      title: dramaOutput.title,
+      hookDescription: dramaOutput.hookDescription,
+      dialogueScript: dramaOutput.dialogueScript,
+      masterFrameImagePrompt: dramaOutput.clips[0]?.frameImagePrompt,
+      characterAnchors: dramaOutput.characterAnchors,
+      locationAnchors: dramaOutput.locationAnchors,
+      clips: dramaOutput.clips,
+      cleanLocationPlates: (dramaOutput as any).cleanLocationPlates,
+      dualMetadata: (dramaOutput as any).dualMetadata,
+      inUniversePosts: (dramaOutput as any).inUniversePosts,
+      sceneContinuityLock: (dramaOutput as any).sceneContinuityLock,
+      tokenUsage,
+    };
+  }
+
   const episodeName = EPISODE_TITLES[dayNum] || `Episode ${dayNum}`;
   const baseTitle = (!forceFresh && existingVariation?.title) || `${episodeName} - ${variationType}`;
   const baseHook = (!forceFresh && existingVariation?.hookDescription) || `${spec.format} story for ${arc.dailyEmotion}`;
