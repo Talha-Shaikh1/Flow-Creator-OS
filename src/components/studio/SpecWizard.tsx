@@ -821,7 +821,7 @@ export function SpecWizard({ onGenerate, isLoading }: Props) {
         </div>
 
         {/* Episode Target Duration (Omni Flash 1.1 Optimized: 60s vs 90s) */}
-        {format === 'character_drama' && (
+        {(format === 'character_drama' || format === 'pet_comedy') && (
           <div className="space-y-2 pt-2 border-t border-neutral-800/60">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-neutral-300 flex items-center gap-1.5">

@@ -14,6 +14,7 @@ import {
   EpisodeSceneContinuity,
 } from './rules/continuity';
 import { buildCharacterDramaClips } from './templates/character-drama';
+import { buildPetComedyClips } from './templates/pet-comedy';
 
 function extractClipsArray(data: any): any[] {
   if (!data || typeof data !== 'object') return [];
@@ -273,6 +274,39 @@ export async function produceVariationWithLLM({
       dualMetadata: (dramaOutput as any).dualMetadata,
       inUniversePosts: (dramaOutput as any).inUniversePosts,
       sceneContinuityLock: (dramaOutput as any).sceneContinuityLock,
+      tokenUsage,
+    };
+  }
+
+  // If pet_comedy format: produce using the scalable 60s/90s Multi-Scene Pet Comedy Engine
+  if (spec.format === 'pet_comedy') {
+    const petOutput = buildPetComedyClips(
+      spec,
+      arc.dailyEmotion,
+      variationType,
+      dayNum,
+      existingVariation
+    );
+
+    const tokenUsage = createTokenReport(
+      350,
+      petOutput.clips.length * 90,
+      'gemini-omni-flash-1.1',
+      'google-flow'
+    );
+
+    return {
+      title: petOutput.title,
+      hookDescription: petOutput.hookDescription,
+      dialogueScript: petOutput.dialogueScript,
+      masterFrameImagePrompt: petOutput.clips[0]?.frameImagePrompt,
+      characterAnchors: petOutput.characterAnchors,
+      locationAnchors: petOutput.locationAnchors,
+      clips: petOutput.clips,
+      cleanLocationPlates: petOutput.cleanLocationPlates,
+      dualMetadata: petOutput.dualMetadata,
+      inUniversePosts: petOutput.inUniversePosts,
+      sceneContinuityLock: petOutput.sceneContinuityLock,
       tokenUsage,
     };
   }
