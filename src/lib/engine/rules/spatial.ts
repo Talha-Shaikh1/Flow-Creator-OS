@@ -47,22 +47,34 @@ export function enforceEyelineBlocking(
   speakerName: string,
   eyeline: 'screen-left' | 'screen-right' | 'center-forward',
   counterpartName?: string
-): { blockingText: string; facingDirective: string } {
+): {
+  blockingText: string;
+  facingDirective: string;
+  counterpartFacingDirective: string;
+  mutualGazeDirective: string;
+} {
+  const counterpart = counterpartName || 'counterpart';
   if (eyeline === 'screen-right') {
     return {
-      facingDirective: `Facing 3/4 right, eyeline strictly locked 15 degrees towards screen-right at off-camera ${counterpartName || 'listener'}`,
-      blockingText: `[SPATIAL & EYELINE MATCH]: ${speakerName} framed medium close-up, angled 3/4 towards screen-right. Eyeline is rigidly locked off-axis towards screen-right, establishing direct conversational eye contact with counterpart in reverse shot. No looking towards camera.`,
+      facingDirective: `Positioned at screen-left, head and torso angled 3/4 towards screen-right, eyes locked DIRECTLY onto ${counterpart}'s face across the space. Addressing ${counterpart} directly with intense eye contact. Strictly zero looking into the camera lens, zero looking off-frame.`,
+      counterpartFacingDirective: `Positioned opposite at screen-right, head and torso angled 3/4 towards screen-left, eyes locked DIRECTLY back into ${speakerName}'s eyes across the space. Rigid listening reaction, unbroken eye contact, lips sealed. Zero camera gaze, zero wandering eyes.`,
+      mutualGazeDirective: `[MUTUAL 180-DEGREE CONVERSATIONAL EYE-CONTACT LOCK]: ${speakerName} (screen-left) and ${counterpart} (screen-right) are face-to-face across the space. ${speakerName} speaks directly TO ${counterpart}; ${counterpart}'s undivided attention is locked onto ${speakerName}. Neither character looks at the camera or glances away into empty space.`,
+      blockingText: `[SPATIAL & EYELINE MATCH]: ${speakerName} framed at screen-left looking directly screen-right into ${counterpart}'s eyes; ${counterpart} framed at screen-right looking directly screen-left into ${speakerName}'s eyes. Direct 180-degree cinema eyeline axis maintained.`,
     };
   }
   if (eyeline === 'screen-left') {
     return {
-      facingDirective: `Facing 3/4 left, eyeline strictly locked 15 degrees towards screen-left at off-camera ${counterpartName || 'speaker'}`,
-      blockingText: `[SPATIAL & EYELINE MATCH]: ${speakerName} framed reverse medium close-up, angled 3/4 towards screen-left. Eyeline is rigidly locked off-axis towards screen-left, matching the 180-degree cinema eyeline axis. Direct eye contact maintained across the cut.`,
+      facingDirective: `Positioned at screen-right, head and torso angled 3/4 towards screen-left, eyes locked DIRECTLY onto ${counterpart}'s face across the space. Addressing ${counterpart} directly with intense eye contact. Strictly zero looking into the camera lens, zero looking off-frame.`,
+      counterpartFacingDirective: `Positioned opposite at screen-left, head and torso angled 3/4 towards screen-right, eyes locked DIRECTLY back into ${speakerName}'s eyes across the space. Rigid listening reaction, unbroken eye contact, lips sealed. Zero camera gaze, zero wandering eyes.`,
+      mutualGazeDirective: `[MUTUAL 180-DEGREE CONVERSATIONAL EYE-CONTACT LOCK]: ${speakerName} (screen-right) and ${counterpart} (screen-left) are face-to-face across the space. ${speakerName} speaks directly TO ${counterpart}; ${counterpart}'s undivided attention is locked onto ${speakerName}. Neither character looks at the camera or glances away into empty space.`,
+      blockingText: `[SPATIAL & EYELINE MATCH]: ${speakerName} framed at screen-right looking directly screen-left into ${counterpart}'s eyes; ${counterpart} framed at screen-left looking directly screen-right into ${speakerName}'s eyes. Direct 180-degree cinema eyeline axis maintained.`,
     };
   }
   return {
-    facingDirective: 'Centered, looking intently ahead with steady forward focus',
-    blockingText: `[SPATIAL BLOCKING]: ${speakerName} centered in frame with shallow depth-of-field background, maintaining steady dramatic tension.`,
+    facingDirective: `Positioned center-frame, head and eyes focused directly forward on ${counterpart} standing directly in front across the space. Intensely locked conversational eye contact. Zero camera gaze, zero wandering eyes.`,
+    counterpartFacingDirective: `Positioned opposite in frame depth, eyes focused directly on ${speakerName} with unbroken listening focus. Zero camera gaze.`,
+    mutualGazeDirective: `[DIRECT TWO-PERSON EYE-CONTACT LOCK]: ${speakerName} and ${counterpart} maintain direct eye-to-eye conversational contact across the space. Zero wandering gaze.`,
+    blockingText: `[SPATIAL BLOCKING]: ${speakerName} maintaining intense eye-to-eye dramatic tension with ${counterpart}.`,
   };
 }
 

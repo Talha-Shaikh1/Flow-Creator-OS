@@ -66,23 +66,49 @@ export function resolveEpisodeContinuity(
 
   // 2. PET COMEDY (Joe the Cat, Nova the Corgi, Zara the Owner)
   if (format === 'pet_comedy') {
+    const zaraOutfits: Record<number, string> = {
+      1: 'Casual ribbed navy tank top, layered delicate silver chain necklaces, relaxed faded blue denim',
+      2: 'Cream oversized chunky-knit sweater, olive linen lounge pants, delicate gold pendant necklace',
+      3: 'Heather grey fitted athletic crewneck, high-waisted black leggings, hair in high ponytail',
+      4: 'Sage green linen button-up shirt with rolled cuffs, white relaxed shorts, tortoiseshell hair clip',
+      5: 'Terracotta oversized graphic hoodie, distressed light-wash boyfriend jeans, messy hair bun',
+      6: 'Pastel lilac ribbed knit cardigan over white scoop-neck tank top, relaxed stone chinos',
+      7: 'Warm mustard yellow relaxed flannel shirt, dark raw denim, leather wristband',
+    };
+    const normalizedPetDay = ((dayNum - 1) % 7) + 1;
+    const zaraOutfit = zaraOutfits[normalizedPetDay] || zaraOutfits[1];
+
+    const joeCollars: Record<number, string> = {
+      1: 'Plush solid blue-grey dense coat, simple distressed brown leather collar with polished brass round tag engraved "JOE"',
+      2: 'Plush solid blue-grey dense coat, midnight-black velvet collar with small polished silver bell',
+      3: 'Plush solid blue-grey dense coat, royal navy braided leather collar with silver fish tag engraved "JOE"',
+    };
+    const joeCollar = joeCollars[((dayNum - 1) % 3) + 1] || joeCollars[1];
+
+    const novaBowties: Record<number, string> = {
+      1: 'Thick fluffy red-and-white double coat, vibrant scarlet-red satin bowtie secured neatly at collar',
+      2: 'Thick fluffy red-and-white double coat, classic Scottish tartan plaid bowtie with brass buckle',
+      3: 'Thick fluffy red-and-white double coat, mustard-gold satin bowtie secured around fluffy neck',
+    };
+    const novaBowtie = novaBowties[((dayNum - 1) % 3) + 1] || novaBowties[1];
+
     const wardrobeLocks: WardrobeLockItem[] = [
       {
         characterName: 'Zara',
         role: 'Pet Parent',
-        exactOutfit: 'Casual ribbed navy tank top, layered delicate silver chain necklaces, relaxed faded blue denim',
-        hairAndGrooming: 'Wavy brunette hair tied in a loose relaxed low bun with soft strands framing face',
+        exactOutfit: zaraOutfit,
+        hairAndGrooming: 'Wavy brunette hair tied in a relaxed stylish bun with soft strands framing face',
       },
       {
         characterName: 'Joe',
         role: 'British Shorthair Cat',
-        exactOutfit: 'Plush solid blue-grey dense coat, simple distressed brown leather collar with polished brass round tag engraved "JOE"',
+        exactOutfit: joeCollar,
         hairAndGrooming: 'Round chubby face, vibrant copper-orange eyes with sharp pinpoint catchlight, pristine grooming',
       },
       {
         characterName: 'Nova',
         role: 'Corgi Dog',
-        exactOutfit: 'Thick fluffy red-and-white double coat, vibrant scarlet-red satin bowtie secured neatly at collar',
+        exactOutfit: novaBowtie,
         hairAndGrooming: 'Ears perked straight up, alert dark almond eyes, wet dark nose, clean white chest fur',
       },
     ];
@@ -95,7 +121,7 @@ export function resolveEpisodeContinuity(
       roomGeography: 'Cozy living room: large cream sectional sofa, dark oak coffee table in center, parquet wood floor with woven tribal rug',
       wardrobeLocks,
       colorPaletteGrade: 'Warm golden hour cinematic film still, rich organic wood tones, natural animal fur texture, zero plastic smoothing',
-      masterAnchorPrompt: `[MASTER EPISODE ANCHOR]: Traditional cozy living room. Zara in navy tank top, Joe in leather collar 'JOE', Nova in red bowtie. Golden fireplace light. Lock 100% across all clips.`,
+      masterAnchorPrompt: `[MASTER EPISODE ANCHOR]: Traditional cozy living room. Zara in ${zaraOutfit}, Joe in ${joeCollar}, Nova in ${novaBowtie}. Golden fireplace light. Lock 100% across all clips.`,
       midjourneyContinuityRecipe: `--sref [KEYFRAME_1_URL] --sw 100 --ar 9:16`,
     };
   }
@@ -150,7 +176,7 @@ export function resolveEpisodeContinuity(
   }
 
   // 5. CHARACTER DRAMA / SERIES DRAMA (Default Universal Multi-Character Standoff)
-  // Rotating curated wardrobe themes by day number to prevent boring repetition across episodes
+  // Rotating curated wardrobe themes by day number to prevent boring repetition across episodes (14 distinct combinations)
   const DRAMA_WARDROBES: Record<number, { hero: string; villain: string; side: string; lighting: string }> = {
     1: {
       hero: 'Tailored charcoal bespoke three-piece wool suit, crisp white spread collar, silk slate-gray tie with subtle micro-weave, platinum tie bar',
@@ -194,9 +220,52 @@ export function resolveEpisodeContinuity(
       side: 'Formal federal dark blue suit with gold legal seal pin',
       lighting: 'Final confrontation: Golden dawn light breaking through storm clouds on horizon, dramatic high-stakes sunrise rim light across faces',
     },
+    8: {
+      hero: 'Camel double-faced cashmere overcoat over tailored dark charcoal suit, cream merino scarf, silver cufflinks',
+      villain: 'Royal cobalt-blue structured pantsuit with silver sculpted lapel brooch, black silk shell top, pearl earrings',
+      side: 'Heavy black canvas field jacket over dark chambray shirt',
+      lighting: 'Late dusk high-rise panorama, deep indigo ambient balanced with golden warm interior floor lamps',
+    },
+    9: {
+      hero: 'Matte obsidian tactical trench coat over fitted black merino crewneck, titanium chronometer',
+      villain: 'Champagne-gold satin tailored blazer with wide-leg tuxedo trousers, slicked-back high ponytail',
+      side: 'Distressed brown leather moto jacket with brass zipper hardware',
+      lighting: 'Foggy waterfront terminal at 02:30 AM, diffused amber sodium-vapor lights cutting through mist',
+    },
+    10: {
+      hero: 'Tailored midnight-navy pinstripe three-piece suit with vintage silver pocket watch chain, spread collar',
+      villain: 'Structured scarlet-red power blazer with black satin peaked lapels, ruby pendant necklace',
+      side: 'Charcoal wool commuter coat over washed denim shirt',
+      lighting: 'Underground transit hub, dramatic high-angle fluorescent strip lights casting long vertical shadows',
+    },
+    11: {
+      hero: 'Olive-grey bespoke wool blazer over charcoal turtleneck, matte brushed bronze ring',
+      villain: 'Ivory silk draped blouse under structured black leather trench coat, geometric gold earrings',
+      side: 'Dark navy fleece tactical zip jacket with radio clip',
+      lighting: 'Early dawn 5:30 AM mist, pale blue horizon light reflecting off damp tarmac',
+    },
+    12: {
+      hero: 'Double-breasted dark chocolate cashmere suit, light blue micro-houndstooth dress shirt, silk navy tie',
+      villain: 'Deep amethyst purple velvet structured blazer with black satin contrast lapels',
+      side: 'Weathered tan canvas chore jacket over black thermal shirt',
+      lighting: 'Dimly lit private vault room, warm tungsten spotlight focused strictly on the center conference desk',
+    },
+    13: {
+      hero: 'Charcoal tactical windbreaker over distressed white dress shirt with loosened collar, rolled sleeves',
+      villain: 'Sleek asymmetric charcoal midi-dress with structured architectural shoulders, silver cuff',
+      side: 'Black security rain shell with tactical utility pockets',
+      lighting: 'Violent thunderstorm flashes outside floor-to-ceiling windows, dramatic intermittent flash strobe',
+    },
+    14: {
+      hero: 'Full formal black tuxedo with silk grosgrain peak lapels, white pleated wing-collar shirt, silk black bow tie',
+      villain: 'Floor-length obsidian black silk evening gown with dramatic shoulder capelet, diamond teardrop earrings',
+      side: 'Tailored federal black security suit with lapel flag pin',
+      lighting: 'Final grand gala standoff: Chandelier crystal prisms throwing amber and diamond light across dark velvet curtains',
+    },
   };
 
-  const dayScheme = DRAMA_WARDROBES[dayNum] || DRAMA_WARDROBES[1];
+  const normalizedDay = ((dayNum - 1) % 14) + 1;
+  const dayScheme = DRAMA_WARDROBES[normalizedDay] || DRAMA_WARDROBES[1];
 
   const wardrobeLocks: WardrobeLockItem[] = [
     {
@@ -234,6 +303,79 @@ export function resolveEpisodeContinuity(
     masterAnchorPrompt: `[MASTER EPISODE ANCHOR]: ${location}. ${heroName} in ${dayScheme.hero}. ${villainName} in ${dayScheme.villain}. Lighting: ${dayScheme.lighting}. Lock 100% across all clips.`,
     midjourneyContinuityRecipe: `--sref [KEYFRAME_1_URL] --sw 100 --cref [CHARACTER_REF_URL] --cw 100 --ar 9:16`,
   };
+}
+
+/**
+ * Dynamically adapts the base episode wardrobe for Scene 1 (Indoor), Scene 2 (Transit/Escalation),
+ * and Scene 3 (Exterior/Climax/Rain/Vault), ensuring characters realistically adjust clothes across an episode.
+ */
+export function resolveSceneAdaptiveWardrobe({
+  baseWardrobe,
+  sceneNumber,
+  sceneLocation,
+  characterRole,
+}: {
+  baseWardrobe: string;
+  sceneNumber?: 1 | 2 | 3;
+  sceneLocation?: string;
+  characterRole?: string;
+}): string {
+  const loc = (sceneLocation || '').toLowerCase();
+  const isOutdoorOrStorm =
+    loc.includes('rain') ||
+    loc.includes('storm') ||
+    loc.includes('rooftop') ||
+    loc.includes('helipad') ||
+    loc.includes('dock') ||
+    loc.includes('pier') ||
+    loc.includes('bridge') ||
+    loc.includes('alley') ||
+    loc.includes('street') ||
+    loc.includes('runway') ||
+    loc.includes('parking') ||
+    loc.includes('garage');
+
+  const isColdVaultOrBasement =
+    loc.includes('vault') ||
+    loc.includes('server') ||
+    loc.includes('basement') ||
+    loc.includes('subterranean') ||
+    loc.includes('tunnel');
+
+  const isTransit =
+    loc.includes('elevator') ||
+    loc.includes('car') ||
+    loc.includes('mercedes') ||
+    loc.includes('limousine') ||
+    loc.includes('van') ||
+    loc.includes('train') ||
+    loc.includes('stairwell') ||
+    loc.includes('corridor');
+
+  if (sceneNumber === 1 || !sceneNumber) {
+    return `${baseWardrobe} [Scene 1: Pristine formal indoor state, buttoned tailored poise]`;
+  }
+
+  if (sceneNumber === 2) {
+    if (isTransit) {
+      return `${baseWardrobe} [Scene 2: High-tension transit adaptation: unbuttoned jacket, loosened collar, hands clenched, sharp forward movement]`;
+    }
+    return `${baseWardrobe} [Scene 2: Tense mid-scene posture, unfastened top button, intense physical body language]`;
+  }
+
+  // Scene 3: Climax & environmental layer
+  if (isOutdoorOrStorm) {
+    if (characterRole === 'Villain') {
+      return `${baseWardrobe} layered with structured black rain trench coat with upturned storm collar and protective tailored leather gloves [Scene 3: Exterior storm/rain adaptation]`;
+    }
+    return `${baseWardrobe} layered with heavy charcoal water-resistant wool trench coat with damp rain sheen on shoulders [Scene 3: Exterior storm/rain adaptation]`;
+  }
+
+  if (isColdVaultOrBasement) {
+    return `${baseWardrobe} adjusted for subterranean environment: structured heavy fabric, zipped inner lining, braced tense posture [Scene 3: Cold vault adaptation]`;
+  }
+
+  return `${baseWardrobe} [Scene 3: High-stakes climax state: disheveled tension, rolled cuffs, ready for physical confrontation]`;
 }
 
 export function buildContinuityFramePrompt({

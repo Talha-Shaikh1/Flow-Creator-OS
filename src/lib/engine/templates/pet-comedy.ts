@@ -1043,9 +1043,34 @@ export function buildPetComedyClips(
     const eyelineRule = enforceEyelineBlocking(d.speaker, d.eyeline, counterpartName);
     const matchingPlate = cleanLocationPlates.find((p) => p.sceneNumber === d.sceneNum) || cleanLocationPlates[0];
 
+    const zaraOutfits: Record<number, string> = {
+      1: 'Casual ribbed navy tank top, layered delicate silver chain necklaces, relaxed faded blue denim',
+      2: 'Cream oversized chunky-knit sweater, olive linen lounge pants, delicate gold pendant necklace',
+      3: 'Heather grey fitted athletic crewneck, high-waisted black leggings, hair in high ponytail',
+      4: 'Sage green linen button-up shirt with rolled cuffs, white relaxed shorts, tortoiseshell hair clip',
+      5: 'Terracotta oversized graphic hoodie, distressed light-wash boyfriend jeans, messy hair bun',
+      6: 'Pastel lilac ribbed knit cardigan over white scoop-neck tank top, relaxed stone chinos',
+      7: 'Warm mustard yellow relaxed flannel shirt, dark raw denim, leather wristband',
+    };
+    const currentZaraOutfit = zaraOutfits[((dayNum - 1) % 7) + 1] || zaraOutfits[1];
+
+    const joeCollars: Record<number, string> = {
+      1: 'distressed brown leather collar with round brass tag "JOE"',
+      2: 'midnight-black velvet collar with small polished silver bell',
+      3: 'royal navy braided leather collar with silver fish tag engraved "JOE"',
+    };
+    const currentJoeCollar = joeCollars[((dayNum - 1) % 3) + 1] || joeCollars[1];
+
+    const novaBowties: Record<number, string> = {
+      1: 'scarlet-red satin bowtie collar',
+      2: 'classic Scottish tartan plaid bowtie with brass buckle',
+      3: 'mustard-gold satin bowtie secured around fluffy neck',
+    };
+    const currentNovaBowtie = novaBowties[((dayNum - 1) % 3) + 1] || novaBowties[1];
+
     const wardrobeText = d.speaker === 'Zara'
-      ? 'Zara: casual navy ribbed tank top, layered silver necklaces'
-      : (d.speaker === 'Joe' ? "Joe: distressed brown leather collar with round brass tag 'JOE'" : "Nova: scarlet-red bowtie collar");
+      ? `Zara: ${currentZaraOutfit}`
+      : (d.speaker === 'Joe' ? `Joe: ${currentJoeCollar}` : `Nova: ${currentNovaBowtie}`);
 
     const omniFlash11Prompt = buildOmniFlash11Directive({
       cameraFramingAndMotion: idx % 2 === 0
@@ -1058,7 +1083,7 @@ export function buildPetComedyClips(
       counterpartName,
       wardrobe: wardrobeText,
       eyelineDirective: eyelineRule.facingDirective,
-      actionAndMicroExpression: `${d.action}. Expressive mouth lip-sync synchronized to spoken dialogue, natural animal micro-expressions, whiskers/ears alert.`,
+      actionAndMicroExpression: `${d.action}. Expressive mouth lip-sync synchronized to spoken dialogue, natural animal micro-expressions, whiskers/ears alert. Zero camera glance.`,
       dialogue: d.dialogue,
       foleyAndAudio: d.foley,
       clipIndex: idx + 1,
@@ -1078,15 +1103,17 @@ export function buildPetComedyClips(
 
     const frameImagePrompt = `[PET COMEDY KEYFRAME ${idx + 1}/${dayBeats.length} - ${sceneDef.sceneName.toUpperCase()}]:
 [LOCATION MASTER ANCHOR]: ${matchingPlate.cleanPlatePrompt}
-[PRIMARY SUBJECT]: Hyper-realistic photo of ${d.speaker} in ${sceneDef.locationName}. ${d.action}. ${eyelineRule.facingDirective}.
-[WARDROBE LOCK]: ${wardrobeText}.
+[PRIMARY SUBJECT]: Hyper-realistic photo of ${d.speaker} in ${sceneDef.locationName}. ${d.action}. ${eyelineRule.facingDirective}
+[COUNTERPART REACTION]: ${eyelineRule.counterpartFacingDirective}
+[MUTUAL GAZE LOCK]: ${eyelineRule.mutualGazeDirective}
+[WARDROBE LOCK (EPISODE ${dayNum})]: ${wardrobeText}.
 [LIGHTING & DEPTH]: ${sceneDef.lightingTheme}, shallow depth of field, 35mm film stock, 8k resolution, 9:16 vertical composition.`;
 
     const continuityRole: 'master_anchor' | 'reverse_angle_match' | 'culmination_match' =
       idx === 0 ? 'master_anchor' : (idx === 1 ? 'reverse_angle_match' : 'culmination_match');
 
     const continuityReferenceTag = idx === 0
-      ? '🎯 MASTER PET ANCHOR (Sets Joe collar, Nova bowtie, Zara tank & room lighting)'
+      ? `🎯 MASTER PET ANCHOR (Sets Joe ${currentJoeCollar}, Nova ${currentNovaBowtie}, Zara outfit & room lighting)`
       : `🔄 CONTINUITY REVERSE ANGLE (Locked to Scene ${d.sceneNum} Clean Plate: --sref [KEYFRAME_1_URL] --sw 100)`;
 
     return {
@@ -1117,7 +1144,7 @@ export function buildPetComedyClips(
       sceneWardrobe: wardrobeText,
       requiresReferenceImageAttachment: true,
       foleySoundDesign: d.foley,
-      negativePromptDirectives: 'double speaking characters, cartoon 3d style, distorted paws, extra ears, missing collar, plastic fur, robotic voice, flickering lighting, deformed animal face.',
+      negativePromptDirectives: 'looking at camera, staring into lens, wandering eyes, double speaking characters, cartoon 3d style, distorted paws, extra ears, missing collar, plastic fur, robotic voice, flickering lighting, deformed animal face.',
       continuityRole,
       continuityReferenceTag,
     };

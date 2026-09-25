@@ -210,9 +210,9 @@ export function ClipCard({
                   ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
                   : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
               }`}
-              title="180-degree cinema match: guarantees characters face each other across cuts"
+              title="180-degree cinema match: guarantees characters face each other directly across cuts"
             >
-              {clip.eyelineDirection === 'screen-right' ? '➔ Screen-Right Eyeline' : '⬅ Screen-Left Eyeline'}
+              {clip.eyelineDirection === 'screen-right' ? '➔ Facing Screen-Right (Eyes Locked on Counterpart)' : '⬅ Facing Screen-Left (Eyes Locked on Counterpart)'}
             </span>
           )}
 

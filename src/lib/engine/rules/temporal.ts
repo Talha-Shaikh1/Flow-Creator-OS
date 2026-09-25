@@ -73,9 +73,9 @@ export function generateSecBySecTimeline(
   return [
     {
       timeRange: '0:00 - 0:02',
-      visualAction: hookAction || `${activeSpeaker} locks eyes with counterpart across the desk in composed, high-stakes suspense.`,
+      visualAction: hookAction || `${activeSpeaker} locks eyes directly onto ${counterpartName} across the space in composed, high-stakes suspense, head and body turned to face ${counterpartName} with zero camera gaze.`,
       cameraMovement: 'Cinematic 50mm slow push-in at eye-level, shallow depth of field f/1.8, 24fps motion blur.',
-      characterPose: customPose || 'Shoulders squared, composed forward posture, hands rested on desk, steady piercing eye lock.',
+      characterPose: customPose || `Shoulders squared, body and face oriented directly towards ${counterpartName}, steady piercing eye contact locked onto ${counterpartName}.`,
       pauseBeat: customPause || '1.5-second measured dramatic pause; heavy silence, calm breath intake before speech.',
       activeSpeaker: activeSpeaker,
       silentCharacters: silentCharacters,
@@ -84,9 +84,9 @@ export function generateSecBySecTimeline(
     },
     {
       timeRange: '0:02 - 0:07',
-      visualAction: `${activeSpeaker} delivers dialogue with dynamic vocal inflection (sakhti & narmi): "${dialogueLine}".`,
+      visualAction: `${activeSpeaker} delivers dialogue directly to ${counterpartName} with unbroken eye-to-eye focus and dynamic vocal inflection (sakhti & narmi): "${dialogueLine}". Eyes remain fixed on ${counterpartName}'s face.`,
       cameraMovement: 'Locked medium close-up with subtle organic handheld breathing motion.',
-      characterPose: 'Slight dynamic head tilt, emphatic hand gesture timed with vocal cadence.',
+      characterPose: `Slight dynamic head gesture aimed directly at ${counterpartName}, maintaining locked eye contact throughout speech.`,
       pauseBeat: 'Continuous natural speech with realistic micro-pauses between clauses.',
       spokenDialogue: dialogueLine,
       lipSyncDirective: 'Mouth shapes match syllables with high fidelity, realistic jaw opening, natural speech cadence.',
@@ -98,13 +98,13 @@ export function generateSecBySecTimeline(
     {
       timeRange: '0:07 - 0:09',
       visualAction: silentCharacters.length > 0
-        ? `Camera performs a smooth rack-focus drift shifting gaze toward ${counterpartName} [ATTACH REFERENCE IMAGE 2 - ${counterpartName.toUpperCase()}], capturing their rigid listening reaction, lips sealed with steady unwavering eye contact.`
-        : `${activeSpeaker} closes lips calmly, maintaining steady, focused analytical eye contact as the statement settles.`,
+        ? `Camera captures ${counterpartName}'s intense reaction: ${counterpartName}'s attention is 100% locked onto ${activeSpeaker}, lips sealed, listening in rigid tension without looking away.`
+        : `${activeSpeaker} closes lips calmly, maintaining steady, focused analytical eye contact on ${counterpartName} as the statement settles.`,
       cameraMovement: silentCharacters.length > 0
-        ? `Smooth rack-focus camera pan drift shifting focus toward ${counterpartName} [ATTACH REFERENCE IMAGE 2].`
+        ? `Smooth camera focus holding the two-person conversational tension with ${counterpartName}.`
         : 'Slow subtle camera drift holding on lingering emotional resonance.',
       characterPose: silentCharacters.length > 0
-        ? `${counterpartName} remains composed, rigid posture, silent listening reaction with sealed lips.`
+        ? `${counterpartName} remains composed, rigid posture, silent listening reaction with eyes fixed on ${activeSpeaker}.`
         : 'Composed posture, subtle breath release, unwavering calm eye contact.',
       pauseBeat: '2-second measured standoff beat; speech ceases, lips sealed completely.',
       activeSpeaker: activeSpeaker,
@@ -115,9 +115,9 @@ export function generateSecBySecTimeline(
     isFinalClip
       ? {
           timeRange: '0:09 - 0:10',
-          visualAction: 'Dramatic micro-expression or sudden quiet revelation leading into immediate episode cliffhanger cut.',
+          visualAction: `Dramatic micro-expression as ${activeSpeaker} and ${counterpartName} hold unbroken mutual eye contact before immediate episode cliffhanger cut.`,
           cameraMovement: 'Sudden slow punch-in before abrupt black cut at 0:09.5s.',
-          characterPose: 'Micro-reaction of realization or quiet defiance.',
+          characterPose: 'Micro-reaction of realization or quiet defiance, gaze held.',
           pauseBeat: 'Abrupt audio and visual pause before scene end.',
           silentCharacters: silentCharacters,
           lightingMood: 'High contrast shadow cutoff.',
@@ -125,9 +125,9 @@ export function generateSecBySecTimeline(
         }
       : {
           timeRange: '0:09 - 0:10',
-          visualAction: 'Seamless reaction beat holding unbroken tension into subsequent reverse shot.',
-          cameraMovement: 'Subtle drift holding eye-line lock, preparing seamless match-cut to counterpart angle.',
-          characterPose: 'Unwavering gaze locked toward counterpart; breath held steady, resolute expression.',
+          visualAction: `Seamless reaction beat holding unbroken mutual eye contact between ${activeSpeaker} and ${counterpartName} into subsequent reverse shot.`,
+          cameraMovement: 'Subtle drift holding 180-degree cinema eyeline axis, preparing seamless match-cut to reverse angle.',
+          characterPose: `Unwavering gaze locked directly toward ${counterpartName}; breath held steady, resolute expression.`,
           pauseBeat: 'Continuous cinematic flow (unbroken scene continuity).',
           silentCharacters: silentCharacters,
           lightingMood: 'Consistent atmospheric chiaroscuro lighting across cuts.',

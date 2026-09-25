@@ -2,7 +2,7 @@ import { StorySpec, ClipPrompt, InUniversePostBundle, CastMember, SceneContinuit
 import { generateLocationAnchorPrompt, generateCleanLocationPlatePrompt, enforceSpatialBlocking, enforceEyelineBlocking } from '../rules/spatial';
 import { generateSecBySecTimeline, buildCinematicFlowVeoPrompt, buildOmniFlash11Directive } from '../rules/temporal';
 import { calculateWordCount } from '../rules/retention';
-import { resolveEpisodeContinuity, buildContinuityFramePrompt } from '../rules/continuity';
+import { resolveEpisodeContinuity, buildContinuityFramePrompt, resolveSceneAdaptiveWardrobe } from '../rules/continuity';
 import { resolve7DayMultiScenePlot, generateVIPBehindTheScenesPost, generateDualCrossPlatformMetadata } from './drama-multi-scene';
 
 export interface PlotClipDef {
@@ -1477,21 +1477,31 @@ export function buildCharacterDramaClips(
     const silentList = cDef.silentNames.map((name) => (name === char2.name ? char2 : char1));
     const counterpartChar = silentList[0] || (activeChar.name === char1.name ? char2 : char1);
 
-    const activeWardrobe =
+    const baseActiveWardrobe =
       continuity.wardrobeLocks.find(
         (w) => w.characterName.toLowerCase() === activeChar.name.toLowerCase()
       )?.exactOutfit || continuity.wardrobeLocks[0]?.exactOutfit || 'Tailored bespoke dark styling';
 
-    const counterpartWardrobe =
+    const baseCounterpartWardrobe =
       continuity.wardrobeLocks.find(
         (w) => w.characterName.toLowerCase() === counterpartChar.name.toLowerCase()
       )?.exactOutfit || continuity.wardrobeLocks[1]?.exactOutfit || 'Tailored structured styling';
 
+    const activeWardrobe = resolveSceneAdaptiveWardrobe({
+      baseWardrobe: baseActiveWardrobe,
+      sceneNumber: cDef.sceneNumber,
+      sceneLocation: cDef.sceneLocation,
+      characterRole: activeChar.role,
+    });
+
+    const counterpartWardrobe = resolveSceneAdaptiveWardrobe({
+      baseWardrobe: baseCounterpartWardrobe,
+      sceneNumber: cDef.sceneNumber,
+      sceneLocation: cDef.sceneLocation,
+      characterRole: counterpartChar.role,
+    });
+
     const eyelineRule = enforceEyelineBlocking(activeChar.name, cDef.eyelineDirection, counterpartChar.name);
-    const counterpartFacingDirective =
-      cDef.eyelineDirection === 'screen-right'
-        ? 'Facing 3/4 left, looking screen-left'
-        : 'Facing 3/4 right, looking screen-right';
 
     const matchingPlate = cleanLocationPlates.find((p) => p.sceneNumber === cDef.sceneNumber);
     const cleanPlatePrompt = matchingPlate ? matchingPlate.cleanPlatePrompt : cleanLocationPlates[0]?.cleanPlatePrompt || '';
@@ -1556,14 +1566,15 @@ export function buildCharacterDramaClips(
       lightingTheme: cDef.lightingTheme,
       timeline,
       cliffhangerNote: isLast ? 'Clip abruptly cuts to black at 0:09.5s on suspended revelation.' : undefined,
-      negativePromptDirectives: 'morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter.',
+      negativePromptDirectives: 'looking at camera, wandering gaze, looking away from counterpart, morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter.',
     });
 
     const frameImagePrompt = `[VIDEO FRAME IMAGE - KEYFRAME ${idx + 1}/${multiScenePlot.clips.length} (${cDef.shotType.toUpperCase()})]
 [LOCATION ANCHOR & ENVIRONMENT]: ${cleanPlatePrompt}
-[CHARACTER SPATIAL BLOCKING & ACTION]:
-• Active Subject (${activeChar.name}): Positioned ${eyelineRule.facingDirective} inside ${cDef.sceneLocation}. ${cDef.action}. Wearing ${activeWardrobe}. Strict facial geometry lock, zero morphing.
-• Counterpart Subject (${counterpartChar.name}): Positioned opposite in room depth (${counterpartFacingDirective}) inside ${cDef.sceneLocation}. Sealed lips, rigid listening reaction posture. Wearing ${counterpartWardrobe}.
+[CHARACTER SPATIAL BLOCKING & MUTUAL GAZE LOCK]:
+• Active Speaker (${activeChar.name}): ${eyelineRule.facingDirective} ${cDef.action}. Wearing ${activeWardrobe}. Strict facial geometry lock, zero morphing.
+• Counterpart Listener (${counterpartChar.name}): ${eyelineRule.counterpartFacingDirective} Wearing ${counterpartWardrobe}. [100% SILENT, LIPS SEALED, RIGID LISTENING FOCUS].
+• Conversational Attention: ${eyelineRule.mutualGazeDirective}
 [CINEMATOGRAPHY & LIGHTING]: Shot on ARRI Alexa LF, 85mm Panavision Anamorphic T1.5 prime lens, f/1.8 shallow depth of field. ${cDef.lightingTheme}. 35mm film grain, master cinematic chiaroscuro grade, 8K UHD photorealistic film still.
 [MIDJOURNEY / FLUX RECIPE]: ${idx === 0 ? 'Generate this Master Keyframe first. Save image URL to lock scene & wardrobe.' : '--sref [KEYFRAME_1_URL] --sw 100 --cref [CHARACTER_REF_URL] --cw 100'} --ar 9:16 --v 6.1 --style raw`;
 
@@ -1578,9 +1589,10 @@ export function buildCharacterDramaClips(
 [CINEMATIC SPEC]: 9:16 vertical cinema composition (Shorts/Reels/TikTok), 24fps motion cadence, 4K Hollywood Noir composition.
 [LOCATION MASTER ANCHOR]: ${cleanPlatePrompt} [START-FRAME PIN: Anchored to clean location plate with identical room geometry, shadows, and architectural lighting].
 
-[CHARACTER SPATIAL COORDINATES & ROOM BLOCKING]:
-• Primary Subject (${activeChar.name}): Positioned ${eyelineRule.facingDirective} inside ${cDef.sceneLocation}. Wearing ${activeWardrobe}. ${eyelineRule.blockingText}. Sharp focus, intense eye contact.
-• Counterpart Subject (${counterpartChar.name}): Positioned ${counterpartFacingDirective} inside ${cDef.sceneLocation}. Wearing ${counterpartWardrobe}. [${counterpartChar.name.toUpperCase()}: 100% SILENT, LIPS SEALED, LISTENING REACTION]. Rigid listening posture across the space.
+[CHARACTER SPATIAL COORDINATES & MUTUAL GAZE LOCK]:
+• Primary Subject (${activeChar.name}): ${eyelineRule.facingDirective} Wearing ${activeWardrobe}. ${eyelineRule.blockingText}.
+• Counterpart Subject (${counterpartChar.name}): ${eyelineRule.counterpartFacingDirective} Wearing ${counterpartWardrobe}. [${counterpartChar.name.toUpperCase()}: 100% SILENT, LIPS SEALED, LISTENING REACTION].
+• Undivided Focus: ${eyelineRule.mutualGazeDirective}
 
 [SECOND-BY-SECOND CINEMATIC CHOREOGRAPHY (10s)]:
 ${timelineFormatted}
@@ -1589,12 +1601,13 @@ ${timelineFormatted}
 • Spoken Dialogue: "${cDef.dialogue}"
 • Dynamic Tonal Inflection: Begins with tense quiet control (narmi), gradually hardening into cold, steely authority (sakhti).
 • Lip-Sync Directive: Native synchronized speech. Realistic mouth, jaw, and facial muscle articulation matching syllables. Natural breath intake before speech. Lips seal completely after line ends. Zero speech overlap.
+• Direct Address: ${activeChar.name} addresses ${counterpartChar.name} with unbroken eye contact throughout the spoken line. Zero looking into camera lens, zero looking off-screen.
 
 [CAMERA & LIGHTING SETUP]:
 • Camera: ${cDef.cameraSetup}. ARRI Alexa Mini LF with Panavision Anamorphic T1.5 prime lens, f/1.8 shallow depth of field.
 • Lighting: ${cDef.lightingTheme}. Deep chiaroscuro shadows, subtle atmospheric haze.
 ${isLast ? '[CLIFFHANGER CUTOFF]: At 0:09.5s, abrupt dramatic blackout cut on the decisive word!\n' : '[TRANSITION]: Seamless match-cut to subsequent reverse-angle shot.\n'}[FOLEY & SOUND DESIGN]: Crisp directional dialogue, natural room acoustic reverberation, low sub-bass tension drone, zero speech overlap.
-[NEGATIVE DIRECTIVES]: morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter, plastic skin, distorted anatomy.`;
+[NEGATIVE DIRECTIVES]: looking at camera, wandering gaze, looking away from counterpart, morphing, blurred facial features, double heads, unnatural lip sync, low quality, glitching, cartoonish distortion, erratic jitter, plastic skin, distorted anatomy.`;
 
     const continuityRole: 'master_anchor' | 'reverse_angle_match' | 'culmination_match' =
       idx === 0 ? 'master_anchor' : idx === 1 ? 'reverse_angle_match' : 'culmination_match';
