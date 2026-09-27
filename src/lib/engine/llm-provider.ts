@@ -127,37 +127,47 @@ export function resolveServerKey(provider: AIProvider): string | null {
 
 export function cleanJsonText(raw: string): string {
   let cleaned = raw.trim();
-  if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+  const match = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (match) {
+    cleaned = match[1].trim();
+  } else if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
   }
-  return cleaned.trim();
+  return cleaned;
 }
 
 export function repairTruncatedJson<T = any>(raw: string): T | null {
-  let str = raw.trim();
-  if (str.startsWith('```')) {
-    str = str.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-  }
+  let str = cleanJsonText(raw);
 
+  // 1. Direct parse attempt
   try {
     return JSON.parse(str);
   } catch (e) {}
 
-  const cutChars = [',', '}', ']'];
-  const maxScan = Math.max(0, str.length - 8000);
-  for (let i = str.length - 1; i >= maxScan; i--) {
-    const ch = str[i];
-    if (!cutChars.includes(ch)) continue;
+  // 2. Direct with trailing comma removal
+  try {
+    return JSON.parse(str.replace(/,(\s*[}\]])/g, '$1'));
+  } catch (e) {}
 
-    const candidate = str.slice(0, ch === ',' ? i : i + 1).trim();
+  // Find start of JSON structure ({ or [)
+  const firstBrace = str.indexOf('{');
+  const firstBracket = str.indexOf('[');
+  let startIdx = 0;
+  if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+    startIdx = firstBrace;
+  } else if (firstBracket !== -1) {
+    startIdx = firstBracket;
+  }
+  str = str.slice(startIdx);
 
-    let openBraces = 0;
-    let openBrackets = 0;
+  // Helper to balance and parse a candidate string prefix
+  const tryBalanceAndParse = (candidate: string): T | null => {
     let inString = false;
     let escape = false;
+    const stack: string[] = [];
 
-    for (let j = 0; j < candidate.length; j++) {
-      const c = candidate[j];
+    for (let i = 0; i < candidate.length; i++) {
+      const c = candidate[i];
       if (escape) {
         escape = false;
         continue;
@@ -171,21 +181,49 @@ export function repairTruncatedJson<T = any>(raw: string): T | null {
         continue;
       }
       if (!inString) {
-        if (c === '{') openBraces++;
-        else if (c === '}') openBraces--;
-        else if (c === '[') openBrackets++;
-        else if (c === ']') openBrackets--;
+        if (c === '{') stack.push('}');
+        else if (c === '[') stack.push(']');
+        else if (c === '}' || c === ']') {
+          if (stack.length > 0 && stack[stack.length - 1] === c) {
+            stack.pop();
+          } else {
+            return null;
+          }
+        }
       }
     }
 
-    if (!inString && openBraces >= 0 && openBrackets >= 0) {
-      let closing = '';
-      for (let b = 0; b < openBrackets; b++) closing += ']';
-      for (let b = 0; b < openBraces; b++) closing += '}';
-      try {
-        const parsed = JSON.parse(candidate + closing);
-        return parsed;
-      } catch (err) {}
+    let completion = '';
+    if (inString) {
+      completion += '"';
+    }
+
+    let trimmed = candidate;
+    if (!inString) {
+      trimmed = trimmed.trim().replace(/,\s*$/, '').replace(/:\s*$/, ': ""');
+    }
+    completion += stack.slice().reverse().join('');
+
+    const finalJson = (trimmed + completion).replace(/,(\s*[}\]])/g, '$1');
+    try {
+      return JSON.parse(finalJson);
+    } catch (e) {
+      return null;
+    }
+  };
+
+  // Try direct balancing from end
+  const direct = tryBalanceAndParse(str);
+  if (direct) return direct;
+
+  // Scan backwards from the end for clean break points (closing quote, bracket, brace, comma)
+  const maxScan = Math.max(0, str.length - 15000);
+  for (let i = str.length - 1; i >= maxScan; i--) {
+    const ch = str[i];
+    if (ch === '"' || ch === '}' || ch === ']' || ch === ',') {
+      const sub = str.slice(0, ch === ',' ? i : i + 1).trim();
+      const res = tryBalanceAndParse(sub);
+      if (res) return res;
     }
   }
 
@@ -197,6 +235,11 @@ export function parseFlexibleJson<T = any>(raw: string): T {
   try {
     return JSON.parse(cleaned);
   } catch (err) {
+    // Try removing trailing commas
+    try {
+      return JSON.parse(cleaned.replace(/,(\s*[}\]])/g, '$1'));
+    } catch (e) {}
+
     // Try to locate first '{' and last '}' or '[' and ']'
     const firstBrace = cleaned.indexOf('{');
     const lastBrace = cleaned.lastIndexOf('}');
@@ -204,7 +247,11 @@ export function parseFlexibleJson<T = any>(raw: string): T {
       const candidate = cleaned.slice(firstBrace, lastBrace + 1);
       try {
         return JSON.parse(candidate);
-      } catch (e) {}
+      } catch (e) {
+        try {
+          return JSON.parse(candidate.replace(/,(\s*[}\]])/g, '$1'));
+        } catch (e2) {}
+      }
     }
     const firstBracket = cleaned.indexOf('[');
     const lastBracket = cleaned.lastIndexOf(']');
@@ -212,7 +259,11 @@ export function parseFlexibleJson<T = any>(raw: string): T {
       const candidate = cleaned.slice(firstBracket, lastBracket + 1);
       try {
         return JSON.parse(candidate);
-      } catch (e) {}
+      } catch (e) {
+        try {
+          return JSON.parse(candidate.replace(/,(\s*[}\]])/g, '$1'));
+        } catch (e2) {}
+      }
     }
 
     // Try auto-repairing truncated JSON

@@ -139,10 +139,14 @@ World: "${seasonStory.worldEnvironment}"
 Theme: "${seasonStory.mainTheme}"
 
 CRITICAL RULES:
-- CHARACTERS ARE REAL HUMAN BEINGS (Fictional photorealistic digital actors): Age, facial bone structure, ethnic heritage, hair, tailored wardrobe, vocal timbre, and micro-expressions.
-- Assign permanent IDs: CHAR-01 (Protagonist), CHAR-02 (Rival/Lover), etc.
+- CAST SIZE (STRICT): In a 1 to 2 minute Mini-Film or Micro-Drama, output EXACTLY 2 CORE CHARACTERS:
+  * CHAR-01: Main Protagonist (e.g. Seeking redemption, revenge, or truth).
+  * CHAR-02: Former Lover / Rival / Target (complex, emotionally wounded, conflicting loyalties).
+  Do NOT add extra characters. Exactly 2 characters ensures maximum depth, tight continuity, and prevents token truncation.
+- CHARACTERS ARE REAL HUMAN BEINGS (Photorealistic actors): Age, facial bone structure, ethnic heritage, tailored wardrobe, vocal timbre, and micro-expressions.
+- CONCISE & PUNCHY: Keep descriptions vivid, cinematic, and tight (1-2 sentences per field, not huge rambling essays).
 - In "morphologySpec", specify REAL HUMAN VISUAL DNA: Exact eye color/moisture, jawline, natural skin texture with visible pores (no plastic smoothing), lip shape, and micro-expressions under emotional distress.
-- Define exact acting expressions, voice cadence (breathy whispers, cracks in voice, icy composure), and LOCKED continuity rules that must never drift between clips.
+- Define exact acting expressions, voice cadence, and LOCKED continuity rules that must never drift between clips.
 - Return STRICT JSON only.
 
 JSON SCHEMA:
@@ -154,13 +158,13 @@ JSON SCHEMA:
       "speciesObject": "Role / Archetype: e.g. 32-year-old Estranged Tycoon & Brooding Strategist",
       "ageAppearance": "32 years old",
       "genderPresentation": "Masculine / Tailored Executive",
-      "personality": "Calculating, guarded, intensely passionate, haunted by past sacrifices, speaks with quiet authority",
+      "personality": "Calculating, guarded, intensely passionate, speaks with quiet authority",
       "roleInStory": "Main Character",
       "morphologySpec": {
-        "eyeType": "Deep slate-grey eyes with intense emotional depth, natural moisture and faint red rimming from suppressed tears",
-        "mouthPlacement": "Sculpted lips, tense jawline that clenches visibly during confrontation, subtle quiver when vulnerable",
-        "limbPhysics": "Poised, commanding posture; defensive hands in coat pockets or gripping furniture with white knuckles",
-        "materialTexture": "Photorealistic human skin with visible natural pores, light five o'clock shadow stubble, subtle rain sheen",
+        "eyeType": "Deep slate-grey eyes with intense emotional depth, natural moisture and faint red rimming",
+        "mouthPlacement": "Sculpted lips, tense jawline that clenches visibly during confrontation",
+        "limbPhysics": "Poised, commanding posture; defensive hands in coat pockets or gripping furniture",
+        "materialTexture": "Photorealistic human skin with visible natural pores, light five o'clock shadow stubble",
         "distinctiveFeatures": "Faint 1-inch hairline scar near right temple; platinum signet ring on left pinky"
       },
       "physicalAppearance": {
@@ -173,7 +177,7 @@ JSON SCHEMA:
         "exactOutfit": "Tailored charcoal Italian cashmere overcoat over an unbuttoned crisp black silk shirt",
         "colors": "Charcoal grey, midnight black, brushed platinum accents",
         "materials": "Heavy cashmere wool, matte silk, polished black leather oxfords",
-        "accessories": "Vintage platinum watch with black leather strap, monogrammed silver lighter",
+        "accessories": "Vintage platinum watch with black leather strap",
         "propsNormallyCarried": "Encrypted black smartphone, confidential leather dossier folder"
       },
       "acting": {
@@ -187,14 +191,14 @@ JSON SCHEMA:
       "voice": {
         "voiceType": "Resonant, velvety baritone with gravelly texture when emotional",
         "ageImpression": "Mature early 30s",
-        "accent": "Refined Mid-Atlantic / Transatlantic cadence",
-        "speakingSpeed": "Deliberate 120 WPM with pregnant, suspenseful pauses before revelations",
+        "accent": "Refined Mid-Atlantic cadence",
+        "speakingSpeed": "Deliberate 120 WPM with pregnant, suspenseful pauses",
         "emotionalStyle": "Restrained intensity; voice lowers to a dangerous whisper when furious"
       },
       "continuityRules": [
         "Signet ring MUST always remain on the left pinky",
         "Overcoat collar stays popped on the left side",
-        "Hair has consistent damp rain styling throughout the scene"
+        "Hair has consistent damp styling throughout the scene"
       ]
     }
   ],
@@ -209,16 +213,34 @@ JSON SCHEMA:
     config: aiConfig,
     prompt,
     systemInstruction:
-      'You are a Master Casting and Visual DNA Supervisor for prestige cinema. Produce an exhaustive, locked Character Bible in strictly valid JSON.',
+      'You are a Master Casting and Visual DNA Supervisor for prestige cinema. Produce a locked Character Bible for exactly 2 lead actors in strictly valid JSON.',
     temperature: 0.75,
     responseJson: true,
   });
 
-  if (!res.parsed || !Array.isArray(res.parsed.characters)) {
-    throw new Error('Failed to generate valid Character Bible JSON');
+  let rawCharacters = res.parsed?.characters;
+  if (!rawCharacters && Array.isArray(res.parsed)) {
+    rawCharacters = res.parsed;
+  } else if (!rawCharacters && Array.isArray(res.parsed?.characterBible?.characters)) {
+    rawCharacters = res.parsed.characterBible.characters;
   }
 
-  return res.parsed as CharacterBible;
+  if (!rawCharacters || !Array.isArray(rawCharacters) || rawCharacters.length === 0) {
+    throw new Error('Failed to generate valid Character Bible JSON (no characters array found)');
+  }
+
+  const lockedRules = Array.isArray(res.parsed?.lockedRules)
+    ? res.parsed.lockedRules
+    : [
+        'Permanent actor IDs (CHAR-01, CHAR-02) must never be swapped',
+        'Real human facial features and bone structure must remain 100% consistent across all camera angles',
+        'Wardrobe and jewelry must remain identical throughout the episode without unexplained changes',
+      ];
+
+  return {
+    characters: rawCharacters,
+    lockedRules,
+  } as CharacterBible;
 }
 
 /**
