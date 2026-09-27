@@ -41,6 +41,7 @@ import { getStoredAIConfig } from '@/lib/ai/ai-settings';
 import { AISettingsModal } from '@/components/settings/AISettingsModal';
 import { AIProviderConfig } from '@/lib/engine/llm-provider';
 import { AdminAccessGuard } from '@/components/auth/AdminAccessGuard';
+import { DirectorCopilotDrawer } from '@/components/drama-series/DirectorCopilotDrawer';
 
 const DRAMA_SERIES_STORAGE_KEY = 'flowcreator_drama_series_production_state';
 
@@ -98,6 +99,7 @@ function DramaSeriesStudioContent() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showAISettingsModal, setShowAISettingsModal] = useState(false);
+  const [showCopilot, setShowCopilot] = useState(false);
   const [currentAIConfig, setCurrentAIConfig] = useState<AIProviderConfig>({ provider: 'mistral' });
 
   // Load cached state on mount
@@ -444,6 +446,16 @@ function DramaSeriesStudioContent() {
 
           {/* Quick Actions */}
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowCopilot(true)}
+              className="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs flex items-center gap-1.5 shadow-sm transition font-bold"
+              title="Open AI Director Copilot"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <span>AI Copilot</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            </button>
+
             <button
               onClick={() => setShowAISettingsModal(true)}
               className="p-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-800 text-xs flex items-center gap-1.5 transition"
@@ -1370,6 +1382,32 @@ function DramaSeriesStudioContent() {
           </div>
         )}
       </section>
+
+      {/* Floating Director Copilot FAB */}
+      <button
+        onClick={() => setShowCopilot(true)}
+        className="fixed bottom-6 right-6 z-40 px-4 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-2 shadow-2xl shadow-purple-600/40 border border-purple-400/40 transition hover:scale-105 active:scale-95 group"
+      >
+        <Sparkles className="w-4 h-4 text-purple-200 group-hover:rotate-12 transition-transform" />
+        <span>Ask Director AI</span>
+        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+      </button>
+
+      {/* Director AI Copilot Drawer */}
+      <DirectorCopilotDrawer
+        isOpen={showCopilot}
+        onClose={() => setShowCopilot(false)}
+        productionContext={{
+          seasonStory,
+          characterBible,
+          selectedEpisodeNumber,
+          episodeProduction,
+          clipsBreakdown,
+          framePrompts,
+          videoPrompts,
+        }}
+        aiConfig={currentAIConfig}
+      />
 
       {/* AI Settings Modal */}
       {showAISettingsModal && (
