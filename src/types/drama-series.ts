@@ -15,6 +15,8 @@ export interface SeasonStory {
   importantCallbacks: string;
   seasonClimax: string;
   seasonEnding: string;
+  charactersInvolved?: string[];
+  runtimeTarget?: string;
   episodes: EpisodeStorySummary[];
 }
 

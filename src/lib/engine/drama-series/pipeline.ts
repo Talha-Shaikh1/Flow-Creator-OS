@@ -18,70 +18,83 @@ export async function generateSeasonStoryPipeline(
   seedTopic: string,
   genre: string = 'Cinematic Emotional Drama & Revenge Romance',
   aiConfig?: AIProviderConfig,
-  optionalLocationHint?: string
+  optionalLocationHint?: string,
+  targetRuntime: '60s' | '90s' | '120s' = '60s'
 ): Promise<SeasonStory> {
+  const clipCount = targetRuntime === '120s' ? 12 : targetRuntime === '90s' ? 9 : 6;
+  const runtimeLabel =
+    targetRuntime === '120s'
+      ? '120 seconds (12 clips of 10s — 2 Min Mini-Film)'
+      : targetRuntime === '90s'
+      ? '90 seconds (9 clips of 10s — 1.5 Min Mini-Film)'
+      : '60 seconds (6 clips of 10s — 1 Min Micro-Drama)';
+
   const locationInstruction = optionalLocationHint
     ? `User Setting Note: "${optionalLocationHint}". Design an authentic, prestige architectural environment around this concept.`
-    : `Intelligently architect and design the primary world environment that NATURALLY AND PERFECTLY FITS THIS DRAMATIC STORY (e.g. if the story is about estranged corporate lovers, design a high-floor glass penthouse study or executive boardroom; if about dynasty inheritance, design an ancestral mansion foyer; if about a runaway lover, design a rain-soaked coastal harbor or moody boutique hotel).`;
+    : `Intelligently architect and design the primary world environment that NATURALLY AND PERFECTLY FITS THIS DRAMATIC STORY (e.g. high-floor glass penthouse study overlooking a midnight rainstorm; ancestral heritage estate foyer; private candlelit suite).`;
 
-  const prompt = `You are a Prestige Television Showrunner, Melodrama Director, and Master Screenwriter specializing in high-stakes REAL HUMAN EMOTIONAL DRAMA, INTENSE LOVE STORIES, BETRAYAL, AND REVENGE SAGAS (HBO, A24, prestige Kdrama, and cinematic British/American character dramas).
+  const prompt = `You are a Master Film Director, Melodrama Showrunner, and Screenwriter specializing in high-stakes REAL HUMAN EMOTIONAL DRAMA, INTENSE LOVE STORIES, BETRAYAL, AND REVENGE SHORT FILMS (HBO, A24, prestige Kdrama, and cinematic prestige films).
 
-TASK: Develop PHASE 1: SEASON STORY DEVELOPMENT based on this concept:
-"${seedTopic}"
-Genre: ${genre}
+TASK: Develop PHASE 1: COMPLETE MINI-FILM STORY ARCHITECTURE for a SINGLE 1-TO-2 MINUTE COMPLETE SHORT FILM.
+CONCEPT: "${seedTopic}"
+GENRE: ${genre}
+TARGET RUNTIME: ${runtimeLabel} (${clipCount} continuous 10-second clips)
 
 LOCATION & WORLD DESIGN DIRECTIVE:
 ${locationInstruction}
 
-CRITICAL STORYTELLING & ENVIRONMENT RULES:
-- CHARACTERS ARE REAL HUMAN BEINGS: Photorealistic human actors, complex emotional psychologies, intense romance, suppressed passion, heartbreak, family vendettas, and calculated revenge.
-- MANDATORY MULTI-LAYERED DRAMA BLEND (NEVER ONE-DIMENSIONAL):
-  A true prestige drama is NEVER flat or single-note! If a concept focuses on 'revenge', it must NOT be only cold anger.
-  EVERY series and episode MUST be a rich, powerful MIXUP of:
-  1. INTENSE ROMANCE & UNRESOLVED PASSION: Electric eye contact, physical proximity, suppressed longing, memories of tender intimacy.
-  2. HEART-WRENCHING EMOTIONAL VULNERABILITY: Moist tearful eyes, cracking voices, unspoken grief, secret sacrifices, shattering heartbreak.
-  3. BETRAYAL & REVENGE STAKES: Calculated retribution, family vendettas, hidden evidence, sudden power shifts, cutthroat loyalty tests.
-  4. PRIDE & SHARP DRAMATIC BANTER: Wounded egos, cutting ironic retorts, prideful defenses concealing unbearable love.
-  The engine must interweave these four pillars seamlessly across all episodes.
-- DYNAMIC REAL-WORLD DRAMA SETTING: Autonomously create a rich, photorealistic, atmospheric world environment that matches the emotional tone of the story (e.g. rain-slicked glass penthouse overlooking city lights, grand heritage mansion hall, candlelit hotel suite, stormy coastal cliff, private executive lounge).
-- STRICT BAN ON WEIRD / ABSTRACT SETTINGS: Absolutely NO cartoon environments, NO kitchens or household counters, NO appliances, NO toasters, NO mugs, NO talking objects, NO surreal/fantasy micro-worlds. 100% photorealistic prestige TV drama sets only.
-- Focus ONLY on high-level season and episodic narrative arcs. No camera prompts at this stage.
-- Divide the season into 4 to 6 serialized, tightly connected episodes.
-- Ensure every episode has a high-stakes emotional confrontation, a sharp dramatic escalation, and a cliffhanger hook that leaves the audience breathless.
-- Return STRICT JSON only matching the schema below.
+CRITICAL RULES:
+1. SINGLE COMPLETE MINI-FILM (NO MULTIPLE EPISODES):
+   - The entire story begins, escalates, reaches a dramatic climax, and resolves inside THIS SINGLE 1-TO-2 MINUTE MINI-FILM.
+   - Do NOT create multiple episodes. The story completes 100% in this video across ${clipCount} continuous 10s clips.
+2. NARRATIVE BEAT PACING ACROSS ${clipCount} CLIPS:
+   - 0-10s (Opening Hook): Instant psychological shock catalyst (e.g. a classified dossier slammed on the table, eye contact across a rainy glass window, gun drawn, teardrop falling).
+   - 10-40s (Rising Confrontation): Bitter accusations, sharp ironic retorts, physical proximity closing, unspoken romance resurfacing.
+   - 40-70s (Emotional Vulnerability & Tears): Cracking voice, secret sacrifice revealed, devastating heartbreak, suppressed passion.
+   - 70-100s (Revenge Trap & Climax): Retribution executed, life-or-death ultimatum, shocking revelation of who the real enemy is.
+   - Ending (Last 10s): Heart-wrenching final twist, devastating emotional cliffhanger or haunting resolution.
+3. CHARACTERS ARE REAL HUMAN BEINGS:
+   - Photorealistic actors with clear names.
+   - You MUST list ALL characters who appear in this film in the "charactersInvolved" array (e.g. ["Elena Voss", "Daniel Mercer", "General Vasileios"]).
+4. DYNAMIC REAL-WORLD LUXURY SETTING:
+   - 100% photorealistic luxury settings (Penthouse terrace in rain, Executive boardroom after midnight, Grand ancestral foyer, Moody hotel suite).
+   - NO cartoon environments, NO kitchens, NO appliances, NO mugs.
+5. Return STRICT JSON only matching this schema.
 
 JSON SCHEMA:
 {
-  "seasonTitle": "Evocative Cinematic Season Title",
+  "seasonTitle": "Evocative Cinematic Film Title",
   "genre": "${genre}",
-  "mainTheme": "Core emotional theme (e.g. Unresolved love vs ruthless revenge, the cost of loyalty, hidden past sacrifices)",
-  "worldEnvironment": "Photorealistic, atmospheric prestige real-world location designed specifically for this story (e.g. Rain-streaked high-rise penthouse study in Manhattan overlooking a midnight skyline; grand ancestral family estate foyer with marble staircase; private candlelit suite)",
+  "mainTheme": "Core emotional theme (Unresolved love vs ruthless revenge, cost of loyalty)",
+  "worldEnvironment": "Photorealistic prestige real-world location designed specifically for this story",
   "overallTone": "Intense, deeply emotional, atmospheric, romantic tension with undercurrent of danger",
-  "comedyStyle": "Dark witty tension banter and sharp dramatic retorts (never silly cartoon gags)",
+  "comedyStyle": "Dark witty tension banter and sharp dramatic retorts",
   "emotionalStyle": "Heart-wrenching vulnerability, unspoken grief, suppressed passion, tearful accusations",
-  "narrativeArc": "Overarching season journey from bitter reunion to devastating revelation and climax",
-  "beginning": "The opening catalyst: an unexpected confrontation or a long-planned revenge move",
-  "majorDevelopments": "Key emotional betrayals, leaked secrets, and shifting loyalties across the season",
-  "majorConflicts": "The clash between irresistible romantic pull and the moral duty of revenge",
-  "characterRelationships": "The complex history, shared trauma, and intense chemistry between the lead characters",
-  "recurringSituations": "Tense late-night private confrontations, shared symbolic tokens (rings, letters, dossiers)",
-  "importantCallbacks": "A specific whispered phrase or promise from their past that changes meaning later",
+  "narrativeArc": "Complete ${targetRuntime} film journey from opening shock hook to devastating climax and resolution",
+  "beginning": "0-10s Opening Shock Hook (e.g. A classified dossier lands on the terrace table...)",
+  "majorDevelopments": "10-40s Rising confrontation and bitter accusations",
+  "majorConflicts": "Clash between irresistible romantic pull and the moral duty of revenge",
+  "characterRelationships": "The complex history, shared trauma, and intense chemistry between the characters",
+  "recurringSituations": "Tense physical proximity, eye-contact locks, symbolic tokens",
+  "importantCallbacks": "A specific whispered phrase or promise from their past that changes meaning",
   "seasonClimax": "The explosive truth revealed: where love and revenge collide in a life-or-death ultimatum",
-  "seasonEnding": "A devastating, emotionally charged cliffhanger setting up the next season",
+  "seasonEnding": "A devastating, emotionally charged resolution or shocking final breath",
+  "charactersInvolved": ["Character Name 1", "Character Name 2", "Character Name 3"],
+  "runtimeTarget": "${runtimeLabel}",
   "episodes": [
     {
       "episodeNumber": 1,
-      "episodeTitle": "Episode Title",
-      "mainStory": "Core dramatic narrative of this episode",
-      "mainConflict": "The primary clash between characters in this episode",
-      "beginning": "Opening 0-3s psychological hook (e.g. a classified dossier slammed on the table, eye contact across a rainy glass window)",
-      "middle": "Rising confrontation, bitter accusations, and intimate emotional tension",
-      "ending": "A sharp cliffhanger reveal or heartbreaking ultimatum",
-      "charactersInvolved": ["Character Name 1", "Character Name 2"],
-      "importantEmotionalBeats": "A crack in the emotional armor; a moment of undeniable romantic vulnerability",
-      "comedyMoments": "Sharp, cutting verbal irony and defensive sarcastic retorts",
-      "connectionWithPrevious": "Opening of the series or callback to previous episode",
-      "setupForFuture": "An unresolved clue or secret hidden from the other character"
+      "episodeTitle": "Complete Mini-Film (${runtimeLabel})",
+      "mainStory": "The complete narrative of this ${targetRuntime} mini-film from opening confrontation to final resolution",
+      "mainConflict": "Love vs revenge and betrayal",
+      "beginning": "0-10s Opening Shock Hook",
+      "middle": "Rising romantic tension, unspoken grief, and secret sacrifice",
+      "ending": "Devastating revenge twist and emotional climax",
+      "charactersInvolved": ["Character Name 1", "Character Name 2", "Character Name 3"],
+      "importantEmotionalBeats": "Undeniable romantic vulnerability and cracking voice",
+      "comedyMoments": "Sharp cutting verbal irony",
+      "connectionWithPrevious": "Opening hook of the film",
+      "setupForFuture": "Final resolution"
     }
   ]
 }`;
@@ -90,7 +103,7 @@ JSON SCHEMA:
     config: aiConfig,
     prompt,
     systemInstruction:
-      'You are a Lead Showrunner for prestige cinematic television dramas. Return strictly valid JSON. Do not wrap in markdown.',
+      'You are a Lead Showrunner and Director for cinematic micro-drama films. Return strictly valid JSON. Do not wrap in markdown.',
     temperature: 0.8,
     responseJson: true,
   });
@@ -98,6 +111,38 @@ JSON SCHEMA:
   if (!res.parsed || !res.parsed.seasonTitle) {
     throw new Error('Failed to generate valid Season Story JSON');
   }
+
+  // Extract clean charactersInvolved
+  const rawChars = Array.isArray(res.parsed.charactersInvolved)
+    ? res.parsed.charactersInvolved
+    : typeof res.parsed.charactersInvolved === 'string'
+    ? [res.parsed.charactersInvolved]
+    : [];
+
+  const cleanChars: string[] = [];
+  rawChars.forEach((item: any) => {
+    if (typeof item === 'string') {
+      item.split(/[,;\n]+/).forEach((sub) => {
+        const clean = sub.trim().replace(/^and\s+/i, '').trim();
+        if (clean && clean.length > 1) cleanChars.push(clean);
+      });
+    }
+  });
+
+  // If charactersInvolved wasn't populated or empty, try extracting from narrativeArc / mainStory or seedTopic
+  if (cleanChars.length === 0) {
+    const textPool = `${res.parsed.narrativeArc || ''} ${res.parsed.characterRelationships || ''} ${seedTopic}`;
+    const nameMatches = textPool.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b/g);
+    if (nameMatches) {
+      nameMatches.forEach((nm) => {
+        if (!/^(Episode|Scene|Season|Mini|Film|Target|Hook|Act|The|When|After|Before|Between|Because|While|Google|Flow|Veo)\b/i.test(nm)) {
+          cleanChars.push(nm);
+        }
+      });
+    }
+  }
+
+  const finalChars = Array.from(new Set(cleanChars));
 
   if (Array.isArray(res.parsed.episodes)) {
     res.parsed.episodes = res.parsed.episodes.map((ep: any) => {
@@ -110,7 +155,7 @@ JSON SCHEMA:
       const cleanInvolved: string[] = [];
       rawInvolved.forEach((item: any) => {
         if (typeof item === 'string') {
-          item.split(',').forEach((sub) => {
+          item.split(/[,;\n]+/).forEach((sub) => {
             const clean = sub.trim().replace(/^and\s+/i, '').trim();
             if (clean && clean.length > 1) cleanInvolved.push(clean);
           });
@@ -119,22 +164,44 @@ JSON SCHEMA:
 
       return {
         ...ep,
+        episodeNumber: 1,
+        episodeTitle: ep.episodeTitle || res.parsed.seasonTitle || 'Complete Mini-Film',
         beginning:
           typeof ep.beginning === 'string'
             ? ep.beginning
-            : ep.beginning?.hook || ep.beginning?.text || JSON.stringify(ep.beginning) || '',
+            : ep.beginning?.hook || ep.beginning?.text || JSON.stringify(ep.beginning) || res.parsed.beginning || '',
         middle:
           typeof ep.middle === 'string'
             ? ep.middle
-            : ep.middle?.text || JSON.stringify(ep.middle) || '',
+            : ep.middle?.text || JSON.stringify(ep.middle) || res.parsed.majorDevelopments || '',
         ending:
           typeof ep.ending === 'string'
             ? ep.ending
-            : ep.ending?.cliffhanger || ep.ending?.text || JSON.stringify(ep.ending) || '',
-        charactersInvolved: cleanInvolved.length > 0 ? Array.from(new Set(cleanInvolved)) : ['Protagonist', 'Antagonist'],
+            : ep.ending?.cliffhanger || ep.ending?.text || JSON.stringify(ep.ending) || res.parsed.seasonEnding || '',
+        charactersInvolved: cleanInvolved.length > 0 ? Array.from(new Set(cleanInvolved)) : finalChars,
       };
     });
+  } else {
+    res.parsed.episodes = [
+      {
+        episodeNumber: 1,
+        episodeTitle: res.parsed.seasonTitle || 'Complete Mini-Film',
+        mainStory: res.parsed.narrativeArc || res.parsed.mainTheme || 'Complete Mini-Film Story',
+        mainConflict: res.parsed.majorConflicts || 'Love vs revenge',
+        beginning: res.parsed.beginning || 'Opening Hook',
+        middle: res.parsed.majorDevelopments || 'Rising Confrontation',
+        ending: res.parsed.seasonEnding || 'Climax Ending',
+        charactersInvolved: finalChars,
+        importantEmotionalBeats: res.parsed.emotionalStyle || 'Vulnerability',
+        comedyMoments: res.parsed.comedyStyle || 'Sharp irony',
+        connectionWithPrevious: 'Opening',
+        setupForFuture: 'Resolution',
+      },
+    ];
   }
+
+  res.parsed.charactersInvolved = finalChars;
+  res.parsed.runtimeTarget = runtimeLabel;
 
   return res.parsed as SeasonStory;
 }
@@ -146,8 +213,24 @@ export async function generateCharacterBiblePipeline(
   seasonStory: SeasonStory,
   aiConfig?: AIProviderConfig
 ): Promise<CharacterBible> {
-  // Extract all unique characters mentioned across all episodes
+  // Extract all unique characters mentioned across charactersInvolved AND episodes
   const rawCharList: string[] = [];
+
+  const rootChars = Array.isArray(seasonStory.charactersInvolved)
+    ? seasonStory.charactersInvolved
+    : typeof seasonStory.charactersInvolved === 'string'
+    ? [seasonStory.charactersInvolved]
+    : [];
+
+  rootChars.forEach((item) => {
+    if (typeof item === 'string') {
+      item.split(/[,;\n]+/).forEach((sub) => {
+        const clean = sub.trim().replace(/^and\s+/i, '').trim();
+        if (clean && clean.length > 1) rawCharList.push(clean);
+      });
+    }
+  });
+
   (seasonStory.episodes || []).forEach((e) => {
     const list = Array.isArray(e.charactersInvolved)
       ? e.charactersInvolved
@@ -157,21 +240,20 @@ export async function generateCharacterBiblePipeline(
 
     list.forEach((item) => {
       if (typeof item === 'string') {
-        item.split(',').forEach((sub) => {
+        item.split(/[,;\n]+/).forEach((sub) => {
           const clean = sub.trim().replace(/^and\s+/i, '').trim();
-          if (clean && clean.length > 1) {
-            rawCharList.push(clean);
-          }
+          if (clean && clean.length > 1) rawCharList.push(clean);
         });
       }
     });
   });
 
   const uniqueNames = Array.from(new Set(rawCharList));
-  const targetCount = uniqueNames.length > 0 ? uniqueNames.length : 2;
-  const castListText = uniqueNames.length > 0
+  const hasNames = uniqueNames.length > 0;
+  const targetCount = hasNames ? uniqueNames.length : 2;
+  const castListText = hasNames
     ? uniqueNames.map((name, i) => `${i + 1}. CHAR-0${i + 1}: "${name}"`).join('\n')
-    : `- CHAR-01: Main Protagonist\n- CHAR-02: Lead Rival / Former Lover`;
+    : `- Extract and identify all distinct real human characters involved in the story and generate a locked actor profile for each.`;
 
   const prompt = `You are a Lead Casting Director, Hair & Makeup Head, and Cinematic Actor Performance Supervisor.
 
@@ -180,16 +262,16 @@ Title: "${seasonStory.seasonTitle}"
 World: "${seasonStory.worldEnvironment}"
 Theme: "${seasonStory.mainTheme}"
 
-REQUIRED CAST LIST (YOU MUST GENERATE ALL ${targetCount} CHARACTERS):
+REQUIRED CAST LIST:
 ${castListText}
 
 RELATIONSHIPS & STORY CONTEXT:
 ${seasonStory.characterRelationships || seasonStory.majorConflicts}
 
 CRITICAL RULES:
-- COMPLETE CAST GENERATION: The "characters" array MUST CONTAIN AN OBJECT FOR EVERY SINGLE ONE of the ${targetCount} characters listed above.
-- NEVER STOP AFTER ONLY 1 CHARACTER. Output all ${targetCount} characters (from CHAR-01 through CHAR-0${targetCount}).
-- CONCISE 1-2 SENTENCE FIELDS: Keep each text description brief, vivid, and cinematic (1-2 sentences max per field) so that all ${targetCount} character objects easily fit within token limits without truncation.
+- COMPLETE CAST GENERATION: ${hasNames ? `You MUST generate a character object in the "characters" array for EVERY SINGLE ONE of the ${targetCount} characters listed above (from CHAR-01 through CHAR-0${targetCount}). Do NOT omit anyone.` : `Generate an entry for every character that plays a role in the story.`}
+- NO HARDCODING: Adapt strictly to the names and roles required by the story.
+- CONCISE 1-2 SENTENCE FIELDS: Keep each text description brief, vivid, and cinematic (1-2 sentences max per field) so that all character objects easily fit within token limits without truncation.
 - CHARACTERS ARE REAL HUMAN BEINGS: Photorealistic actors, facial bone structure, ethnic heritage, tailored wardrobe, vocal timbre, and micro-expressions.
 - Return STRICT JSON only matching this schema.
 
@@ -198,7 +280,7 @@ JSON SCHEMA:
   "characters": [
     {
       "id": "CHAR-01",
-      "name": "${uniqueNames[0] || 'Lead Protagonist'}",
+      "name": "${uniqueNames[0] || 'Character Name'}",
       "speciesObject": "Role / Archetype: e.g. 34-year-old Heiress & Reluctant Avenger",
       "ageAppearance": "34 years old",
       "genderPresentation": "Refined Executive",
@@ -243,56 +325,7 @@ JSON SCHEMA:
         "Signet ring MUST always remain on the left hand",
         "Overcoat collar stays popped on the left side"
       ]
-    }${targetCount > 1 ? `,
-    {
-      "id": "CHAR-02",
-      "name": "${uniqueNames[1] || 'Second Character'}",
-      "speciesObject": "Role / Archetype: e.g. 36-year-old Corporate Strategist & Former Lover",
-      "ageAppearance": "36 years old",
-      "genderPresentation": "Masculine / Tailored Executive",
-      "personality": "Protective, brooding, burdened with dangerous secrets, quietly dangerous",
-      "roleInStory": "Main Character / Rival / Love Interest",
-      "morphologySpec": {
-        "eyeType": "Warm amber-brown eyes with shadow beneath, tense micro-expressions",
-        "mouthPlacement": "Firm lips that tighten when lying, subtle twitch when cornered",
-        "limbPhysics": "Broad-shouldered, athletic frame, deliberate slow movements",
-        "materialTexture": "Natural skin pores, 5 o'clock shadow stubble",
-        "distinctiveFeatures": "Silver wristwatch, bespoke cuff links"
-      },
-      "physicalAppearance": {
-        "headShape": "Square jaw, textured short dark hair with slight grey temples",
-        "faceStructure": "Rugged aristocratic features",
-        "bodyProportions": "Tall 6'2 athletic tailored frame",
-        "distinctiveFeatures": "Direct, guarded eyeline"
-      },
-      "clothing": {
-        "exactOutfit": "Dark navy tailored wool suit jacket, open collar crisp white shirt",
-        "colors": "Midnight navy, crisp white, silver accents",
-        "materials": "Fine Italian wool, Egyptian cotton",
-        "accessories": "Silver vintage chronometer",
-        "propsNormallyCarried": "Encrypted phone"
-      },
-      "acting": {
-        "normalExpression": "Intense brooding focus",
-        "happyExpression": "Soft, vulnerable gaze",
-        "sadExpression": "Gazing away to swallow regret",
-        "angryExpression": "Low guttural tone, step-in confrontation",
-        "comedicExpression": "Quiet cynical chuckle",
-        "typicalBodyLanguage": "Stands tall, hands at sides, closes physical proximity"
-      },
-      "voice": {
-        "voiceType": "Deep commanding baritone",
-        "ageImpression": "Mid 30s",
-        "accent": "Cultured European cadence",
-        "speakingSpeed": "Steady, controlled 115 WPM",
-        "emotionalStyle": "Suppressed passion and warning tone"
-      },
-      "continuityRules": [
-        "Navy suit jacket stays buttoned once",
-        "Hair parting remains consistent on the left"
-      ]
-    }` : ''}
-    /* ... Repeat for every remaining character in REQUIRED CAST LIST (CHAR-03 through CHAR-0${targetCount})! */
+    }
   ],
   "lockedRules": [
     "Permanent actor IDs (CHAR-01, CHAR-02, ...) must never be swapped",
@@ -482,21 +515,21 @@ export async function generateEpisodeProductionPipeline(
       ? '90 seconds (9 clips of 10s — 1.5 Min Mini-Film)'
       : '60 seconds (6 clips of 10s — 1 Min Micro-Drama)';
 
-  const prompt = `You are a Senior Drama Series Director and Screenwriter.
+  const prompt = `You are a Senior Drama Director and Screenwriter.
 
-TASK: Develop PHASE 3: EPISODE PRODUCTION BREAKDOWN for Episode ${episodeNumber}: "${selectedEp.episodeTitle}".
+TASK: Develop PHASE 3: MINI-FILM PRODUCTION BREAKDOWN for: "${selectedEp.episodeTitle}".
 TARGET RUNTIME FORMAT: ${runtimeLabel}
 
 CONTEXT:
-Season: "${seasonStory.seasonTitle}"
+Film Title: "${seasonStory.seasonTitle}"
 World / Main Setting: "${chosenLocation}"
-Episode Summary: "${selectedEp.mainStory}"
+Story Arc: "${selectedEp.mainStory}"
 Conflict: "${selectedEp.mainConflict}"
 Cast Available:
 ${charSummary}
 
 CRITICAL RULES:
-- REAL HUMAN EMOTIONAL DRAMA BLEND: Never make this episode one-dimensional. Seamlessly blend intense romantic tension, deep emotional vulnerability (tears, heartbreak), and calculated revenge stakes. A scene can begin with cold vengeful accusations, transition into intimate physical proximity and romantic vulnerability as defenses crumble, and end on a heartbreaking ultimatum.
+- REAL HUMAN EMOTIONAL DRAMA BLEND: Never make this one-dimensional. Seamlessly blend intense romantic tension, deep emotional vulnerability (tears, heartbreak), and calculated revenge stakes. A scene can begin with cold vengeful accusations, transition into intimate physical proximity and romantic vulnerability as defenses crumble, and end on a heartbreaking ultimatum.
 - LOCKED REAL DRAMA LOCATION: All scenes must be grounded in realistic prestige settings matching: "${chosenLocation}" (e.g. Midnight Penthouse Study with rain-streaked windows, Rain-Drenched Glass Terrace, Grand Mansion Foyer, Executive Boardroom After Hours, VIP Hotel Suite).
 - NEGATIVE DIRECTIVE: STRICTLY FORBID KITCHENS, NO APPLIANCES, NO DOMESTIC COMIC SPACES, NO TOY/CARTOON WORLDS. Every scene must look like a high-budget HBO / A24 / Netflix prestige television drama.
 - Target Runtime: Exactly ${runtimeLabel}. Plan 2 to 3 cinematic scenes that can be executed in exactly ${clipCount} continuous 10-second clips.
@@ -509,7 +542,7 @@ JSON SCHEMA:
   "episodeTitle": "${selectedEp.episodeTitle}",
   "runtimeTarget": "${runtimeLabel}",
   "storySummary": "${selectedEp.mainStory}",
-  "characterList": ["CHAR-01", "CHAR-02"],
+  "characterList": ${JSON.stringify(characterBible.characters.map((c) => c.id))},
   "locationList": ["${chosenLocation}"],
   "timeline": "Midnight 01:15 AM, Heavy Rainstorm",
   "emotionalProgression": "Icy confrontation -> Painful tearful revelation -> Romantic vulnerability -> Bitter ultimatum",

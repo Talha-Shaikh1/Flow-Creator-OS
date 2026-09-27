@@ -239,14 +239,15 @@ function DramaSeriesStudioContent() {
     }
   };
 
-  // PHASE 1: Generate Season Story
+  // PHASE 1: Generate Mini-Film Story
   const handleGenerateSeason = async () => {
-    setActiveStepText('Architecting Story-Driven Real Drama World & Episode Arcs...');
+    setActiveStepText(`Architecting Complete ${targetRuntime} Mini-Film Story & World...`);
     try {
       const data = await callDramaPipeline('season_story', {
         seedTopic,
         genre,
         optionalLocationHint: optionalLocationHint.trim() || undefined,
+        targetRuntime,
       });
       setSeasonStory(data.seasonStory);
       saveStateToStorage({ seasonStory: data.seasonStory });
@@ -567,9 +568,9 @@ function DramaSeriesStudioContent() {
           {/* Gates Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
             {[
-              { gate: 1, label: '1. Season Story', icon: Layers },
+              { gate: 1, label: '1. Mini-Film Story', icon: Layers },
               { gate: 2, label: '2. Character Bible', icon: Lock },
-              { gate: 3, label: '3. Episode Sheet', icon: FileText },
+              { gate: 3, label: '3. Film Breakdown', icon: FileText },
               { gate: 4, label: '4. Scene 180° Axis', icon: Compass },
               { gate: 5, label: '5. 10s Clips Break', icon: Tv },
               { gate: 6, label: '6. Frame Prompts', icon: Camera },
@@ -651,10 +652,10 @@ function DramaSeriesStudioContent() {
                 <div>
                   <h2 className="text-base font-bold text-white flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-purple-400" />
-                    Phase 1: Season Story & World Architecture
+                    Phase 1: Mini-Film Story & World Architecture
                   </h2>
                   <p className="text-xs text-neutral-400">
-                    Define the high-level world, emotional stakes, and serialized multi-episode narrative arc.
+                    Define the high-level world, emotional stakes, and complete 1-to-2 minute continuous narrative arc.
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -852,7 +853,7 @@ function DramaSeriesStudioContent() {
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400">
-                      Approved Season Concept
+                      Approved Mini-Film Story ({seasonStory.runtimeTarget || targetRuntime})
                     </span>
                     <h3 className="text-lg font-extrabold text-white">{seasonStory.seasonTitle}</h3>
                     <p className="text-xs text-neutral-400 mt-0.5">{seasonStory.worldEnvironment}</p>
@@ -867,6 +868,26 @@ function DramaSeriesStudioContent() {
                   </button>
                 </div>
 
+                {/* Dynamic Cast Involved in Story */}
+                {seasonStory.charactersInvolved && seasonStory.charactersInvolved.length > 0 && (
+                  <div className="p-3.5 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
+                    <span className="text-neutral-500 text-[10px] uppercase font-bold block">
+                      🎭 Identified Cast in Story ({seasonStory.charactersInvolved.length} Characters)
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {seasonStory.charactersInvolved.map((charName, i) => (
+                        <span
+                          key={i}
+                          className="px-2.5 py-1 rounded-lg bg-purple-950/70 border border-purple-500/40 text-purple-200 text-xs font-semibold flex items-center gap-1.5"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                          {charName}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Core Pillars Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                   <div className="p-3.5 rounded-xl bg-neutral-950 border border-neutral-800">
@@ -879,51 +900,98 @@ function DramaSeriesStudioContent() {
 
                   <div className="p-3.5 rounded-xl bg-neutral-950 border border-neutral-800">
                     <span className="text-neutral-500 text-[10px] uppercase font-bold block mb-1">
-                      Comedy & Emotional Style
+                      Emotional Depth & Banter
                     </span>
-                    <p className="text-neutral-300 leading-relaxed">{seasonStory.comedyStyle}</p>
-                    <p className="text-neutral-400 mt-2 text-[11px]">{seasonStory.emotionalStyle}</p>
+                    <p className="text-neutral-300 leading-relaxed">{seasonStory.emotionalStyle}</p>
+                    <p className="text-neutral-400 mt-2 text-[11px]">{seasonStory.comedyStyle}</p>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-neutral-950 border border-neutral-800">
                     <span className="text-neutral-500 text-[10px] uppercase font-bold block mb-1">
-                      Season Climax & Ending
+                      Climax & Resolution
                     </span>
                     <p className="text-neutral-300 leading-relaxed">{seasonStory.seasonClimax}</p>
                     <p className="text-neutral-400 mt-2 text-[11px]">{seasonStory.seasonEnding}</p>
                   </div>
                 </div>
 
-                {/* Serialized Episodes List */}
-                <div>
-                  <h4 className="text-xs font-bold text-neutral-300 uppercase tracking-wider mb-3">
-                    Serialized Episode Arcs ({seasonStory.episodes.length} Episodes)
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {seasonStory.episodes.map((ep) => (
-                      <div
-                        key={ep.episodeNumber}
-                        className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2 text-xs"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-extrabold text-purple-400">
-                            Episode {ep.episodeNumber}: {safeText(ep.episodeTitle)}
-                          </span>
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-neutral-800 text-neutral-400">
-                            {Array.isArray(ep.charactersInvolved)
-                              ? ep.charactersInvolved.join(', ')
-                              : safeText(ep.charactersInvolved)}
-                          </span>
-                        </div>
-                        <p className="text-neutral-300">{safeText(ep.mainStory)}</p>
-                        <div className="text-[11px] text-neutral-400 pt-1 border-t border-neutral-900 flex justify-between">
-                          <span>
-                            <strong>Hook:</strong> {safeText(ep.beginning, 45)}
-                          </span>
-                          <span className="text-purple-300 font-mono">End: {safeText(ep.ending, 30)}</span>
-                        </div>
+                {/* Complete Mini-Film 5-Beat Narrative Arc */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <Film className="w-3.5 h-3.5 text-purple-400" />
+                      <span>Complete Mini-Film Story Beats (Continuous Narrative Arc)</span>
+                    </h4>
+                    <span className="text-[11px] font-mono text-purple-300 bg-purple-950/60 px-2 py-0.5 rounded border border-purple-500/30">
+                      {seasonStory.runtimeTarget || targetRuntime}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                    {/* Beat 1: Hook */}
+                    <div className="p-3.5 rounded-xl bg-neutral-950 border border-neutral-800 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-amber-400 text-[11px] uppercase tracking-wide">
+                          0-10s: Opening Shock Hook
+                        </span>
+                        <span className="text-[10px] text-neutral-500 font-mono">Clip 1</span>
                       </div>
-                    ))}
+                      <p className="text-neutral-200 leading-relaxed font-medium">
+                        {safeText(seasonStory.beginning)}
+                      </p>
+                    </div>
+
+                    {/* Beat 2: Rising Tension */}
+                    <div className="p-3.5 rounded-xl bg-neutral-950 border border-neutral-800 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-indigo-400 text-[11px] uppercase tracking-wide">
+                          10-40s: Rising Confrontation
+                        </span>
+                        <span className="text-[10px] text-neutral-500 font-mono">Rising Arc</span>
+                      </div>
+                      <p className="text-neutral-300 leading-relaxed">
+                        {safeText(seasonStory.majorDevelopments)}
+                      </p>
+                    </div>
+
+                    {/* Beat 3: Romantic Vulnerability & Secrets */}
+                    <div className="p-3.5 rounded-xl bg-neutral-950 border border-neutral-800 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-rose-400 text-[11px] uppercase tracking-wide">
+                          40-70s: Unspoken Passion & Secrets
+                        </span>
+                        <span className="text-[10px] text-neutral-500 font-mono">Heartbreak</span>
+                      </div>
+                      <p className="text-neutral-300 leading-relaxed">
+                        {safeText(seasonStory.characterRelationships)}
+                      </p>
+                    </div>
+
+                    {/* Beat 4: Revenge Trap / Climax */}
+                    <div className="p-3.5 rounded-xl bg-neutral-950 border border-neutral-800 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-red-400 text-[11px] uppercase tracking-wide">
+                          70-100s: Revenge Trap & Climax
+                        </span>
+                        <span className="text-[10px] text-neutral-500 font-mono">Climax</span>
+                      </div>
+                      <p className="text-neutral-300 leading-relaxed">
+                        {safeText(seasonStory.seasonClimax)}
+                      </p>
+                    </div>
+
+                    {/* Beat 5: Ending */}
+                    <div className="p-3.5 rounded-xl bg-neutral-950 border border-neutral-800 space-y-1.5 md:col-span-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-emerald-400 text-[11px] uppercase tracking-wide">
+                          Final Resolution / Devastating Breath
+                        </span>
+                        <span className="text-[10px] text-neutral-500 font-mono">Ending</span>
+                      </div>
+                      <p className="text-neutral-200 leading-relaxed font-medium">
+                        {safeText(seasonStory.seasonEnding)}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1062,29 +1130,12 @@ function DramaSeriesStudioContent() {
                 <div>
                   <h2 className="text-base font-bold text-white flex items-center gap-2">
                     <FileText className="w-5 h-5 text-purple-400" />
-                    Phase 3: Episode Production Breakdown
+                    Phase 3: Mini-Film Production Breakdown
                   </h2>
                   <p className="text-xs text-neutral-400">
-                    Select an episode to direct. Work on ONE episode at a time (strict pipeline rule).
+                    Complete 1-to-2 minute continuous short film breakdown: scene progression, blocking, camera concepts, and dialogue.
                   </p>
                 </div>
-
-                {seasonStory && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-neutral-400">Episode:</span>
-                    <select
-                      value={selectedEpisodeNumber}
-                      onChange={(e) => setSelectedEpisodeNumber(Number(e.target.value))}
-                      className="p-2 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-neutral-200 font-bold focus:outline-none focus:border-purple-500"
-                    >
-                      {seasonStory.episodes.map((ep) => (
-                        <option key={ep.episodeNumber} value={ep.episodeNumber}>
-                          Ep {ep.episodeNumber}: {ep.episodeTitle}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-neutral-800">
@@ -1124,7 +1175,7 @@ function DramaSeriesStudioContent() {
                     className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-purple-600/20 transition"
                   >
                     <Sparkles className="w-4 h-4" />
-                    <span>Generate Breakdown for Ep {selectedEpisodeNumber}</span>
+                    <span>Generate Mini-Film Breakdown ({targetRuntime})</span>
                   </button>
 
                   <button
@@ -1145,9 +1196,9 @@ function DramaSeriesStudioContent() {
                 <div className="space-y-6 pt-6 mt-6 border-t border-neutral-800">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-purple-400">Episode Production Sheet</span>
+                      <span className="text-[10px] font-bold uppercase text-purple-400">Mini-Film Production Sheet</span>
                       <h3 className="text-base font-extrabold text-white">
-                        Ep {episodeProduction.episodeNumber}: {episodeProduction.episodeTitle}
+                        {episodeProduction.episodeTitle} ({episodeProduction.runtimeTarget || targetRuntime})
                       </h3>
                       <p className="text-xs text-neutral-400 mt-1">{episodeProduction.storySummary}</p>
                     </div>
@@ -1227,8 +1278,7 @@ function DramaSeriesStudioContent() {
                 <div className="space-y-6 pt-4 border-t border-neutral-800">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-neutral-400">
-                      Generated {clipsBreakdown.length} sequential 10-second clips for Ep{' '}
-                      {episodeProduction?.episodeNumber}.
+                      Generated {clipsBreakdown.length} sequential 10-second clips for Complete Mini-Film ({targetRuntime}).
                     </span>
                     <button
                       onClick={handleApproveGate4And5}

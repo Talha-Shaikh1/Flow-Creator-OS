@@ -103,7 +103,13 @@ Return STRICT JSON only matching this schema:
       if (!seedTopic) {
         return NextResponse.json({ error: 'seedTopic is required for season_story' }, { status: 400 });
       }
-      const story = await generateSeasonStoryPipeline(seedTopic, genre, aiConfig, body.optionalLocationHint);
+      const story = await generateSeasonStoryPipeline(
+        seedTopic,
+        genre,
+        aiConfig,
+        body.optionalLocationHint,
+        targetRuntime
+      );
       return NextResponse.json({ success: true, seasonStory: story });
     }
 
