@@ -26,6 +26,7 @@ import {
   HelpCircle,
   Lightbulb,
   Clock,
+  History,
   X,
 } from 'lucide-react';
 import {
@@ -45,6 +46,11 @@ import { AISettingsModal } from '@/components/settings/AISettingsModal';
 import { AIProviderConfig } from '@/lib/engine/llm-provider';
 import { AdminAccessGuard } from '@/components/auth/AdminAccessGuard';
 import { DirectorCopilotDrawer } from '@/components/drama-series/DirectorCopilotDrawer';
+import { DramaHistoryModal } from '@/components/drama-series/DramaHistoryModal';
+import {
+  saveDramaFilmToHistory,
+  getDramaFilmHistory,
+} from '@/lib/history/drama-history';
 
 const DRAMA_SERIES_STORAGE_KEY = 'flowcreator_drama_series_production_state';
 
@@ -125,11 +131,15 @@ function DramaSeriesStudioContent() {
   const [directorIdeas, setDirectorIdeas] = useState<any[] | null>(null);
   const [isLoadingIdeas, setIsLoadingIdeas] = useState(false);
   const [showIdeasModal, setShowIdeasModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyCount, setHistoryCount] = useState(0);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   // Load cached state on mount
   useEffect(() => {
     try {
       setCurrentAIConfig(getStoredAIConfig());
+      setHistoryCount(getDramaFilmHistory().length);
       const cached = localStorage.getItem(DRAMA_SERIES_STORAGE_KEY);
       if (cached) {
         const parsed: DramaSeriesState = JSON.parse(cached);
@@ -153,13 +163,14 @@ function DramaSeriesStudioContent() {
     }
   }, []);
 
-  // Save state helper
+  // Save state helper (auto-saves both working session AND film archive)
   const saveStateToStorage = (updates: Partial<DramaSeriesState>) => {
     try {
       const stateToSave: DramaSeriesState = {
         currentGate: updates.currentGate ?? currentGate,
         completedGates: updates.completedGates ?? completedGates,
         seedTopic: updates.seedTopic ?? seedTopic,
+        genre: updates.genre ?? genre,
         seasonStory: updates.seasonStory ?? seasonStory ?? undefined,
         characterBible: updates.characterBible ?? characterBible ?? undefined,
         selectedEpisodeNumber: updates.selectedEpisodeNumber ?? selectedEpisodeNumber,
@@ -174,9 +185,59 @@ function DramaSeriesStudioContent() {
         updatedAt: new Date().toISOString(),
       };
       localStorage.setItem(DRAMA_SERIES_STORAGE_KEY, JSON.stringify(stateToSave));
+      saveDramaFilmToHistory(stateToSave);
+      setHistoryCount(getDramaFilmHistory().length);
     } catch (e) {
       console.warn('Failed to save drama state to local storage:', e);
     }
+  };
+
+  const handleLoadFilmFromHistory = (loadedState: DramaSeriesState) => {
+    if (loadedState.seasonStory) setSeasonStory(loadedState.seasonStory);
+    if (loadedState.characterBible) setCharacterBible(loadedState.characterBible);
+    if (loadedState.episodeProduction) setEpisodeProduction(loadedState.episodeProduction);
+    if (loadedState.sceneContinuity) setSceneContinuity(loadedState.sceneContinuity);
+    if (loadedState.clipsBreakdown) setClipsBreakdown(loadedState.clipsBreakdown);
+    if (loadedState.framePrompts) setFramePrompts(loadedState.framePrompts);
+    if (loadedState.videoPrompts) setVideoPrompts(loadedState.videoPrompts);
+    if (loadedState.directorQA) setDirectorQA(loadedState.directorQA);
+    if (loadedState.seedTopic) setSeedTopic(loadedState.seedTopic);
+    if (loadedState.genre) setGenre(loadedState.genre);
+    if (loadedState.aspectRatio) setAspectRatio(loadedState.aspectRatio);
+    if (loadedState.targetRuntime) setTargetRuntime(loadedState.targetRuntime);
+    if (loadedState.completedGates) setCompletedGates(loadedState.completedGates);
+    if (loadedState.currentGate) setCurrentGate(loadedState.currentGate);
+
+    localStorage.setItem(DRAMA_SERIES_STORAGE_KEY, JSON.stringify(loadedState));
+    setHistoryCount(getDramaFilmHistory().length);
+
+    const title = loadedState.seasonStory?.seasonTitle || 'Mini-Film';
+    setToastMsg(`✨ Loaded "${title}" into Studio!`);
+    setTimeout(() => setToastMsg(null), 4000);
+  };
+
+  const handleManualSave = () => {
+    const currentState: DramaSeriesState = {
+      currentGate,
+      completedGates,
+      seedTopic,
+      seasonStory: seasonStory ?? undefined,
+      characterBible: characterBible ?? undefined,
+      selectedEpisodeNumber,
+      episodeProduction: episodeProduction ?? undefined,
+      sceneContinuity: sceneContinuity ?? undefined,
+      clipsBreakdown: clipsBreakdown ?? undefined,
+      framePrompts: framePrompts ?? undefined,
+      videoPrompts: videoPrompts ?? undefined,
+      directorQA: directorQA ?? undefined,
+      aspectRatio,
+      targetRuntime,
+      updatedAt: new Date().toISOString(),
+    };
+    saveDramaFilmToHistory(currentState);
+    setHistoryCount(getDramaFilmHistory().length);
+    setToastMsg(`💾 "${seasonStory?.seasonTitle || 'Mini-Film'}" saved to Archive!`);
+    setTimeout(() => setToastMsg(null), 3000);
   };
 
   const handleCopy = (text: string, key: string) => {
@@ -514,6 +575,30 @@ function DramaSeriesStudioContent() {
           {/* Quick Actions */}
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setShowHistoryModal(true)}
+              className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 text-xs flex items-center gap-1.5 transition font-bold"
+              title="Open Drama Mini-Film Archive / Saved Films"
+            >
+              <History className="w-3.5 h-3.5 text-purple-400" />
+              <span>Film Archive</span>
+              {historyCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-purple-950 text-purple-300 text-[10px] font-mono border border-purple-500/30">
+                  {historyCount}
+                </span>
+              )}
+            </button>
+
+            {seasonStory && (
+              <button
+                onClick={handleManualSave}
+                className="px-2.5 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 text-xs flex items-center gap-1 transition"
+                title="Save Current Film into Archive"
+              >
+                <span>💾 Save</span>
+              </button>
+            )}
+
+            <button
               onClick={() => setShowCopilot(true)}
               className="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs flex items-center gap-1.5 shadow-sm transition font-bold"
               title="Open AI Director Copilot"
@@ -617,6 +702,19 @@ function DramaSeriesStudioContent() {
             })}
           </div>
         </div>
+
+        {/* Toast Alert */}
+        {toastMsg && (
+          <div className="p-3.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 text-xs font-semibold mb-6 flex items-center justify-between shadow-lg shadow-emerald-950/30 animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{toastMsg}</span>
+            </div>
+            <button onClick={() => setToastMsg(null)} className="text-emerald-400 hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Global Loading Spinner / Status Alert */}
         {isLoading && (
@@ -1839,6 +1937,16 @@ function DramaSeriesStudioContent() {
           </div>
         </div>
       )}
+
+      {/* Drama Mini-Film Archive / History Modal */}
+      <DramaHistoryModal
+        isOpen={showHistoryModal}
+        onClose={() => {
+          setShowHistoryModal(false);
+          setHistoryCount(getDramaFilmHistory().length);
+        }}
+        onSelectFilm={handleLoadFilmFromHistory}
+      />
     </main>
   );
 }

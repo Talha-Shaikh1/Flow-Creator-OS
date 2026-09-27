@@ -218,6 +218,7 @@ export interface DramaSeriesState {
   currentGate: DramaPipelineGate;
   completedGates: DramaPipelineGate[];
   seedTopic: string;
+  genre?: string;
   seasonStory?: SeasonStory;
   characterBible?: CharacterBible;
   selectedEpisodeNumber: number;
