@@ -98,6 +98,29 @@ JSON SCHEMA:
     throw new Error('Failed to generate valid Season Story JSON');
   }
 
+  if (Array.isArray(res.parsed.episodes)) {
+    res.parsed.episodes = res.parsed.episodes.map((ep: any) => ({
+      ...ep,
+      beginning:
+        typeof ep.beginning === 'string'
+          ? ep.beginning
+          : ep.beginning?.hook || ep.beginning?.text || JSON.stringify(ep.beginning) || '',
+      middle:
+        typeof ep.middle === 'string'
+          ? ep.middle
+          : ep.middle?.text || JSON.stringify(ep.middle) || '',
+      ending:
+        typeof ep.ending === 'string'
+          ? ep.ending
+          : ep.ending?.cliffhanger || ep.ending?.text || JSON.stringify(ep.ending) || '',
+      charactersInvolved: Array.isArray(ep.charactersInvolved)
+        ? ep.charactersInvolved
+        : typeof ep.charactersInvolved === 'string'
+        ? [ep.charactersInvolved]
+        : [],
+    }));
+  }
+
   return res.parsed as SeasonStory;
 }
 

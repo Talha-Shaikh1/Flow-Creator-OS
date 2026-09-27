@@ -74,6 +74,22 @@ export default function DramaSeriesStudioPage() {
   );
 }
 
+function safeText(val: any, maxLen?: number): string {
+  if (val === null || val === undefined) return '';
+  let str = '';
+  if (typeof val === 'string') {
+    str = val;
+  } else if (typeof val === 'object') {
+    str = val.text || val.hook || val.description || val.summary || val.cliffhanger || JSON.stringify(val);
+  } else {
+    str = String(val);
+  }
+  if (maxLen && str.length > maxLen) {
+    return str.slice(0, maxLen) + '...';
+  }
+  return str;
+}
+
 function DramaSeriesStudioContent() {
   // Production State
   const [currentGate, setCurrentGate] = useState<DramaPipelineGate>(1);
@@ -779,18 +795,20 @@ function DramaSeriesStudioContent() {
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-extrabold text-purple-400">
-                            Episode {ep.episodeNumber}: {ep.episodeTitle}
+                            Episode {ep.episodeNumber}: {safeText(ep.episodeTitle)}
                           </span>
                           <span className="text-[10px] px-2 py-0.5 rounded bg-neutral-800 text-neutral-400">
-                            {ep.charactersInvolved.join(', ')}
+                            {Array.isArray(ep.charactersInvolved)
+                              ? ep.charactersInvolved.join(', ')
+                              : safeText(ep.charactersInvolved)}
                           </span>
                         </div>
-                        <p className="text-neutral-300">{ep.mainStory}</p>
+                        <p className="text-neutral-300">{safeText(ep.mainStory)}</p>
                         <div className="text-[11px] text-neutral-400 pt-1 border-t border-neutral-900 flex justify-between">
                           <span>
-                            <strong>Hook:</strong> {ep.beginning.slice(0, 45)}...
+                            <strong>Hook:</strong> {safeText(ep.beginning, 45)}
                           </span>
-                          <span className="text-purple-300 font-mono">End: {ep.ending.slice(0, 30)}...</span>
+                          <span className="text-purple-300 font-mono">End: {safeText(ep.ending, 30)}</span>
                         </div>
                       </div>
                     ))}
@@ -903,7 +921,7 @@ function DramaSeriesStudioContent() {
 
                         {/* Continuity Rules */}
                         <div className="text-[10px] text-neutral-400 bg-neutral-900/50 p-2 rounded-lg border border-neutral-800/80">
-                          <strong className="text-emerald-400">Lock Rule:</strong> {char.continuityRules.join(' • ')}
+                          <strong className="text-emerald-400">Lock Rule:</strong> {Array.isArray(char.continuityRules) ? char.continuityRules.join(' • ') : safeText(char.continuityRules)}
                         </div>
                       </div>
                     ))}
@@ -1454,9 +1472,9 @@ function DramaSeriesStudioContent() {
                           ))}
                         </div>
 
-                        {rev.issuesIdentified && rev.issuesIdentified.length > 0 && (
+                        {rev.issuesIdentified && (
                           <div className="p-3 rounded-lg bg-red-950/30 border border-red-500/20 text-[11px] text-red-300">
-                            <strong>Identified Issue:</strong> {rev.issuesIdentified.join(' • ')}
+                            <strong>Identified Issue:</strong> {Array.isArray(rev.issuesIdentified) ? rev.issuesIdentified.join(' • ') : safeText(rev.issuesIdentified)}
                           </div>
                         )}
                       </div>
