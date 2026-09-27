@@ -78,8 +78,8 @@ function DramaSeriesStudioContent() {
   // Production State
   const [currentGate, setCurrentGate] = useState<DramaPipelineGate>(1);
   const [completedGates, setCompletedGates] = useState<DramaPipelineGate[]>([]);
-  const [seedTopic, setSeedTopic] = useState(DRAMA_PRESETS[0].topic);
-  const [genre, setGenre] = useState(DRAMA_PRESETS[0].genre);
+  const [seedTopic, setSeedTopic] = useState('');
+  const [genre, setGenre] = useState('Cinematic Emotional Drama & Revenge Romance');
   const [selectedEpisodeNumber, setSelectedEpisodeNumber] = useState<number>(1);
   const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16'>('16:9');
 
@@ -384,8 +384,8 @@ function DramaSeriesStudioContent() {
       setDirectorQA(null);
       setCurrentGate(1);
       setCompletedGates([]);
-      setSeedTopic(DRAMA_PRESETS[0].topic);
-      setGenre(DRAMA_PRESETS[0].genre);
+      setSeedTopic('');
+      setGenre('Cinematic Emotional Drama & Revenge Romance');
       setOptionalLocationHint('');
     }
   };
@@ -604,19 +604,33 @@ function DramaSeriesStudioContent() {
                     Define the high-level world, emotional stakes, and serialized multi-episode narrative arc.
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {DRAMA_PRESETS.map((p, idx) => (
                     <button
                       key={idx}
                       onClick={() => {
                         setSeedTopic(p.topic);
                         setGenre(p.genre);
+                        saveStateToStorage({ seedTopic: p.topic });
                       }}
                       className="px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[11px] font-medium transition"
+                      title={p.title}
                     >
-                      {p.title.split(':')[0]}
+                      {p.title.split(' (')[0]}
                     </button>
                   ))}
+                  {seedTopic && (
+                    <button
+                      onClick={() => {
+                        setSeedTopic('');
+                        saveStateToStorage({ seedTopic: '' });
+                      }}
+                      className="px-2 py-1 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 text-[11px] font-medium border border-red-500/30 transition"
+                      title="Clear textarea"
+                    >
+                      Clear
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -628,9 +642,12 @@ function DramaSeriesStudioContent() {
                   <textarea
                     rows={3}
                     value={seedTopic}
-                    onChange={(e) => setSeedTopic(e.target.value)}
-                    placeholder="Enter your emotional romance, betrayal, revenge, or family melodrama concept..."
-                    className="w-full p-3 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-neutral-200 focus:outline-none focus:border-purple-500 transition"
+                    onChange={(e) => {
+                      setSeedTopic(e.target.value);
+                      saveStateToStorage({ seedTopic: e.target.value });
+                    }}
+                    placeholder="Apna real human emotional drama, romance, betrayal ya revenge concept yahan likhein (ya upar diye gaye buttons me sy koi example load krein)..."
+                    className="w-full p-3 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-neutral-200 placeholder:text-neutral-600 focus:outline-none focus:border-purple-500 transition"
                   />
                   <div className="flex flex-col gap-1 text-[11px] text-purple-300 mt-2 p-2.5 rounded-xl bg-purple-950/40 border border-purple-500/30">
                     <div className="flex items-center gap-1.5 font-bold text-purple-300">
