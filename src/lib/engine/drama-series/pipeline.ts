@@ -16,16 +16,34 @@ import {
 export async function generateSeasonStoryPipeline(
   seedTopic: string,
   genre: string = 'Cinematic Emotional Drama & Revenge Romance',
-  aiConfig?: AIProviderConfig
+  aiConfig?: AIProviderConfig,
+  optionalLocationHint?: string
 ): Promise<SeasonStory> {
+  const locationInstruction = optionalLocationHint
+    ? `User Setting Note: "${optionalLocationHint}". Design an authentic, prestige architectural environment around this concept.`
+    : `Intelligently architect and design the primary world environment that NATURALLY AND PERFECTLY FITS THIS DRAMATIC STORY (e.g. if the story is about estranged corporate lovers, design a high-floor glass penthouse study or executive boardroom; if about dynasty inheritance, design an ancestral mansion foyer; if about a runaway lover, design a rain-soaked coastal harbor or moody boutique hotel).`;
+
   const prompt = `You are a Prestige Television Showrunner, Melodrama Director, and Master Screenwriter specializing in high-stakes REAL HUMAN EMOTIONAL DRAMA, INTENSE LOVE STORIES, BETRAYAL, AND REVENGE SAGAS (HBO, A24, prestige Kdrama, and cinematic British/American character dramas).
 
 TASK: Develop PHASE 1: SEASON STORY DEVELOPMENT based on this concept:
 "${seedTopic}"
 Genre: ${genre}
 
-CRITICAL STORYTELLING RULES:
+LOCATION & WORLD DESIGN DIRECTIVE:
+${locationInstruction}
+
+CRITICAL STORYTELLING & ENVIRONMENT RULES:
 - CHARACTERS ARE REAL HUMAN BEINGS: Photorealistic human actors, complex emotional psychologies, intense romance, suppressed passion, heartbreak, family vendettas, and calculated revenge.
+- MANDATORY MULTI-LAYERED DRAMA BLEND (NEVER ONE-DIMENSIONAL):
+  A true prestige drama is NEVER flat or single-note! If a concept focuses on 'revenge', it must NOT be only cold anger.
+  EVERY series and episode MUST be a rich, powerful MIXUP of:
+  1. INTENSE ROMANCE & UNRESOLVED PASSION: Electric eye contact, physical proximity, suppressed longing, memories of tender intimacy.
+  2. HEART-WRENCHING EMOTIONAL VULNERABILITY: Moist tearful eyes, cracking voices, unspoken grief, secret sacrifices, shattering heartbreak.
+  3. BETRAYAL & REVENGE STAKES: Calculated retribution, family vendettas, hidden evidence, sudden power shifts, cutthroat loyalty tests.
+  4. PRIDE & SHARP DRAMATIC BANTER: Wounded egos, cutting ironic retorts, prideful defenses concealing unbearable love.
+  The engine must interweave these four pillars seamlessly across all episodes.
+- DYNAMIC REAL-WORLD DRAMA SETTING: Autonomously create a rich, photorealistic, atmospheric world environment that matches the emotional tone of the story (e.g. rain-slicked glass penthouse overlooking city lights, grand heritage mansion hall, candlelit hotel suite, stormy coastal cliff, private executive lounge).
+- STRICT BAN ON WEIRD / ABSTRACT SETTINGS: Absolutely NO cartoon environments, NO kitchens or household counters, NO appliances, NO toasters, NO mugs, NO talking objects, NO surreal/fantasy micro-worlds. 100% photorealistic prestige TV drama sets only.
 - Focus ONLY on high-level season and episodic narrative arcs. No camera prompts at this stage.
 - Divide the season into 4 to 6 serialized, tightly connected episodes.
 - Ensure every episode has a high-stakes emotional confrontation, a sharp dramatic escalation, and a cliffhanger hook that leaves the audience breathless.
@@ -36,7 +54,7 @@ JSON SCHEMA:
   "seasonTitle": "Evocative Cinematic Season Title",
   "genre": "${genre}",
   "mainTheme": "Core emotional theme (e.g. Unresolved love vs ruthless revenge, the cost of loyalty, hidden past sacrifices)",
-  "worldEnvironment": "High-end cinematic real-world setting (e.g. Rain-slicked luxury penthouse in Manhattan overlooking a midnight skyline; moody coastal villa; candlelit executive boardroom)",
+  "worldEnvironment": "Photorealistic, atmospheric prestige real-world location designed specifically for this story (e.g. Rain-streaked high-rise penthouse study in Manhattan overlooking a midnight skyline; grand ancestral family estate foyer with marble staircase; private candlelit suite)",
   "overallTone": "Intense, deeply emotional, atmospheric, romantic tension with undercurrent of danger",
   "comedyStyle": "Dark witty tension banter and sharp dramatic retorts (never silly cartoon gags)",
   "emotionalStyle": "Heart-wrenching vulnerability, unspoken grief, suppressed passion, tearful accusations",
@@ -187,7 +205,8 @@ export async function generateEpisodeProductionPipeline(
   seasonStory: SeasonStory,
   characterBible: CharacterBible,
   episodeNumber: number,
-  aiConfig?: AIProviderConfig
+  aiConfig?: AIProviderConfig,
+  locationSetting?: string
 ): Promise<EpisodeProductionSheet> {
   const selectedEp =
     seasonStory.episodes.find((e) => e.episodeNumber === episodeNumber) || seasonStory.episodes[0];
@@ -196,20 +215,24 @@ export async function generateEpisodeProductionPipeline(
     .map((c) => `${c.id} (${c.name}): ${c.speciesObject}, ${c.personality}`)
     .join('\n');
 
+  const chosenLocation = locationSetting || seasonStory.worldEnvironment;
+
   const prompt = `You are a Senior Drama Series Director and Screenwriter.
 
 TASK: Develop PHASE 3: EPISODE PRODUCTION BREAKDOWN for Episode ${episodeNumber}: "${selectedEp.episodeTitle}".
 
 CONTEXT:
 Season: "${seasonStory.seasonTitle}"
-World: "${seasonStory.worldEnvironment}"
+World / Main Setting: "${chosenLocation}"
 Episode Summary: "${selectedEp.mainStory}"
 Conflict: "${selectedEp.mainConflict}"
 Cast Available:
 ${charSummary}
 
 CRITICAL RULES:
-- REAL HUMAN EMOTIONAL DRAMA: Romantic tension, bitter heartbreak, betrayal, and revenge.
+- REAL HUMAN EMOTIONAL DRAMA BLEND: Never make this episode one-dimensional. Seamlessly blend intense romantic tension, deep emotional vulnerability (tears, heartbreak), and calculated revenge stakes. A scene can begin with cold vengeful accusations, transition into intimate physical proximity and romantic vulnerability as defenses crumble, and end on a heartbreaking ultimatum.
+- LOCKED REAL DRAMA LOCATION: All scenes must be grounded in realistic prestige settings matching: "${chosenLocation}" (e.g. Midnight Penthouse Study with rain-streaked windows, Rain-Drenched Glass Terrace, Grand Mansion Foyer, Executive Boardroom After Hours, VIP Hotel Suite).
+- NEGATIVE DIRECTIVE: STRICTLY FORBID KITCHENS, NO APPLIANCES, NO DOMESTIC COMIC SPACES, NO TOY/CARTOON WORLDS. Every scene must look like a high-budget HBO / A24 / Netflix prestige television drama.
 - Target Runtime: 40 to 60 seconds (4 to 6 continuous 10-second clips).
 - Break the episode into 2 to 3 cinematic scenes with seamless emotional escalation.
 - Blocking: Physical proximity, stepping into each other's personal space, turning away in pain, touching or slamming props.
@@ -222,7 +245,7 @@ JSON SCHEMA:
   "runtimeTarget": "40-60s (4-6 clips)",
   "storySummary": "${selectedEp.mainStory}",
   "characterList": ["CHAR-01", "CHAR-02"],
-  "locationList": ["Midnight Penthouse Study", "Rain-Drenched Glass Balcony"],
+  "locationList": ["${chosenLocation}"],
   "timeline": "Midnight 01:15 AM, Heavy Rainstorm",
   "emotionalProgression": "Icy confrontation -> Painful tearful revelation -> Romantic vulnerability -> Bitter ultimatum",
   "comedyBeats": "Sharp, cutting verbal irony and prideful defensive retorts",
@@ -310,6 +333,19 @@ CRITICAL RULES:
    - EYE CONTACT: Speaker must look directly into the other character's eyes.
 4. 0-3S HOOK IN CLIP 1:
    - Clip 1 MUST have an immediate emotional shock hook in the first 3 seconds (e.g. an unexpected confrontation, a dossier slammed down, tear glistening on cheek).
+5. LOCATION CONTINUITY & FRAME CHAINING STRATEGY:
+   - Determine whether each clip stays in the same location/scene as the previous clip.
+   - If Clip N stays in the same location as Clip N-1 (e.g. both in Penthouse Study):
+     * Set "locationContinuityType": "SAME_LOCATION_CONTINUOUS"
+     * Set "frameReferenceStrategy": "USE_PREVIOUS_CLIP_END_FRAME"
+     * Set "frameReferenceNote": "Location does not change. Use the final frame (End Frame) of Clip [N-1] as the starting frame input in Google Flow (Veo) for 100% actor and environment continuity."
+   - If Clip N cuts to a different location or time:
+     * Set "locationContinuityType": "NEW_LOCATION_SCENE_CUT"
+     * Set "frameReferenceStrategy": "NEW_STARTING_FRAME"
+     * Set "frameReferenceNote": "New scene cut. Generate fresh starting frame."
+6. MULTI-LAYERED EMOTIONAL ACTING & DIALOGUE (LOVE + EMOTION + REVENGE MIXUP):
+   - Dialogue must NEVER be one-dimensional. It must carry deep subtext: pride and vengeance on the surface, but intense suppressed love, sorrow, and unbearable longing underneath in their eyes and micro-expressions.
+   - Spoken words attack the betrayal or demand revenge, but the actor's moist eyes and proximity reveal that they still desperately care.
 
 Return STRICT JSON only matching this schema:
 {
@@ -330,6 +366,9 @@ Return STRICT JSON only matching this schema:
       "clipNumber": 1,
       "duration": "10 seconds",
       "sceneNumber": 1,
+      "locationContinuityType": "NEW_LOCATION_SCENE_CUT",
+      "frameReferenceStrategy": "NEW_STARTING_FRAME",
+      "frameReferenceNote": "Episode establishing clip. Generate new starting frame.",
       "charactersPresent": ["CHAR-01", "CHAR-02"],
       "characterPositions": "CHAR-01 on Screen-Left; CHAR-02 on Screen-Right",
       "characterActions": "CHAR-01 stands motionless behind desk with jaw clenched; CHAR-02 takes a tentative step forward clutching her coat",
@@ -366,13 +405,34 @@ Return STRICT JSON only matching this schema:
     throw new Error('Failed to generate Scene Continuity and Clips Breakdown JSON');
   }
 
-  // Calculate exact word counts
-  const clips: TenSecClipDef[] = res.parsed.clipsBreakdown.map((clip: any) => {
+  // Calculate exact word counts & deterministic location continuity
+  const rawClips = res.parsed.clipsBreakdown || [];
+  const clips: TenSecClipDef[] = rawClips.map((clip: any, idx: number) => {
     const words = clip.dialogue ? clip.dialogue.trim().split(/\s+/).filter(Boolean) : [];
+    const isFirstClip = idx === 0;
+    const prevClip = idx > 0 ? rawClips[idx - 1] : null;
+    const sameScene = prevClip && clip.sceneNumber && prevClip.sceneNumber && clip.sceneNumber === prevClip.sceneNumber;
+    const sameEnv =
+      prevClip &&
+      prevClip.environment &&
+      clip.environment &&
+      prevClip.environment.trim().toLowerCase().slice(0, 15) === clip.environment.trim().toLowerCase().slice(0, 15);
+
+    const isContinuous =
+      !isFirstClip &&
+      (sameScene || sameEnv || clip.locationContinuityType === 'SAME_LOCATION_CONTINUOUS');
+
     return {
       ...clip,
       duration: '10 seconds',
       wordCount: words.length,
+      locationContinuityType: isContinuous ? 'SAME_LOCATION_CONTINUOUS' : 'NEW_LOCATION_SCENE_CUT',
+      frameReferenceStrategy: isContinuous ? 'USE_PREVIOUS_CLIP_END_FRAME' : 'NEW_STARTING_FRAME',
+      frameReferenceNote: isContinuous
+        ? `Location does not change from Clip ${clip.clipNumber - 1}. Use the ENDING FRAME (last frame) of Clip ${clip.clipNumber - 1} as the starting frame in Google Flow (Veo) Image-to-Video mode for 100% continuity.`
+        : isFirstClip
+        ? 'Episode opening establishing shot. Generate fresh starting frame.'
+        : 'Scene transition / new location cut. Generate fresh establishing frame.',
     };
   });
 
@@ -390,7 +450,8 @@ export async function generateFrameAndVideoPromptsPipeline(
   characterBible: CharacterBible,
   sceneContinuity: SceneContinuityPlan[],
   aiConfig?: AIProviderConfig,
-  aspectRatio: '16:9' | '9:16' = '16:9'
+  aspectRatio: '16:9' | '9:16' = '16:9',
+  locationSetting?: string
 ): Promise<{
   framePrompts: FramePromptItem[];
   videoPrompts: VideoPromptItem[];
@@ -408,6 +469,7 @@ export async function generateFrameAndVideoPromptsPipeline(
 
 TASK: Generate PHASE 6 (Still Frame Prompts) and PHASE 7 (10-Second Video Prompts) for REAL HUMAN EMOTIONAL DRAMA.
 TARGET ASPECT RATIO: ${aspectRatio} (${aspectRatio === '16:9' ? '16:9 Cinematic Widescreen Landscape — emphasize horizontal depth, clear screen-left vs screen-right two-shot blocking, and razor-sharp horizontal eyeline contact between characters' : '9:16 Vertical Portrait Short-Form'})
+LOCKED LOCATION SETTING: ${locationSetting || 'Luxury Midnight Penthouse & Study with rain-streaked glass walls'}
 
 LOCKED CHARACTERS BIBLE:
 ${charactersContext}
@@ -418,9 +480,10 @@ ${clipsJson}
 CRITICAL RULES FOR FRAME PROMPTS (PHASE 6):
 - Create the exact starting still image prompt for the 10-second clip.
 - MUST SPECIFY REAL HUMAN CINEMATIC PHOTOREALISM:
-  * 35mm film still, Panavision anamorphic lens, 85mm portrait bokeh.
+  * 35mm film still, Panavision anamorphic lens, 85mm portrait bokeh, shot on Arri Alexa Mini LF.
   * Real human skin texture, visible natural pores, subtle moisture/tears, fine facial hair stubble, realistic hair strands.
-  * No plastic AI smoothing, no cartoon or stylized 3D looks — 100% photorealistic prestige movie aesthetic (Netflix/HBO drama).
+  * Architectural Realism: Ground background strictly in real prestige drama settings (e.g. rain-streaked glass, dark mahogany, warm brass lamp chiaroscuro lighting against cold rainstorm neon).
+  * NEGATIVE PROMPT EMBEDDED: Include at the end: [NEGATIVE: cartoon, anime, 3D render, CGI look, plastic doll skin, kitchen counter, appliances, toaster, mug, vegetable, anthropomorphic, miniature world, surreal abstract room, extra limbs].
   * Exact spatial position (Screen-Left vs Screen-Right), gaze vector, hand posture, lighting, and wardrobe.
   * Aspect ratio: ${aspectRatio}.
 
@@ -436,7 +499,7 @@ Return STRICT JSON only matching this schema:
   "framePrompts": [
     {
       "clipNumber": 1,
-      "prompt": "Cinematic 35mm film still, photorealistic prestige drama (${aspectRatio}): CHAR-01 framed on Screen-Left looking toward Screen-Right...",
+      "prompt": "Cinematic 35mm film still, photorealistic prestige drama (${aspectRatio}): CHAR-01 framed on Screen-Left looking toward Screen-Right... [NEGATIVE: cartoon, 3D CGI, plastic skin, kitchen counter, toaster, mug, vegetable, miniature world]",
       "aspectRatio": "${aspectRatio}",
       "styleTag": "Photorealistic 35mm Film Still"
     }
@@ -469,8 +532,25 @@ Return STRICT JSON only matching this schema:
     throw new Error('Failed to generate Frame and Video Prompts JSON');
   }
 
+  const rawFrames = res.parsed.framePrompts || [];
+  const framePrompts: FramePromptItem[] = rawFrames.map((fp: any, idx: number) => {
+    const clip = clips[idx];
+    const isContinuous = clip?.frameReferenceStrategy === 'USE_PREVIOUS_CLIP_END_FRAME';
+    const prevClipNum = clip ? clip.clipNumber - 1 : idx;
+
+    return {
+      ...fp,
+      isContinuousFromPrevious: isContinuous,
+      previousClipReference: isContinuous ? prevClipNum : undefined,
+      frameStrategy: isContinuous ? 'USE_PREVIOUS_CLIP_END_FRAME' : 'NEW_STARTING_FRAME',
+      workflowInstruction: isContinuous
+        ? `🔄 SAME LOCATION CONTINUATION: Location does NOT change from Clip ${prevClipNum}. Do not generate a new image from scratch. Use the ENDING FRAME (last frame) of Clip ${prevClipNum} directly as the starting image in Google Flow (Veo) Image-to-Video mode for 100% actor and environment continuity.`
+        : `🎬 NEW SCENE CUT: Generate a fresh starting frame using this prompt.`,
+    };
+  });
+
   return {
-    framePrompts: res.parsed.framePrompts,
+    framePrompts,
     videoPrompts: res.parsed.videoPrompts,
   };
 }

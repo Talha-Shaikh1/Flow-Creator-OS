@@ -43,29 +43,87 @@ interface DirectorCopilotDrawerProps {
 const QUICK_PROMPTS = [
   {
     icon: ImageIcon,
-    label: 'Thumbnail Prompts (High-CTR)',
+    label: 'Thumbnail Prompts',
     query:
-      'Generate 3 high-CTR, dramatic YouTube thumbnail prompts for this episode in 16:9 format (--ar 16:9) for Midjourney/Flux. Include intense eye contact, high contrast, and bold 2-3 word text overlay suggestions!',
+      'Generate 2 concise, high-CTR YouTube thumbnail prompts in 16:9 format (--ar 16:9) for Midjourney/Flux for this episode, with a bold 2-word text overlay.',
   },
   {
     icon: Flame,
-    label: '5 Viral YouTube Titles',
+    label: '5 Punchy Viral Titles',
     query:
-      'Suggest 5 viral, curiosity-inducing YouTube video titles for this episode with high psychological tension for A/B testing.',
+      'Suggest 5 short, viral YouTube titles for this episode for A/B testing. Keep each title punchy and under 60 characters.',
   },
   {
     icon: Music,
-    label: 'Music & Sound Design',
+    label: 'Music & Sound Cues',
     query:
-      'Suggest specific cinematic background music cues (e.g. cello drone, ticking clock tension) and Foley sound effects for this episode.',
+      'Give a concise 3-bullet breakdown of the background music (mood, instruments, and 1 AI music prompt) for this episode. Keep it brief and simple.',
   },
   {
     icon: Edit3,
-    label: 'Elevate Cliffhanger Dialogue',
+    label: 'Cliffhanger Polish',
     query:
-      'Analyze the ending dialogue of this episode and suggest 2 punchier, high-stakes variations that make the cliffhanger impossible to skip.',
+      'Give 2 short, powerful variations of the ending cliffhanger dialogue for this episode.',
   },
 ];
+
+function FormattedChatMessage({ content }: { content: string }) {
+  const parts = content.split(/(```[\s\S]*?```)/g);
+
+  return (
+    <div className="space-y-2 text-xs leading-relaxed">
+      {parts.map((part, idx) => {
+        if (part.startsWith('```') && part.endsWith('```')) {
+          const lines = part.slice(3, -3).trim();
+          const code = lines.replace(/^[a-zA-Z0-9_-]+\n/, '');
+          return (
+            <div
+              key={idx}
+              className="my-2 rounded-xl bg-black/80 border border-neutral-800 p-2.5 font-mono text-[11px] text-purple-200 select-all"
+            >
+              <pre className="whitespace-pre-wrap overflow-x-auto">{code}</pre>
+            </div>
+          );
+        }
+
+        const cleanLines = part.split('\n').map((line, lIdx) => {
+          const trimmed = line.trim();
+          if (!trimmed) return <div key={lIdx} className="h-1" />;
+
+          const isHeading = trimmed.startsWith('#');
+          const headingText = trimmed.replace(/^#+\s*/, '').replace(/[*_~`]/g, '');
+          if (isHeading) {
+            return (
+              <div key={lIdx} className="font-bold text-white text-xs pt-1 text-purple-300">
+                {headingText}
+              </div>
+            );
+          }
+
+          const isBullet = trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('• ');
+          const bulletText = trimmed.replace(/^[-*•]\s*/, '');
+
+          if (isBullet) {
+            return (
+              <div key={lIdx} className="flex items-start gap-1.5 pl-1 text-neutral-300">
+                <span className="text-purple-400 font-bold shrink-0">•</span>
+                <span>{bulletText.replace(/[*_~`]/g, '')}</span>
+              </div>
+            );
+          }
+
+          return (
+            <p key={lIdx} className="text-neutral-200">
+              {trimmed.replace(/[*_~`]/g, '')}
+            </p>
+          );
+        });
+
+        return <div key={idx} className="space-y-1">{cleanLines}</div>;
+      })}
+    </div>
+  );
+}
 
 export function DirectorCopilotDrawer({
   isOpen,
@@ -78,7 +136,7 @@ export function DirectorCopilotDrawer({
       id: 'welcome',
       role: 'assistant',
       content:
-        '👋 **Hello Director!** I am your **AI Co-Showrunner & Production Strategist**.\n\nI have live context of your **active episode, characters, dialogue, and camera angles**. \n\nAsk me anything! For example: \n- *"Generate 3 YouTube thumbnail prompts for this episode"*\n- *"Give me 5 viral title ideas for A/B testing"*\n- *"What sound effects should play during Clip 2?"*',
+        'Hello Director! AI Copilot ready hai live episode context k sath.\n\nKoi bhi sawal pochein, jaise:\n- YouTube thumbnail prompts\n- 5 viral titles\n- Background music & sound cues\n- Dialogue polish',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -225,7 +283,7 @@ export function DirectorCopilotDrawer({
                       : 'bg-neutral-900/90 border-neutral-800 text-neutral-200'
                   }`}
                 >
-                  <div className="whitespace-pre-wrap leading-relaxed">{m.content}</div>
+                  <FormattedChatMessage content={m.content} />
 
                   <div className="flex items-center justify-between pt-1 border-t border-neutral-800/60 text-[10px] text-neutral-500">
                     <span>{m.timestamp}</span>

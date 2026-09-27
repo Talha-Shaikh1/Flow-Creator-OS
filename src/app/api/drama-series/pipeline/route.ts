@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       if (!seedTopic) {
         return NextResponse.json({ error: 'seedTopic is required for season_story' }, { status: 400 });
       }
-      const story = await generateSeasonStoryPipeline(seedTopic, genre, aiConfig);
+      const story = await generateSeasonStoryPipeline(seedTopic, genre, aiConfig, body.optionalLocationHint);
       return NextResponse.json({ success: true, seasonStory: story });
     }
 

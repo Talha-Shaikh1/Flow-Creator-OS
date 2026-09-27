@@ -101,6 +101,7 @@ function DramaSeriesStudioContent() {
   const [showAISettingsModal, setShowAISettingsModal] = useState(false);
   const [showCopilot, setShowCopilot] = useState(false);
   const [currentAIConfig, setCurrentAIConfig] = useState<AIProviderConfig>({ provider: 'mistral' });
+  const [optionalLocationHint, setOptionalLocationHint] = useState<string>('');
 
   // Load cached state on mount
   useEffect(() => {
@@ -190,9 +191,13 @@ function DramaSeriesStudioContent() {
 
   // PHASE 1: Generate Season Story
   const handleGenerateSeason = async () => {
-    setActiveStepText('Architecting Season Story & Episode Arcs...');
+    setActiveStepText('Architecting Story-Driven Real Drama World & Episode Arcs...');
     try {
-      const data = await callDramaPipeline('season_story', { seedTopic, genre });
+      const data = await callDramaPipeline('season_story', {
+        seedTopic,
+        genre,
+        optionalLocationHint: optionalLocationHint.trim() || undefined,
+      });
       setSeasonStory(data.seasonStory);
       saveStateToStorage({ seasonStory: data.seasonStory });
     } catch (e) {}
@@ -367,7 +372,7 @@ function DramaSeriesStudioContent() {
   };
 
   const handleResetProduction = () => {
-    if (confirm('Are you sure you want to reset the entire production pipeline state?')) {
+    if (confirm('Are you sure you want to reset the entire drama production pipeline state? This clears all cached data to start fresh.')) {
       localStorage.removeItem(DRAMA_SERIES_STORAGE_KEY);
       setSeasonStory(null);
       setCharacterBible(null);
@@ -379,6 +384,9 @@ function DramaSeriesStudioContent() {
       setDirectorQA(null);
       setCurrentGate(1);
       setCompletedGates([]);
+      setSeedTopic(DRAMA_PRESETS[0].topic);
+      setGenre(DRAMA_PRESETS[0].genre);
+      setOptionalLocationHint('');
     }
   };
 
@@ -386,7 +394,7 @@ function DramaSeriesStudioContent() {
   const handleExportPackage = () => {
     if (!episodeProduction || !framePrompts || !videoPrompts) return;
     let md = `# PRODUCTION PACKAGE: EPISODE ${episodeProduction.episodeNumber} - ${episodeProduction.episodeTitle}\n\n`;
-    md += `**Series:** ${seasonStory?.seasonTitle || '3D Animated Series'}\n`;
+    md += `**Series:** ${seasonStory?.seasonTitle || 'Prestige Cinematic Drama Series'}\n`;
     md += `**Target Runtime:** ${episodeProduction.runtimeTarget}\n`;
     md += `**Story:** ${episodeProduction.storySummary}\n\n`;
     md += `## 1. CAST INVOLVED\n`;
@@ -398,6 +406,11 @@ function DramaSeriesStudioContent() {
       const fp = framePrompts[idx];
       const clip = clipsBreakdown?.[idx];
       md += `### CLIP ${vp.clipNumber} (10 SECONDS)\n`;
+      if (clip?.locationContinuityType === 'SAME_LOCATION_CONTINUOUS' || fp?.isContinuousFromPrevious) {
+        md += `> **🔄 LOCATION CONTINUITY DIRECTIVE:** Location does NOT change from Clip ${vp.clipNumber - 1}. Use the **Ending Frame (last frame) of Clip ${vp.clipNumber - 1}** as the starting frame input in Google Flow (Veo) Image-to-Video mode for 100% actor and environment continuity.\n\n`;
+      } else {
+        md += `> **🎬 NEW SCENE CUT / ESTABLISHING FRAME:** Generate fresh starting frame using the prompt below.\n\n`;
+      }
       md += `- **Active Speaker:** ${vp.activeSpeaker}\n`;
       md += `- **Dialogue:** "${vp.dialogueLine}"\n`;
       md += `- **Listener Tag:** ${vp.listenerDirective}\n\n`;
@@ -618,6 +631,28 @@ function DramaSeriesStudioContent() {
                     onChange={(e) => setSeedTopic(e.target.value)}
                     placeholder="Enter your emotional romance, betrayal, revenge, or family melodrama concept..."
                     className="w-full p-3 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-neutral-200 focus:outline-none focus:border-purple-500 transition"
+                  />
+                  <div className="flex flex-col gap-1 text-[11px] text-purple-300 mt-2 p-2.5 rounded-xl bg-purple-950/40 border border-purple-500/30">
+                    <div className="flex items-center gap-1.5 font-bold text-purple-300">
+                      <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                      <span>Story-Driven World & Multi-Layered Drama Mixup</span>
+                    </div>
+                    <p className="text-neutral-300 text-[11px] leading-relaxed">
+                      AI story engine har drama men <strong>Romance, Emotional Heartbreak, Revenge Vendetta aur Pride</strong> ka balanced mixup banata hai. Story sirf revenge par flat nahi hogi, balky deep love aur tears ka zabardast drama banegi.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-neutral-400 mb-1">
+                    Atmosphere / Setting Note <span className="text-neutral-500 font-normal">(Optional — AI designs automatically if left blank)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={optionalLocationHint}
+                    onChange={(e) => setOptionalLocationHint(e.target.value)}
+                    placeholder="e.g. Midnight rainstorm in Manhattan, or coastal family mansion at dusk (optional)"
+                    className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-neutral-300 placeholder:text-neutral-600 focus:outline-none focus:border-purple-500 transition"
                   />
                 </div>
 
@@ -1076,6 +1111,20 @@ function DramaSeriesStudioContent() {
                           )}
                         </div>
 
+                        {/* Location Continuity & Frame Reference Strategy */}
+                        {clip.locationContinuityType === 'SAME_LOCATION_CONTINUOUS' ? (
+                          <div className="flex items-center gap-2 p-2 rounded-lg bg-indigo-950/40 border border-indigo-500/40 text-indigo-200 text-[11px]">
+                            <RefreshCw className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                            <span>
+                              <strong className="text-indigo-300">Same Location:</strong> Location change nahi ho rahi. Agli clip generate krny k liye <strong>Clip {clip.clipNumber - 1} ka Ending Frame</strong> use krein.
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 p-1.5 rounded-lg bg-neutral-900/60 border border-neutral-800 text-neutral-400 text-[10px]">
+                            <span>🎬 {clip.clipNumber === 1 ? 'Episode opening shot — generate fresh establishing frame' : 'Scene transition / new location cut'}</span>
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] text-neutral-400 pt-1">
                           <div>
                             <strong>Eye Contact:</strong> {clip.eyeDirection}
@@ -1191,6 +1240,26 @@ function DramaSeriesStudioContent() {
                           {/* Phase 6: Still Frame Prompt */}
                           {fp && (
                             <div className="space-y-2">
+                              {/* Workflow Reference Strategy Banner */}
+                              {fp.isContinuousFromPrevious ? (
+                                <div className="p-3 rounded-xl bg-gradient-to-r from-indigo-950/70 to-purple-950/40 border border-indigo-500/50 space-y-1">
+                                  <div className="flex items-center gap-2 text-indigo-300 font-bold text-xs">
+                                    <RefreshCw className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                                    <span>SAME LOCATION CONTINUATION — USE PREVIOUS CLIP END FRAME</span>
+                                  </div>
+                                  <p className="text-[11px] text-neutral-200 leading-relaxed">
+                                    Location change nahi ho rahi! Clip {vp.clipNumber} usi scene men banti hai. Google Flow (Veo) Image-to-Video mode men <strong>Clip {fp.previousClipReference || vp.clipNumber - 1} ka Ending Frame (Last Frame)</strong> upload krein ta k character, lighting aur environment 100% match rahay.
+                                  </p>
+                                  <div className="text-[10px] text-neutral-400 pt-0.5">
+                                    Fallback Text Prompt (agar naya still generate krna hu):
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="px-2.5 py-1 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 text-[10px] flex items-center gap-1.5 w-fit">
+                                  <span>🎬 New scene cut / establishing frame — generate fresh starting frame</span>
+                                </div>
+                              )}
+
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold text-neutral-300 flex items-center gap-1.5">
                                   <Camera className="w-3.5 h-3.5 text-indigo-400" />

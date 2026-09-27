@@ -36,7 +36,7 @@ export interface EpisodeStorySummary {
 export interface CharacterBibleItem {
   id: string; // CHAR-01, CHAR-02
   name: string;
-  speciesObject: string; // e.g. Weathered Ceramic Espresso Mug, Baby Corgi, Heirloom Eggplant
+  speciesObject: string; // Real Human Character Role: e.g. 32-year-old Brooding Strategist, Estranged Heiress
   ageAppearance: string;
   genderPresentation: string;
   personality: string;
@@ -150,6 +150,9 @@ export interface TenSecClipDef {
   beginningState: string;
   endingState: string;
   continuityConnectionToPrevious: string;
+  locationContinuityType?: 'SAME_LOCATION_CONTINUOUS' | 'NEW_LOCATION_SCENE_CUT';
+  frameReferenceStrategy?: 'USE_PREVIOUS_CLIP_END_FRAME' | 'NEW_STARTING_FRAME';
+  frameReferenceNote?: string;
 }
 
 export interface FramePromptItem {
@@ -157,6 +160,10 @@ export interface FramePromptItem {
   prompt: string;
   aspectRatio: string;
   styleTag: string;
+  isContinuousFromPrevious?: boolean;
+  previousClipReference?: number;
+  frameStrategy?: 'USE_PREVIOUS_CLIP_END_FRAME' | 'NEW_STARTING_FRAME';
+  workflowInstruction?: string;
 }
 
 export interface VideoPromptItem {
@@ -219,5 +226,7 @@ export interface DramaSeriesState {
   videoPrompts?: VideoPromptItem[];
   directorQA?: DirectorQAPackage;
   aspectRatio?: '16:9' | '9:16';
+  selectedLocation?: string;
+  customLocation?: string;
   updatedAt: string;
 }
