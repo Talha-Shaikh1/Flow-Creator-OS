@@ -100,26 +100,40 @@ JSON SCHEMA:
   }
 
   if (Array.isArray(res.parsed.episodes)) {
-    res.parsed.episodes = res.parsed.episodes.map((ep: any) => ({
-      ...ep,
-      beginning:
-        typeof ep.beginning === 'string'
-          ? ep.beginning
-          : ep.beginning?.hook || ep.beginning?.text || JSON.stringify(ep.beginning) || '',
-      middle:
-        typeof ep.middle === 'string'
-          ? ep.middle
-          : ep.middle?.text || JSON.stringify(ep.middle) || '',
-      ending:
-        typeof ep.ending === 'string'
-          ? ep.ending
-          : ep.ending?.cliffhanger || ep.ending?.text || JSON.stringify(ep.ending) || '',
-      charactersInvolved: Array.isArray(ep.charactersInvolved)
+    res.parsed.episodes = res.parsed.episodes.map((ep: any) => {
+      const rawInvolved = Array.isArray(ep.charactersInvolved)
         ? ep.charactersInvolved
         : typeof ep.charactersInvolved === 'string'
         ? [ep.charactersInvolved]
-        : [],
-    }));
+        : [];
+
+      const cleanInvolved: string[] = [];
+      rawInvolved.forEach((item: any) => {
+        if (typeof item === 'string') {
+          item.split(',').forEach((sub) => {
+            const clean = sub.trim().replace(/^and\s+/i, '').trim();
+            if (clean && clean.length > 1) cleanInvolved.push(clean);
+          });
+        }
+      });
+
+      return {
+        ...ep,
+        beginning:
+          typeof ep.beginning === 'string'
+            ? ep.beginning
+            : ep.beginning?.hook || ep.beginning?.text || JSON.stringify(ep.beginning) || '',
+        middle:
+          typeof ep.middle === 'string'
+            ? ep.middle
+            : ep.middle?.text || JSON.stringify(ep.middle) || '',
+        ending:
+          typeof ep.ending === 'string'
+            ? ep.ending
+            : ep.ending?.cliffhanger || ep.ending?.text || JSON.stringify(ep.ending) || '',
+        charactersInvolved: cleanInvolved.length > 0 ? Array.from(new Set(cleanInvolved)) : ['Protagonist', 'Antagonist'],
+      };
+    });
   }
 
   return res.parsed as SeasonStory;
@@ -132,62 +146,79 @@ export async function generateCharacterBiblePipeline(
   seasonStory: SeasonStory,
   aiConfig?: AIProviderConfig
 ): Promise<CharacterBible> {
-  // Extract all characters mentioned in story summaries or episode lists
-  const storyCharacters = Array.from(
-    new Set(
-      (seasonStory.episodes || [])
-        .flatMap((e) => e.charactersInvolved || [])
-        .filter((c) => typeof c === 'string' && c.trim().length > 0)
-    )
-  );
+  // Extract all unique characters mentioned across all episodes
+  const rawCharList: string[] = [];
+  (seasonStory.episodes || []).forEach((e) => {
+    const list = Array.isArray(e.charactersInvolved)
+      ? e.charactersInvolved
+      : typeof e.charactersInvolved === 'string'
+      ? [e.charactersInvolved]
+      : [];
 
-  const characterContext =
-    storyCharacters.length > 0
-      ? `CHARACTERS ESTABLISHED IN APPROVED STORY:\n${storyCharacters.map((c, i) => `- CHAR-0${i + 1}: ${c}`).join('\n')}\n\nRELATIONSHIPS & CONFLICTS:\n${seasonStory.characterRelationships || seasonStory.majorConflicts}`
-      : `RELATIONSHIPS & CONFLICTS:\n${seasonStory.characterRelationships || seasonStory.majorConflicts}`;
+    list.forEach((item) => {
+      if (typeof item === 'string') {
+        item.split(',').forEach((sub) => {
+          const clean = sub.trim().replace(/^and\s+/i, '').trim();
+          if (clean && clean.length > 1) {
+            rawCharList.push(clean);
+          }
+        });
+      }
+    });
+  });
+
+  const uniqueNames = Array.from(new Set(rawCharList));
+  const targetCount = uniqueNames.length > 0 ? uniqueNames.length : 2;
+  const castListText = uniqueNames.length > 0
+    ? uniqueNames.map((name, i) => `${i + 1}. CHAR-0${i + 1}: "${name}"`).join('\n')
+    : `- CHAR-01: Main Protagonist\n- CHAR-02: Lead Rival / Former Lover`;
 
   const prompt = `You are a Lead Casting Director, Hair & Makeup Head, and Cinematic Actor Performance Supervisor.
 
-TASK: Develop PHASE 2: LOCKED CHARACTER BIBLE for REAL HUMAN ACTORS based on the approved Season Story:
+TASK: Develop PHASE 2: LOCKED CHARACTER BIBLE for ALL REAL HUMAN ACTORS in this approved story:
 Title: "${seasonStory.seasonTitle}"
 World: "${seasonStory.worldEnvironment}"
 Theme: "${seasonStory.mainTheme}"
 
-${characterContext}
+REQUIRED CAST LIST (YOU MUST GENERATE ALL ${targetCount} CHARACTERS):
+${castListText}
+
+RELATIONSHIPS & STORY CONTEXT:
+${seasonStory.characterRelationships || seasonStory.majorConflicts}
 
 CRITICAL RULES:
-- STORY-DRIVEN CAST SIZE: Create a complete, locked character profile for EVERY character required by the approved story (Protagonists, Antagonists, Love Interests, Key Family/Allies). Assign sequential IDs: CHAR-01, CHAR-02, CHAR-03, etc.
-- CHARACTERS ARE REAL HUMAN BEINGS (Photorealistic digital actors): Age, facial bone structure, ethnic heritage, tailored wardrobe, vocal timbre, and micro-expressions.
-- In "morphologySpec", specify REAL HUMAN VISUAL DNA: Exact eye color/moisture, jawline, natural skin texture with visible pores (no plastic smoothing), lip shape, and micro-expressions under emotional distress.
-- Define exact acting expressions, voice cadence (breathy whispers, cracks in voice, icy composure), and LOCKED continuity rules that must never drift between clips.
-- Return STRICT JSON only.
+- COMPLETE CAST GENERATION: The "characters" array MUST CONTAIN AN OBJECT FOR EVERY SINGLE ONE of the ${targetCount} characters listed above.
+- NEVER STOP AFTER ONLY 1 CHARACTER. Output all ${targetCount} characters (from CHAR-01 through CHAR-0${targetCount}).
+- CONCISE 1-2 SENTENCE FIELDS: Keep each text description brief, vivid, and cinematic (1-2 sentences max per field) so that all ${targetCount} character objects easily fit within token limits without truncation.
+- CHARACTERS ARE REAL HUMAN BEINGS: Photorealistic actors, facial bone structure, ethnic heritage, tailored wardrobe, vocal timbre, and micro-expressions.
+- Return STRICT JSON only matching this schema.
 
 JSON SCHEMA:
 {
   "characters": [
     {
       "id": "CHAR-01",
-      "name": "Character Full Name",
-      "speciesObject": "Role / Archetype: e.g. 32-year-old Estranged Tycoon & Brooding Strategist",
-      "ageAppearance": "32 years old",
-      "genderPresentation": "Masculine / Tailored Executive",
-      "personality": "Calculating, guarded, intensely passionate, speaks with quiet authority",
+      "name": "${uniqueNames[0] || 'Lead Protagonist'}",
+      "speciesObject": "Role / Archetype: e.g. 34-year-old Heiress & Reluctant Avenger",
+      "ageAppearance": "34 years old",
+      "genderPresentation": "Refined Executive",
+      "personality": "Calculating, guarded, intensely passionate, haunted by past betrayal",
       "roleInStory": "Main Character",
       "morphologySpec": {
-        "eyeType": "Deep slate-grey eyes with intense emotional depth, natural moisture and faint red rimming",
+        "eyeType": "Deep slate-grey eyes with emotional depth, natural moisture and faint red rimming",
         "mouthPlacement": "Sculpted lips, tense jawline that clenches visibly during confrontation",
-        "limbPhysics": "Poised, commanding posture; defensive hands in coat pockets or gripping furniture",
-        "materialTexture": "Photorealistic human skin with visible natural pores, light five o'clock shadow stubble",
-        "distinctiveFeatures": "Faint 1-inch hairline scar near right temple; platinum signet ring on left pinky"
+        "limbPhysics": "Poised, commanding posture; defensive hands in coat pockets",
+        "materialTexture": "Photorealistic human skin with visible natural pores, matte finish",
+        "distinctiveFeatures": "Faint hairline scar near temple; platinum signet ring"
       },
       "physicalAppearance": {
-        "headShape": "Strong chiseled jawline, high cheekbones, dark textured wavy hair slightly damp from rain",
-        "faceStructure": "Sharp aristocratic bone structure with piercing gaze and sorrowful furrowed brow",
-        "bodyProportions": "Athletic, broad-shouldered 6'1 frame in tailored European silhouette",
+        "headShape": "Strong chiseled jawline, dark textured wavy hair",
+        "faceStructure": "Sharp aristocratic bone structure with piercing gaze",
+        "bodyProportions": "Athletic, elegant European silhouette",
         "distinctiveFeatures": "Piercing eye contact that rarely blinks during confrontations"
       },
       "clothing": {
-        "exactOutfit": "Tailored charcoal Italian cashmere overcoat over an unbuttoned crisp black silk shirt",
+        "exactOutfit": "Tailored charcoal Italian cashmere overcoat over a silk shirt",
         "colors": "Charcoal grey, midnight black, brushed platinum accents",
         "materials": "Heavy cashmere wool, matte silk, polished black leather oxfords",
         "accessories": "Vintage platinum watch with black leather strap",
@@ -195,28 +226,76 @@ JSON SCHEMA:
       },
       "acting": {
         "normalExpression": "Cold, unreadable composure masking profound inner turmoil",
-        "happyExpression": "Rare, gentle softening around the eyes with a warm, private half-smile",
-        "sadExpression": "Eyes glistening with unshed tears, jaw clenching, looking down to conceal heartbreak",
-        "angryExpression": "Icy calm, lowered voice, piercing narrowed gaze that commands the entire room",
+        "happyExpression": "Rare, gentle softening around the eyes with a warm half-smile",
+        "sadExpression": "Eyes glistening with unshed tears, jaw clenching",
+        "angryExpression": "Icy calm, lowered voice, piercing narrowed gaze",
         "comedicExpression": "Dry, sardonic smirk with a slow tilt of the head",
-        "typicalBodyLanguage": "Maintains unbroken eye contact, steps forward slowly to close physical distance during arguments"
+        "typicalBodyLanguage": "Maintains unbroken eye contact, steps forward slowly"
       },
       "voice": {
         "voiceType": "Resonant, velvety baritone with gravelly texture when emotional",
-        "ageImpression": "Mature early 30s",
+        "ageImpression": "Early 30s",
         "accent": "Refined Mid-Atlantic cadence",
-        "speakingSpeed": "Deliberate 120 WPM with pregnant, suspenseful pauses",
-        "emotionalStyle": "Restrained intensity; voice lowers to a dangerous whisper when furious"
+        "speakingSpeed": "Deliberate 120 WPM with pregnant pauses",
+        "emotionalStyle": "Restrained intensity; voice lowers to a dangerous whisper"
       },
       "continuityRules": [
-        "Signet ring MUST always remain on the left pinky",
-        "Overcoat collar stays popped on the left side",
-        "Hair has consistent damp styling throughout the scene"
+        "Signet ring MUST always remain on the left hand",
+        "Overcoat collar stays popped on the left side"
       ]
-    }
+    }${targetCount > 1 ? `,
+    {
+      "id": "CHAR-02",
+      "name": "${uniqueNames[1] || 'Second Character'}",
+      "speciesObject": "Role / Archetype: e.g. 36-year-old Corporate Strategist & Former Lover",
+      "ageAppearance": "36 years old",
+      "genderPresentation": "Masculine / Tailored Executive",
+      "personality": "Protective, brooding, burdened with dangerous secrets, quietly dangerous",
+      "roleInStory": "Main Character / Rival / Love Interest",
+      "morphologySpec": {
+        "eyeType": "Warm amber-brown eyes with shadow beneath, tense micro-expressions",
+        "mouthPlacement": "Firm lips that tighten when lying, subtle twitch when cornered",
+        "limbPhysics": "Broad-shouldered, athletic frame, deliberate slow movements",
+        "materialTexture": "Natural skin pores, 5 o'clock shadow stubble",
+        "distinctiveFeatures": "Silver wristwatch, bespoke cuff links"
+      },
+      "physicalAppearance": {
+        "headShape": "Square jaw, textured short dark hair with slight grey temples",
+        "faceStructure": "Rugged aristocratic features",
+        "bodyProportions": "Tall 6'2 athletic tailored frame",
+        "distinctiveFeatures": "Direct, guarded eyeline"
+      },
+      "clothing": {
+        "exactOutfit": "Dark navy tailored wool suit jacket, open collar crisp white shirt",
+        "colors": "Midnight navy, crisp white, silver accents",
+        "materials": "Fine Italian wool, Egyptian cotton",
+        "accessories": "Silver vintage chronometer",
+        "propsNormallyCarried": "Encrypted phone"
+      },
+      "acting": {
+        "normalExpression": "Intense brooding focus",
+        "happyExpression": "Soft, vulnerable gaze",
+        "sadExpression": "Gazing away to swallow regret",
+        "angryExpression": "Low guttural tone, step-in confrontation",
+        "comedicExpression": "Quiet cynical chuckle",
+        "typicalBodyLanguage": "Stands tall, hands at sides, closes physical proximity"
+      },
+      "voice": {
+        "voiceType": "Deep commanding baritone",
+        "ageImpression": "Mid 30s",
+        "accent": "Cultured European cadence",
+        "speakingSpeed": "Steady, controlled 115 WPM",
+        "emotionalStyle": "Suppressed passion and warning tone"
+      },
+      "continuityRules": [
+        "Navy suit jacket stays buttoned once",
+        "Hair parting remains consistent on the left"
+      ]
+    }` : ''}
+    /* ... Repeat for every remaining character in REQUIRED CAST LIST (CHAR-03 through CHAR-0${targetCount})! */
   ],
   "lockedRules": [
-    "Permanent actor IDs (CHAR-01, CHAR-02) must never be swapped",
+    "Permanent actor IDs (CHAR-01, CHAR-02, ...) must never be swapped",
     "Real human facial features and bone structure must remain 100% consistent across all camera angles",
     "Wardrobe and jewelry must remain identical throughout the episode without unexplained changes"
   ]
@@ -226,7 +305,7 @@ JSON SCHEMA:
     config: aiConfig,
     prompt,
     systemInstruction:
-      'You are a Master Casting and Visual DNA Supervisor for prestige cinema. Produce a complete locked Character Bible for all characters required by the story in strictly valid JSON.',
+      `You are a Master Casting and Visual DNA Supervisor for prestige cinema. You MUST produce a complete Character Bible for ALL ${targetCount} characters in strictly valid JSON. Keep each field to 1-2 concise sentences.`,
     temperature: 0.75,
     responseJson: true,
   });
