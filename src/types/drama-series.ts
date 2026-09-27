@@ -226,6 +226,7 @@ export interface DramaSeriesState {
   videoPrompts?: VideoPromptItem[];
   directorQA?: DirectorQAPackage;
   aspectRatio?: '16:9' | '9:16';
+  targetRuntime?: '60s' | '90s' | '120s';
   selectedLocation?: string;
   customLocation?: string;
   updatedAt: string;

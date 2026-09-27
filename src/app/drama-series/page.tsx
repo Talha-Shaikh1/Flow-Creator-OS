@@ -24,6 +24,9 @@ import {
   Compass,
   MessageSquare,
   HelpCircle,
+  Lightbulb,
+  Clock,
+  X,
 } from 'lucide-react';
 import {
   DramaSeriesState,
@@ -98,6 +101,7 @@ function DramaSeriesStudioContent() {
   const [genre, setGenre] = useState('Cinematic Emotional Drama & Revenge Romance');
   const [selectedEpisodeNumber, setSelectedEpisodeNumber] = useState<number>(1);
   const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16'>('16:9');
+  const [targetRuntime, setTargetRuntime] = useState<'60s' | '90s' | '120s'>('60s');
 
   // Phase Data
   const [seasonStory, setSeasonStory] = useState<SeasonStory | null>(null);
@@ -118,6 +122,9 @@ function DramaSeriesStudioContent() {
   const [showCopilot, setShowCopilot] = useState(false);
   const [currentAIConfig, setCurrentAIConfig] = useState<AIProviderConfig>({ provider: 'mistral' });
   const [optionalLocationHint, setOptionalLocationHint] = useState<string>('');
+  const [directorIdeas, setDirectorIdeas] = useState<any[] | null>(null);
+  const [isLoadingIdeas, setIsLoadingIdeas] = useState(false);
+  const [showIdeasModal, setShowIdeasModal] = useState(false);
 
   // Load cached state on mount
   useEffect(() => {
@@ -139,6 +146,7 @@ function DramaSeriesStudioContent() {
         if (parsed.seedTopic) setSeedTopic(parsed.seedTopic);
         if (parsed.selectedEpisodeNumber) setSelectedEpisodeNumber(parsed.selectedEpisodeNumber);
         if (parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
+        if (parsed.targetRuntime) setTargetRuntime(parsed.targetRuntime);
       }
     } catch (e) {
       console.warn('Could not read cached drama state:', e);
@@ -162,6 +170,7 @@ function DramaSeriesStudioContent() {
         videoPrompts: updates.videoPrompts ?? videoPrompts ?? undefined,
         directorQA: updates.directorQA ?? directorQA ?? undefined,
         aspectRatio: updates.aspectRatio ?? aspectRatio,
+        targetRuntime: updates.targetRuntime ?? targetRuntime,
         updatedAt: new Date().toISOString(),
       };
       localStorage.setItem(DRAMA_SERIES_STORAGE_KEY, JSON.stringify(stateToSave));
@@ -174,6 +183,31 @@ function DramaSeriesStudioContent() {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  // Generate 3 High-Stakes Mini-Film Concepts from Director
+  const handleGetDirectorIdeas = async () => {
+    setIsLoadingIdeas(true);
+    setErrorMsg(null);
+    try {
+      const aiConfig = getStoredAIConfig();
+      const res = await fetch('/api/drama-series/pipeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'director_ideas', aiConfig }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to generate story ideas from Director');
+      }
+      setDirectorIdeas(data.ideas || []);
+      setShowIdeasModal(true);
+    } catch (err: any) {
+      console.error('Failed to fetch director ideas:', err);
+      setErrorMsg(err.message || 'Director could not generate ideas right now.');
+    } finally {
+      setIsLoadingIdeas(false);
+    }
   };
 
   // API Call Wrapper
@@ -253,12 +287,13 @@ function DramaSeriesStudioContent() {
   // PHASE 3: Generate Episode Production Breakdown
   const handleGenerateEpisodeSheet = async () => {
     if (!seasonStory || !characterBible) return;
-    setActiveStepText(`Deconstructing Episode ${selectedEpisodeNumber} into Scenes & Beats...`);
+    setActiveStepText(`Deconstructing Episode ${selectedEpisodeNumber} into Scenes & Beats (${targetRuntime})...`);
     try {
       const data = await callDramaPipeline('episode_breakdown', {
         seasonStory,
         characterBible,
         episodeNumber: selectedEpisodeNumber,
+        targetRuntime,
       });
       setEpisodeProduction(data.episodeSheet);
       saveStateToStorage({ episodeProduction: data.episodeSheet });
@@ -278,11 +313,12 @@ function DramaSeriesStudioContent() {
   // PHASE 4 & 5: Generate Scene Continuity & 10s Clip Breakdown
   const handleGenerateClipsAndContinuity = async () => {
     if (!episodeProduction || !characterBible) return;
-    setActiveStepText('Enforcing 180° Spatial Axis & 10s Clip Speaker Isolation...');
+    setActiveStepText(`Enforcing 180° Spatial Axis & ${targetRuntime} Clip Speaker Isolation...`);
     try {
       const data = await callDramaPipeline('clips_continuity', {
         episodeSheet: episodeProduction,
         characterBible,
+        targetRuntime,
       });
       setSceneContinuity(data.sceneContinuity);
       setClipsBreakdown(data.clipsBreakdown);
@@ -356,13 +392,14 @@ function DramaSeriesStudioContent() {
   // POWER USER: Run Gates 3 to 8 for the selected episode in 1 Click
   const handleRunFullEpisode = async () => {
     if (!seasonStory || !characterBible) return;
-    setActiveStepText(`Directing Full Production for Episode ${selectedEpisodeNumber} (Gates 3-8)...`);
+    setActiveStepText(`Directing Full Production for Episode ${selectedEpisodeNumber} (${targetRuntime}, Gates 3-8)...`);
     try {
       const data = await callDramaPipeline('run_full_episode', {
         seasonStory,
         characterBible,
         episodeNumber: selectedEpisodeNumber,
         aspectRatio,
+        targetRuntime,
       });
       setEpisodeProduction(data.episodeSheet);
       setSceneContinuity(data.sceneContinuity);
@@ -652,9 +689,20 @@ function DramaSeriesStudioContent() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-neutral-300 mb-1.5">
-                    Creative Seed / Series Concept
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-neutral-300">
+                      Creative Seed / Series Concept
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleGetDirectorIdeas}
+                      disabled={isLoadingIdeas}
+                      className="px-3 py-1 rounded-xl bg-gradient-to-r from-purple-600/30 to-fuchsia-600/30 hover:from-purple-600/50 hover:to-fuchsia-600/50 text-purple-200 border border-purple-500/40 text-[11px] font-bold flex items-center gap-1.5 transition shadow-sm"
+                    >
+                      <Lightbulb className="w-3.5 h-3.5 text-yellow-300 shrink-0" />
+                      <span>{isLoadingIdeas ? 'Consulting Director...' : '💡 Ask Director for Story Ideas'}</span>
+                    </button>
+                  </div>
                   <textarea
                     rows={3}
                     value={seedTopic}
@@ -673,6 +721,70 @@ function DramaSeriesStudioContent() {
                     <p className="text-neutral-300 text-[11px] leading-relaxed">
                       AI story engine har drama men <strong>Romance, Emotional Heartbreak, Revenge Vendetta aur Pride</strong> ka balanced mixup banata hai. Story sirf revenge par flat nahi hogi, balky deep love aur tears ka zabardast drama banegi.
                     </p>
+                  </div>
+                </div>
+
+                {/* Mini-Film Target Runtime Selector */}
+                <div className="p-3.5 rounded-xl bg-neutral-950/60 border border-neutral-800/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-neutral-300 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-purple-400" />
+                      <span>Complete Story Runtime (Mini-Film Format):</span>
+                    </label>
+                    <span className="text-[11px] font-semibold text-purple-300">
+                      {targetRuntime === '60s'
+                        ? '⚡ 60s Micro-Drama (6 Continuous 10s Clips)'
+                        : targetRuntime === '90s'
+                        ? '🎬 90s Mini-Film (9 Continuous 10s Clips)'
+                        : '👑 120s Mini-Movie (12 Continuous 10s Clips)'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {[
+                      {
+                        id: '60s' as const,
+                        label: '⚡ 1 Min Micro-Drama',
+                        count: '6 Clips (60s)',
+                        desc: 'Hook, fast rising tension, sudden emotional twist & revenge punch in 1 continuous min.',
+                      },
+                      {
+                        id: '90s' as const,
+                        label: '🎬 1.5 Min Mini-Film',
+                        count: '9 Clips (90s)',
+                        desc: 'Balanced romantic vulnerability, deeper secrets, and intense confrontation in 1.5 min.',
+                      },
+                      {
+                        id: '120s' as const,
+                        label: '👑 2 Min Mini-Movie',
+                        count: '12 Clips (120s)',
+                        desc: 'Full cinematic depth, painful tears, intimate proximity, and devastating betrayal climax in 2 min.',
+                      },
+                    ].map((rt) => (
+                      <button
+                        key={rt.id}
+                        type="button"
+                        onClick={() => {
+                          setTargetRuntime(rt.id);
+                          saveStateToStorage({ targetRuntime: rt.id });
+                        }}
+                        className={`p-2.5 rounded-xl border text-left transition flex flex-col justify-between ${
+                          targetRuntime === rt.id
+                            ? 'bg-purple-950/80 border-purple-500 text-white shadow-md shadow-purple-500/10'
+                            : 'bg-neutral-950 border-neutral-800/70 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
+                        }`}
+                      >
+                        <div>
+                          <div className="font-extrabold text-xs flex items-center justify-between">
+                            <span>{rt.label}</span>
+                            {targetRuntime === rt.id && (
+                              <span className="w-2 h-2 rounded-full bg-purple-400 shadow-sm shadow-purple-400" />
+                            )}
+                          </div>
+                          <div className="text-[10px] font-bold text-purple-300/90 mt-0.5">{rt.count}</div>
+                        </div>
+                        <div className="text-[10px] text-neutral-500 mt-1 leading-tight">{rt.desc}</div>
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -967,11 +1079,37 @@ function DramaSeriesStudioContent() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-xs text-neutral-400">
-                  Target runtime: 40-60 seconds (4 to 6 continuous 10s clips)
-                </span>
-                <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-neutral-800">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-neutral-400 font-bold flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-purple-400" />
+                    <span>Mini-Film Runtime:</span>
+                  </span>
+                  <div className="flex rounded-xl bg-neutral-950 p-1 border border-neutral-800">
+                    {[
+                      { id: '60s' as const, label: '⚡ 60s (6 Clips)' },
+                      { id: '90s' as const, label: '🎬 90s (9 Clips)' },
+                      { id: '120s' as const, label: '👑 120s (12 Clips)' },
+                    ].map((rt) => (
+                      <button
+                        key={rt.id}
+                        type="button"
+                        onClick={() => {
+                          setTargetRuntime(rt.id);
+                          saveStateToStorage({ targetRuntime: rt.id });
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                          targetRuntime === rt.id
+                            ? 'bg-purple-950 text-purple-200 border border-purple-500 shadow-sm'
+                            : 'text-neutral-400 hover:text-white'
+                        }`}
+                      >
+                        {rt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
                   <button
                     onClick={handleGenerateEpisodeSheet}
                     disabled={isLoading || !characterBible}
@@ -985,10 +1123,12 @@ function DramaSeriesStudioContent() {
                     onClick={handleRunFullEpisode}
                     disabled={isLoading || !characterBible}
                     className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-indigo-600/20 transition"
-                    title="Auto-run Gates 3 to 8 for this episode"
+                    title={`Direct Full ${targetRuntime} Mini-Film (Gates 3-8)`}
                   >
                     <Play className="w-3.5 h-3.5" />
-                    <span>Run Full Episode (Gates 3-8)</span>
+                    <span>
+                      🎬 Direct Mini-Film ({targetRuntime === '120s' ? '120s • 12 Clips' : targetRuntime === '90s' ? '90s • 9 Clips' : '60s • 6 Clips'})
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1522,6 +1662,124 @@ function DramaSeriesStudioContent() {
             setCurrentAIConfig(getStoredAIConfig());
           }}
         />
+      )}
+
+      {/* Director Story Ideas Modal */}
+      {showIdeasModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-4xl bg-neutral-950 border border-purple-500/40 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-neutral-800 flex items-center justify-between bg-neutral-900/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-300">
+                  <Lightbulb className="w-5 h-5 text-yellow-300" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                    <span>Director's Mini-Film Story Concepts</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 uppercase tracking-wider">
+                      1-2 Min Complete Arc
+                    </span>
+                  </h3>
+                  <p className="text-xs text-neutral-400">
+                    High-retention concepts blending Romantic Vulnerability, Tearful Secrets, and Shocking Revenge.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowIdeasModal(false)}
+                className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-4">
+              {isLoadingIdeas ? (
+                <div className="py-16 text-center space-y-3">
+                  <RefreshCw className="w-8 h-8 text-purple-400 animate-spin mx-auto" />
+                  <p className="text-sm font-semibold text-neutral-200">
+                    Director is brainstorming 3 high-stakes drama concepts...
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    Designing emotional hooks, photorealistic luxury architectural settings, and revenge pacing.
+                  </p>
+                </div>
+              ) : directorIdeas && directorIdeas.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {directorIdeas.map((idea: any, idx: number) => (
+                    <div
+                      key={idea.id || idx}
+                      className="p-4 rounded-xl bg-neutral-900/80 border border-neutral-800 hover:border-purple-500/60 transition flex flex-col justify-between space-y-3 group"
+                    >
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400">
+                            Concept #{idx + 1}
+                          </span>
+                          <span className="text-[10px] text-neutral-400 bg-neutral-950 px-2 py-0.5 rounded border border-neutral-800">
+                            {idea.runtimeFit || '60s - 120s'}
+                          </span>
+                        </div>
+                        <h4 className="font-extrabold text-sm text-white group-hover:text-purple-300 transition">
+                          {idea.title}
+                        </h4>
+                        {idea.hook && (
+                          <div className="p-2.5 rounded-lg bg-neutral-950/70 border border-neutral-800/80 text-[11px] text-yellow-200/90 leading-snug">
+                            <span className="font-bold text-yellow-400">⚡ 0-5s Hook:</span> {idea.hook}
+                          </div>
+                        )}
+                        {idea.setting && (
+                          <div className="text-[11px] text-neutral-400">
+                            <span className="font-semibold text-neutral-300">🏰 Setting:</span> {idea.setting}
+                          </div>
+                        )}
+                        <p className="text-xs text-neutral-300 leading-relaxed">{idea.seedTopic}</p>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setSeedTopic(idea.seedTopic);
+                          if (idea.genre) setGenre(idea.genre);
+                          if (idea.setting) setOptionalLocationHint(idea.setting);
+                          saveStateToStorage({ seedTopic: idea.seedTopic });
+                          setShowIdeasModal(false);
+                        }}
+                        className="w-full py-2 px-3 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-purple-600/20 transition mt-2"
+                      >
+                        <span>🎬 Use This Concept</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-12 text-center text-xs text-neutral-400">
+                  No ideas generated yet. Click "Generate Fresh Ideas" below.
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-neutral-800 bg-neutral-900/50 flex items-center justify-between">
+              <button
+                onClick={handleGetDirectorIdeas}
+                disabled={isLoadingIdeas}
+                className="px-4 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold flex items-center gap-2 transition"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoadingIdeas ? 'animate-spin' : ''}`} />
+                <span>Generate Fresh Ideas</span>
+              </button>
+              <button
+                onClick={() => setShowIdeasModal(false)}
+                className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 text-xs font-semibold transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );

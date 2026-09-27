@@ -229,7 +229,8 @@ export async function generateEpisodeProductionPipeline(
   characterBible: CharacterBible,
   episodeNumber: number,
   aiConfig?: AIProviderConfig,
-  locationSetting?: string
+  locationSetting?: string,
+  targetRuntime: '60s' | '90s' | '120s' = '60s'
 ): Promise<EpisodeProductionSheet> {
   const selectedEp =
     seasonStory.episodes.find((e) => e.episodeNumber === episodeNumber) || seasonStory.episodes[0];
@@ -239,10 +240,18 @@ export async function generateEpisodeProductionPipeline(
     .join('\n');
 
   const chosenLocation = locationSetting || seasonStory.worldEnvironment;
+  const clipCount = targetRuntime === '120s' ? 12 : targetRuntime === '90s' ? 9 : 6;
+  const runtimeLabel =
+    targetRuntime === '120s'
+      ? '120 seconds (12 clips of 10s — 2 Min Mini-Film)'
+      : targetRuntime === '90s'
+      ? '90 seconds (9 clips of 10s — 1.5 Min Mini-Film)'
+      : '60 seconds (6 clips of 10s — 1 Min Micro-Drama)';
 
   const prompt = `You are a Senior Drama Series Director and Screenwriter.
 
 TASK: Develop PHASE 3: EPISODE PRODUCTION BREAKDOWN for Episode ${episodeNumber}: "${selectedEp.episodeTitle}".
+TARGET RUNTIME FORMAT: ${runtimeLabel}
 
 CONTEXT:
 Season: "${seasonStory.seasonTitle}"
@@ -256,8 +265,7 @@ CRITICAL RULES:
 - REAL HUMAN EMOTIONAL DRAMA BLEND: Never make this episode one-dimensional. Seamlessly blend intense romantic tension, deep emotional vulnerability (tears, heartbreak), and calculated revenge stakes. A scene can begin with cold vengeful accusations, transition into intimate physical proximity and romantic vulnerability as defenses crumble, and end on a heartbreaking ultimatum.
 - LOCKED REAL DRAMA LOCATION: All scenes must be grounded in realistic prestige settings matching: "${chosenLocation}" (e.g. Midnight Penthouse Study with rain-streaked windows, Rain-Drenched Glass Terrace, Grand Mansion Foyer, Executive Boardroom After Hours, VIP Hotel Suite).
 - NEGATIVE DIRECTIVE: STRICTLY FORBID KITCHENS, NO APPLIANCES, NO DOMESTIC COMIC SPACES, NO TOY/CARTOON WORLDS. Every scene must look like a high-budget HBO / A24 / Netflix prestige television drama.
-- Target Runtime: 40 to 60 seconds (4 to 6 continuous 10-second clips).
-- Break the episode into 2 to 3 cinematic scenes with seamless emotional escalation.
+- Target Runtime: Exactly ${runtimeLabel}. Plan 2 to 3 cinematic scenes that can be executed in exactly ${clipCount} continuous 10-second clips.
 - Blocking: Physical proximity, stepping into each other's personal space, turning away in pain, touching or slamming props.
 - Return STRICT JSON only matching this schema.
 
@@ -265,7 +273,7 @@ JSON SCHEMA:
 {
   "episodeNumber": ${episodeNumber},
   "episodeTitle": "${selectedEp.episodeTitle}",
-  "runtimeTarget": "40-60s (4-6 clips)",
+  "runtimeTarget": "${runtimeLabel}",
   "storySummary": "${selectedEp.mainStory}",
   "characterList": ["CHAR-01", "CHAR-02"],
   "locationList": ["${chosenLocation}"],
@@ -316,11 +324,14 @@ JSON SCHEMA:
 export async function generateClipsAndContinuityPipeline(
   episodeSheet: EpisodeProductionSheet,
   characterBible: CharacterBible,
-  aiConfig?: AIProviderConfig
+  aiConfig?: AIProviderConfig,
+  targetRuntime: '60s' | '90s' | '120s' = '60s'
 ): Promise<{
   sceneContinuity: SceneContinuityPlan[];
   clipsBreakdown: TenSecClipDef[];
 }> {
+  const targetClipsCount = targetRuntime === '120s' ? 12 : targetRuntime === '90s' ? 9 : 6;
+
   const charactersJson = JSON.stringify(
     characterBible.characters.map((c) => ({
       id: c.id,
@@ -336,6 +347,7 @@ export async function generateClipsAndContinuityPipeline(
 TASK: Develop PHASE 4 (Scene Continuity Planning) and PHASE 5 (10-Second Clip Breakdown) for REAL HUMAN DRAMA:
 Episode ${episodeSheet.episodeNumber}: "${episodeSheet.episodeTitle}"
 Scenes to cover: ${JSON.stringify(episodeSheet.scenes)}
+TARGET RUNTIME: ${targetRuntime === '120s' ? '120s (12 clips — 2 Min Mini-Film)' : targetRuntime === '90s' ? '90s (9 clips — 1.5 Min Mini-Film)' : '60s (6 clips — 1 Min Micro-Drama)'}
 
 LOCKED CAST:
 ${charactersJson}
@@ -345,8 +357,13 @@ CRITICAL RULES:
    - Establish the camera side. The camera must NEVER cross the 180-degree axis line between CHAR-01 and CHAR-02.
    - Screen-Left character must remain screen-left in reverse-shots (looking screen-right at listener).
    - Screen-Right character must remain screen-right (looking screen-left at listener).
-2. 10-SECOND CLIP STRUCTURE:
-   - Exactly 4 to 6 clips (each exactly 10 seconds).
+2. 10-SECOND CLIP STRUCTURE (EXACTLY ${targetClipsCount} CLIPS):
+   - Output EXACTLY ${targetClipsCount} clips (each strictly 10 seconds).
+   - Complete the full mini-film story arc across these ${targetClipsCount} clips:
+     * Clip 1 (0-10s): High-voltage opening shock hook (dossier slammed, tear glistening, tense confrontation).
+     * Clips 2-${Math.floor(targetClipsCount * 0.4)}: Rising bitter accusations, ego clashes, and sarcastic retorts.
+     * Clips ${Math.floor(targetClipsCount * 0.4) + 1}-${Math.floor(targetClipsCount * 0.7)}: Romantic vulnerability, close physical proximity, suppressed passion resurfacing.
+     * Clips ${Math.floor(targetClipsCount * 0.7) + 1}-${targetClipsCount}: Revenge trap execution, devastating truth revealed, and heartbreaking cliffhanger ending.
    - A character must NOT teleport, change clothing, or alter hair styling between clips.
    - Every clip begins from the logical ending state of the previous clip.
 3. DIALOGUE & SPEAKER ISOLATION (VEO HARD CONSTRAINT):

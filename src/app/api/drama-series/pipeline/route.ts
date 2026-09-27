@@ -7,7 +7,7 @@ import {
   generateFrameAndVideoPromptsPipeline,
   runDirectorQAPipeline,
 } from '@/lib/engine/drama-series/pipeline';
-import { AIProviderConfig } from '@/lib/engine/llm-provider';
+import { AIProviderConfig, callUniversalLLM } from '@/lib/engine/llm-provider';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,9 +27,11 @@ export async function POST(req: NextRequest) {
       framePrompts,
       videoPrompts,
       aspectRatio = '16:9',
+      targetRuntime = '60s',
       aiConfig,
     }: {
       action:
+        | 'director_ideas'
         | 'season_story'
         | 'character_bible'
         | 'episode_breakdown'
@@ -48,11 +50,52 @@ export async function POST(req: NextRequest) {
       framePrompts?: any;
       videoPrompts?: any;
       aspectRatio?: '16:9' | '9:16';
+      targetRuntime?: '60s' | '90s' | '120s';
       aiConfig?: AIProviderConfig;
     } = body;
 
     if (!action) {
       return NextResponse.json({ error: 'Action parameter is required' }, { status: 400 });
+    }
+
+    // 0. GENERATE HIGH-CONCEPT MINI-FILM IDEAS FROM DIRECTOR
+    if (action === 'director_ideas') {
+      const ideasPrompt = `You are a Master Television Showrunner & Film Director specializing in 1 to 2 minute high-stakes Real Human Drama Mini-Films (HBO, A24, prestige Turkish & Korean melodramas).
+
+TASK: Generate 3 unique, captivating, binge-worthy 1-to-2 MINUTE MINI-FILM CONCEPTS that blend INTENSE ROMANCE, TEARFUL HEARTBREAK, and HIGH-STAKES REVENGE.
+
+RULES:
+- 100% Real human photorealistic actors (no cartoons, no talking objects).
+- Every concept must have:
+  1. A sharp 0-3 second psychological hook.
+  2. Unspoken romance and deep heartbreak.
+  3. A shocking revenge twist.
+  4. An atmospheric, photorealistic luxury architectural setting.
+
+Return STRICT JSON only matching this schema:
+{
+  "ideas": [
+    {
+      "id": "idea-1",
+      "title": "Evocative Cinematic Title",
+      "genre": "Cinematic Emotional Drama & Revenge Romance",
+      "seedTopic": "Full 2-sentence creative story concept ready to generate",
+      "hook": "0-5s shocking visual hook",
+      "setting": "Atmospheric real-world luxury setting",
+      "runtimeFit": "60s - 120s Mini-Film"
+    }
+  ]
+}`;
+      const res = await callUniversalLLM({
+        config: aiConfig,
+        prompt: ideasPrompt,
+        systemInstruction:
+          'You are a Lead Showrunner for cinematic micro-dramas. Return strictly valid JSON.',
+        temperature: 0.85,
+        responseJson: true,
+      });
+
+      return NextResponse.json({ success: true, ideas: res.parsed?.ideas || [] });
     }
 
     // 1. PHASE 1: Season Story
@@ -85,7 +128,9 @@ export async function POST(req: NextRequest) {
         seasonStory,
         characterBible,
         episodeNumber,
-        aiConfig
+        aiConfig,
+        body.locationSetting,
+        targetRuntime
       );
       return NextResponse.json({ success: true, episodeSheet: sheet });
     }
@@ -98,7 +143,7 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
-      const data = await generateClipsAndContinuityPipeline(episodeSheet, characterBible, aiConfig);
+      const data = await generateClipsAndContinuityPipeline(episodeSheet, characterBible, aiConfig, targetRuntime);
       return NextResponse.json({
         success: true,
         sceneContinuity: data.sceneContinuity,
@@ -161,12 +206,14 @@ export async function POST(req: NextRequest) {
         seasonStory,
         characterBible,
         episodeNumber,
-        aiConfig
+        aiConfig,
+        body.locationSetting,
+        targetRuntime
       );
 
       // Step 4 & 5: Clips & Continuity
       const { sceneContinuity: continuity, clipsBreakdown: clips } =
-        await generateClipsAndContinuityPipeline(sheet, characterBible, aiConfig);
+        await generateClipsAndContinuityPipeline(sheet, characterBible, aiConfig, targetRuntime);
 
       // Step 6 & 7: Frame & Video Prompts
       const { framePrompts: frames, videoPrompts: videos } =
