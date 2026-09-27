@@ -47,28 +47,28 @@ const DRAMA_SERIES_STORAGE_KEY = 'flowcreator_drama_series_production_state';
 
 const DRAMA_PRESETS = [
   {
-    title: 'Kitchen Noir: Midnight Counter',
+    title: 'Echoes of Betrayal (Romance & Revenge)',
     topic:
-      'A cynical, cracked ceramic espresso mug detective investigates the mysterious disappearance of the morning strawberry jam in a dim Michelin-star kitchen after midnight.',
-    genre: 'Cinematic 3D Animated Noir Comedy',
+      'Two estranged lovers and former partners—a brilliant female architect and a brooding corporate strategist—meet in a rain-drenched luxury penthouse years after a calculated betrayal destroyed her family. As her ruthless plan for revenge unfolds, their deep, unresolved love and tearful secrets resurface.',
+    genre: 'Cinematic Emotional Drama & Revenge Romance',
   },
   {
-    title: 'The Refrigerator Mafia',
+    title: 'The Broken Vow (Dynasty Romance & Vendetta)',
     topic:
-      'An aristocratic 2% milk carton don clashes with a rebellious hot-headed sriracha bottle over territory on the top door shelf before breakfast.',
-    genre: 'Cinematic 3D Crime Comedy',
+      'A forbidden love between heirs of two warring empires turns into a deadly game of revenge when an orchestrated corporate scandal ruins his family. Forced into midnight confrontations, she must choose between ruthless family loyalty and the man she still desperately loves.',
+    genre: 'High-Tension Romantic Thriller & Family Melodrama',
   },
   {
-    title: 'Veggie High School: The Salad Auditions',
+    title: 'Tears in the Penthouse (Second Chance Romance)',
     topic:
-      'An overachieving heirloom broccoli competes against a slacker baby carrot for the lead role in the upcoming culinary showcase.',
-    genre: 'Cinematic 3D High School Comedy',
+      'Five years after walking away at the altar to secretly protect her from a dangerous syndicate, a brooding tycoon returns into her life. Trapped together in a high-stakes corporate takeover, five years of heartbreak, unspoken tears, and suppressed passion explode into fierce emotional confrontations.',
+    genre: 'Prestige Melodrama & Second-Chance Emotional Romance',
   },
 ];
 
 export default function DramaSeriesStudioPage() {
   return (
-    <AdminAccessGuard personaName="Drama Series (3D Animated & Object Drama)" isStudioPage>
+    <AdminAccessGuard personaName="Drama Series (Cinematic Human Drama)" isStudioPage>
       <DramaSeriesStudioContent />
     </AdminAccessGuard>
   );
@@ -432,14 +432,14 @@ function DramaSeriesStudioContent() {
               <div className="flex items-center gap-2">
                 <h1 className="font-extrabold text-sm sm:text-base tracking-tight text-white flex items-center gap-1.5">
                   <span>Drama Series Studio</span>
-                  <span className="text-purple-400 text-xs sm:text-sm font-semibold">3D Object & Drama</span>
+                  <span className="text-purple-400 text-xs sm:text-sm font-semibold">Emotional Romance & Revenge</span>
                 </h1>
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30 hidden sm:inline-block">
                   Master Pipeline
                 </span>
               </div>
               <div className="text-[11px] text-neutral-400 hidden sm:block">
-                8-Phase Gated Production • Google Flow (Veo) 10s Choreography • 180° Spatial Lock
+                Prestige Human Drama • Google Flow (Veo) 10s Choreography • 180° Spatial Axis Lock
               </div>
             </div>
           </div>
@@ -616,7 +616,7 @@ function DramaSeriesStudioContent() {
                     rows={3}
                     value={seedTopic}
                     onChange={(e) => setSeedTopic(e.target.value)}
-                    placeholder="Enter your anthropomorphic object or vegetable comedy concept..."
+                    placeholder="Enter your emotional romance, betrayal, revenge, or family melodrama concept..."
                     className="w-full p-3 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-neutral-200 focus:outline-none focus:border-purple-500 transition"
                   />
                 </div>
@@ -811,27 +811,27 @@ function DramaSeriesStudioContent() {
 
                         <div>
                           <div className="text-[11px] font-bold text-neutral-300 mb-1">
-                            Species / Object: <span className="text-purple-300">{char.speciesObject}</span>
+                            Role / Archetype: <span className="text-purple-300">{char.speciesObject}</span>
                           </div>
                           <p className="text-neutral-400 leading-relaxed">{char.personality}</p>
                         </div>
 
-                        {/* Morphology Specs */}
+                        {/* Actor DNA Specs */}
                         <div className="p-3 rounded-xl bg-neutral-900/90 border border-neutral-800 space-y-1.5 text-[11px]">
                           <span className="text-purple-400 font-bold uppercase tracking-wider text-[10px] block">
-                            Morphology & Anatomy Spec (Veo Lock)
+                            Actor Visual DNA & Facial Lock (Veo Master Identity)
                           </span>
                           <div>
-                            <strong>Eyes:</strong> {char.morphologySpec.eyeType}
+                            <strong>Eyes & Emotion:</strong> {char.morphologySpec.eyeType}
                           </div>
                           <div>
-                            <strong>Mouth:</strong> {char.morphologySpec.mouthPlacement}
+                            <strong>Lips & Expression:</strong> {char.morphologySpec.mouthPlacement}
                           </div>
                           <div>
-                            <strong>Limbs / Motion:</strong> {char.morphologySpec.limbPhysics}
+                            <strong>Body Language / Presence:</strong> {char.morphologySpec.limbPhysics}
                           </div>
                           <div>
-                            <strong>Materials:</strong> {char.morphologySpec.materialTexture}
+                            <strong>Skin & Texture:</strong> {char.morphologySpec.materialTexture}
                           </div>
                         </div>
 
