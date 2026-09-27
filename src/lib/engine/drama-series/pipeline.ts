@@ -131,6 +131,20 @@ export async function generateCharacterBiblePipeline(
   seasonStory: SeasonStory,
   aiConfig?: AIProviderConfig
 ): Promise<CharacterBible> {
+  // Extract all characters mentioned in story summaries or episode lists
+  const storyCharacters = Array.from(
+    new Set(
+      (seasonStory.episodes || [])
+        .flatMap((e) => e.charactersInvolved || [])
+        .filter((c) => typeof c === 'string' && c.trim().length > 0)
+    )
+  );
+
+  const characterContext =
+    storyCharacters.length > 0
+      ? `CHARACTERS ESTABLISHED IN APPROVED STORY:\n${storyCharacters.map((c, i) => `- CHAR-0${i + 1}: ${c}`).join('\n')}\n\nRELATIONSHIPS & CONFLICTS:\n${seasonStory.characterRelationships || seasonStory.majorConflicts}`
+      : `RELATIONSHIPS & CONFLICTS:\n${seasonStory.characterRelationships || seasonStory.majorConflicts}`;
+
   const prompt = `You are a Lead Casting Director, Hair & Makeup Head, and Cinematic Actor Performance Supervisor.
 
 TASK: Develop PHASE 2: LOCKED CHARACTER BIBLE for REAL HUMAN ACTORS based on the approved Season Story:
@@ -138,15 +152,13 @@ Title: "${seasonStory.seasonTitle}"
 World: "${seasonStory.worldEnvironment}"
 Theme: "${seasonStory.mainTheme}"
 
+${characterContext}
+
 CRITICAL RULES:
-- CAST SIZE (STRICT): In a 1 to 2 minute Mini-Film or Micro-Drama, output EXACTLY 2 CORE CHARACTERS:
-  * CHAR-01: Main Protagonist (e.g. Seeking redemption, revenge, or truth).
-  * CHAR-02: Former Lover / Rival / Target (complex, emotionally wounded, conflicting loyalties).
-  Do NOT add extra characters. Exactly 2 characters ensures maximum depth, tight continuity, and prevents token truncation.
-- CHARACTERS ARE REAL HUMAN BEINGS (Photorealistic actors): Age, facial bone structure, ethnic heritage, tailored wardrobe, vocal timbre, and micro-expressions.
-- CONCISE & PUNCHY: Keep descriptions vivid, cinematic, and tight (1-2 sentences per field, not huge rambling essays).
+- STORY-DRIVEN CAST SIZE: Create a complete, locked character profile for EVERY character required by the approved story (Protagonists, Antagonists, Love Interests, Key Family/Allies). Assign sequential IDs: CHAR-01, CHAR-02, CHAR-03, etc.
+- CHARACTERS ARE REAL HUMAN BEINGS (Photorealistic digital actors): Age, facial bone structure, ethnic heritage, tailored wardrobe, vocal timbre, and micro-expressions.
 - In "morphologySpec", specify REAL HUMAN VISUAL DNA: Exact eye color/moisture, jawline, natural skin texture with visible pores (no plastic smoothing), lip shape, and micro-expressions under emotional distress.
-- Define exact acting expressions, voice cadence, and LOCKED continuity rules that must never drift between clips.
+- Define exact acting expressions, voice cadence (breathy whispers, cracks in voice, icy composure), and LOCKED continuity rules that must never drift between clips.
 - Return STRICT JSON only.
 
 JSON SCHEMA:
@@ -213,7 +225,7 @@ JSON SCHEMA:
     config: aiConfig,
     prompt,
     systemInstruction:
-      'You are a Master Casting and Visual DNA Supervisor for prestige cinema. Produce a locked Character Bible for exactly 2 lead actors in strictly valid JSON.',
+      'You are a Master Casting and Visual DNA Supervisor for prestige cinema. Produce a complete locked Character Bible for all characters required by the story in strictly valid JSON.',
     temperature: 0.75,
     responseJson: true,
   });
