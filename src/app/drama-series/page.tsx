@@ -1004,16 +1004,16 @@ function DramaSeriesStudioContent() {
                             Actor Visual DNA & Facial Lock (Veo Master Identity)
                           </span>
                           <div>
-                            <strong>Eyes & Emotion:</strong> {char.morphologySpec.eyeType}
+                            <strong>Eyes & Emotion:</strong> {char.morphologySpec?.eyeType || 'Deep focused gaze, natural emotional depth'}
                           </div>
                           <div>
-                            <strong>Lips & Expression:</strong> {char.morphologySpec.mouthPlacement}
+                            <strong>Lips & Expression:</strong> {char.morphologySpec?.mouthPlacement || 'Disciplined jawline, subtle micro-expressions'}
                           </div>
                           <div>
-                            <strong>Body Language / Presence:</strong> {char.morphologySpec.limbPhysics}
+                            <strong>Body Language / Presence:</strong> {char.morphologySpec?.limbPhysics || 'Commanding posture, controlled movements'}
                           </div>
                           <div>
-                            <strong>Skin & Texture:</strong> {char.morphologySpec.materialTexture}
+                            <strong>Skin & Texture:</strong> {char.morphologySpec?.materialTexture || 'Photorealistic human skin with visible natural pores'}
                           </div>
                         </div>
 
@@ -1021,12 +1021,20 @@ function DramaSeriesStudioContent() {
                         <div className="grid grid-cols-2 gap-2 text-[11px]">
                           <div className="p-2.5 rounded-lg bg-neutral-900 border border-neutral-800">
                             <strong className="text-neutral-400 block mb-0.5">Wardrobe / Outfit:</strong>
-                            <p className="text-neutral-300">{char.clothing.exactOutfit}</p>
+                            <p className="text-neutral-300">
+                              {typeof char.clothing === 'string'
+                                ? char.clothing
+                                : char.clothing?.exactOutfit || 'Tailored luxury bespoke styling'}
+                            </p>
                           </div>
                           <div className="p-2.5 rounded-lg bg-neutral-900 border border-neutral-800">
                             <strong className="text-neutral-400 block mb-0.5">Voice Profile:</strong>
                             <p className="text-neutral-300">
-                              {char.voice.voiceType} ({char.voice.speakingSpeed})
+                              {typeof char.voice === 'string'
+                                ? char.voice
+                                : `${char.voice?.voiceType || 'Resonant voice'}${
+                                    char.voice?.speakingSpeed ? ` (${char.voice.speakingSpeed})` : ''
+                                  }`}
                             </p>
                           </div>
                         </div>

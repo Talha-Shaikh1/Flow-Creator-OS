@@ -2,6 +2,7 @@ import { callUniversalLLM, AIProviderConfig } from '@/lib/engine/llm-provider';
 import {
   SeasonStory,
   CharacterBible,
+  CharacterBibleItem,
   EpisodeProductionSheet,
   SceneContinuityPlan,
   TenSecClipDef,
@@ -241,6 +242,126 @@ JSON SCHEMA:
     throw new Error('Failed to generate valid Character Bible JSON (no characters array found)');
   }
 
+  const sanitizedCharacters: CharacterBibleItem[] = rawCharacters.map((c: any, idx: number) => {
+    // 1. Clothing Sanitization
+    let clothingObj = {
+      exactOutfit: 'Tailored luxury bespoke styling',
+      colors: 'Neutral, dark cinematic tones',
+      materials: 'Cashmere wool, matte silk',
+      accessories: 'None',
+      propsNormallyCarried: 'None',
+    };
+    if (typeof c.clothing === 'string') {
+      clothingObj.exactOutfit = c.clothing;
+    } else if (c.clothing && typeof c.clothing === 'object') {
+      clothingObj = {
+        exactOutfit: c.clothing.exactOutfit || c.clothing.outfit || c.clothing.description || 'Tailored luxury bespoke styling',
+        colors: c.clothing.colors || 'Neutral, dark cinematic tones',
+        materials: c.clothing.materials || 'Cashmere wool, matte silk',
+        accessories: c.clothing.accessories || 'None',
+        propsNormallyCarried: c.clothing.propsNormallyCarried || 'None',
+      };
+    }
+
+    // 2. Morphology Spec Sanitization
+    let morphologyObj = {
+      eyeType: 'Deep focused gaze, natural emotional depth',
+      mouthPlacement: 'Natural expression, disciplined jawline',
+      limbPhysics: 'Commanding posture, controlled body language',
+      materialTexture: 'Photorealistic human skin with visible natural pores',
+      distinctiveFeatures: 'Refined cinematic presence',
+    };
+    if (typeof c.morphologySpec === 'string') {
+      morphologyObj.distinctiveFeatures = c.morphologySpec;
+    } else if (c.morphologySpec && typeof c.morphologySpec === 'object') {
+      morphologyObj = {
+        eyeType: c.morphologySpec.eyeType || morphologyObj.eyeType,
+        mouthPlacement: c.morphologySpec.mouthPlacement || morphologyObj.mouthPlacement,
+        limbPhysics: c.morphologySpec.limbPhysics || morphologyObj.limbPhysics,
+        materialTexture: c.morphologySpec.materialTexture || morphologyObj.materialTexture,
+        distinctiveFeatures: c.morphologySpec.distinctiveFeatures || morphologyObj.distinctiveFeatures,
+      };
+    }
+
+    // 3. Physical Appearance Sanitization
+    let physicalObj = {
+      headShape: 'Chiseled, defined structure',
+      faceStructure: 'Expressive aristocratic bone structure',
+      bodyProportions: 'Athletic, elegant European silhouette',
+      distinctiveFeatures: 'Unbroken intense eye contact',
+    };
+    if (typeof c.physicalAppearance === 'string') {
+      physicalObj.distinctiveFeatures = c.physicalAppearance;
+    } else if (c.physicalAppearance && typeof c.physicalAppearance === 'object') {
+      physicalObj = {
+        headShape: c.physicalAppearance.headShape || physicalObj.headShape,
+        faceStructure: c.physicalAppearance.faceStructure || physicalObj.faceStructure,
+        bodyProportions: c.physicalAppearance.bodyProportions || physicalObj.bodyProportions,
+        distinctiveFeatures: c.physicalAppearance.distinctiveFeatures || physicalObj.distinctiveFeatures,
+      };
+    }
+
+    // 4. Voice Sanitization
+    let voiceObj = {
+      voiceType: 'Resonant, expressive cinematic cadence',
+      ageImpression: c.ageAppearance || 'Mature',
+      accent: 'Neutral refined cadence',
+      speakingSpeed: 'Deliberate 120 WPM',
+      emotionalStyle: 'Restrained emotional intensity',
+    };
+    if (typeof c.voice === 'string') {
+      voiceObj.voiceType = c.voice;
+    } else if (c.voice && typeof c.voice === 'object') {
+      voiceObj = {
+        voiceType: c.voice.voiceType || voiceObj.voiceType,
+        ageImpression: c.voice.ageImpression || voiceObj.ageImpression,
+        accent: c.voice.accent || voiceObj.accent,
+        speakingSpeed: c.voice.speakingSpeed || voiceObj.speakingSpeed,
+        emotionalStyle: c.voice.emotionalStyle || voiceObj.emotionalStyle,
+      };
+    }
+
+    // 5. Acting Sanitization
+    let actingObj = {
+      normalExpression: 'Guarded composure, intense emotional depth',
+      happyExpression: 'Rare, gentle softening around the eyes',
+      sadExpression: 'Eyes glistening with unshed tears, jaw clenching',
+      angryExpression: 'Icy calm, lowered dangerous whisper',
+      comedicExpression: 'Dry, sardonic smirk',
+      typicalBodyLanguage: 'Direct eye contact, controlled posture',
+    };
+    if (typeof c.acting === 'string') {
+      actingObj.normalExpression = c.acting;
+    } else if (c.acting && typeof c.acting === 'object') {
+      actingObj = {
+        normalExpression: c.acting.normalExpression || actingObj.normalExpression,
+        happyExpression: c.acting.happyExpression || actingObj.happyExpression,
+        sadExpression: c.acting.sadExpression || actingObj.sadExpression,
+        angryExpression: c.acting.angryExpression || actingObj.angryExpression,
+        comedicExpression: c.acting.comedicExpression || actingObj.comedicExpression,
+        typicalBodyLanguage: c.acting.typicalBodyLanguage || actingObj.typicalBodyLanguage,
+      };
+    }
+
+    return {
+      id: c.id || `CHAR-0${idx + 1}`,
+      name: c.name || `Character ${idx + 1}`,
+      speciesObject: c.speciesObject || c.role || 'Photorealistic Actor',
+      ageAppearance: c.ageAppearance || '30s',
+      genderPresentation: c.genderPresentation || 'Refined',
+      personality: c.personality || 'Complex, emotionally guarded',
+      roleInStory: c.roleInStory || (idx === 0 ? 'Main Character' : 'Recurring Character'),
+      morphologySpec: morphologyObj,
+      physicalAppearance: physicalObj,
+      clothing: clothingObj,
+      acting: actingObj,
+      voice: voiceObj,
+      continuityRules: Array.isArray(c.continuityRules)
+        ? c.continuityRules
+        : [String(c.continuityRules || 'Wardrobe and appearance must stay strictly locked')],
+    };
+  });
+
   const lockedRules = Array.isArray(res.parsed?.lockedRules)
     ? res.parsed.lockedRules
     : [
@@ -250,7 +371,7 @@ JSON SCHEMA:
       ];
 
   return {
-    characters: rawCharacters,
+    characters: sanitizedCharacters,
     lockedRules,
   } as CharacterBible;
 }
@@ -531,10 +652,16 @@ export async function generateFrameAndVideoPromptsPipeline(
   videoPrompts: VideoPromptItem[];
 }> {
   const charactersContext = characterBible.characters
-    .map(
-      (c) =>
-        `[${c.id} - ${c.name}]: ${c.speciesObject}. Appearance: ${c.physicalAppearance.headShape}, ${c.physicalAppearance.faceStructure}. Outfit: ${c.clothing.exactOutfit}. Visual DNA: ${c.morphologySpec.eyeType}, ${c.morphologySpec.mouthPlacement}, ${c.morphologySpec.materialTexture}, ${c.morphologySpec.distinctiveFeatures}.`
-    )
+    .map((c) => {
+      const outfit = typeof c.clothing === 'string' ? c.clothing : c.clothing?.exactOutfit || 'Tailored luxury styling';
+      const head = c.physicalAppearance?.headShape || 'Chiseled';
+      const face = c.physicalAppearance?.faceStructure || 'Expressive';
+      const eyes = c.morphologySpec?.eyeType || 'Focused gaze';
+      const mouth = c.morphologySpec?.mouthPlacement || 'Disciplined';
+      const texture = c.morphologySpec?.materialTexture || 'Photorealistic skin';
+      const features = c.morphologySpec?.distinctiveFeatures || '';
+      return `[${c.id} - ${c.name}]: ${c.speciesObject}. Appearance: ${head}, ${face}. Outfit: ${outfit}. Visual DNA: ${eyes}, ${mouth}, ${texture}, ${features}.`;
+    })
     .join('\n');
 
   const clipsJson = JSON.stringify(clips);
