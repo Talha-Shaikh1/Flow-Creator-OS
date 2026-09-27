@@ -23,6 +23,7 @@ import {
   Layers,
   Camera,
   Tv,
+  Film,
   Wrench,
 } from 'lucide-react';
 import { AISettingsModal } from '@/components/settings/AISettingsModal';
@@ -84,7 +85,9 @@ export function AppNavbar({
   };
 
   const isPersonaActive =
-    pathname.startsWith('/influencer') || pathname.startsWith('/pet-comedy');
+    pathname.startsWith('/influencer') ||
+    pathname.startsWith('/pet-comedy') ||
+    pathname.startsWith('/drama-series');
 
   const hasTools = Boolean(onOpenCalendar || onOpenVault || onOpenHistory);
 
@@ -202,6 +205,17 @@ export function AppNavbar({
                   <div>
                     <div className="font-semibold text-amber-300">Pet Comedy Series</div>
                     <div className="text-[10px] text-neutral-400">Joe & Nova Sitcom Studio</div>
+                  </div>
+                </Link>
+
+                <Link
+                  href="/drama-series"
+                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-neutral-800/80 transition"
+                >
+                  <Film className="w-4 h-4 text-purple-400 shrink-0" />
+                  <div>
+                    <div className="font-semibold text-purple-300">3D Drama Series</div>
+                    <div className="text-[10px] text-neutral-400">Object & 3D Narrative Drama</div>
                   </div>
                 </Link>
               </div>
@@ -407,6 +421,17 @@ export function AppNavbar({
               <div className="flex items-center gap-2.5">
                 <Tv className="w-4 h-4 text-amber-400" />
                 <span>Pet Comedy Studio</span>
+              </div>
+            </Link>
+
+            <Link
+              href="/drama-series"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-between px-3 py-2 rounded-xl text-sm text-neutral-300 hover:bg-neutral-900"
+            >
+              <div className="flex items-center gap-2.5">
+                <Film className="w-4 h-4 text-purple-400" />
+                <span>3D Drama Series Studio</span>
               </div>
             </Link>
 

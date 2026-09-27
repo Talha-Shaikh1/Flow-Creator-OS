@@ -410,7 +410,7 @@ function AdminDashboardContent() {
                   <p className="text-xs text-neutral-400 mb-4">
                     As Super Admin, only you have access to direct batches for these private production personas.
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <Link
                       href="/influencer"
                       className="p-4 rounded-xl bg-neutral-950 border border-pink-500/20 hover:border-pink-500/50 transition flex items-center justify-between group"
@@ -441,6 +441,22 @@ function AdminDashboardContent() {
                         </div>
                       </div>
                       <ExternalLink className="w-4 h-4 text-neutral-500 group-hover:text-amber-400 transition" />
+                    </Link>
+
+                    <Link
+                      href="/drama-series"
+                      className="p-4 rounded-xl bg-neutral-950 border border-purple-500/20 hover:border-purple-500/50 transition flex items-center justify-between group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center">
+                          <Film className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-white group-hover:text-purple-300 transition">Drama Series</div>
+                          <div className="text-[11px] text-neutral-400">3D Object Drama • 8-Phase Gates</div>
+                        </div>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-neutral-500 group-hover:text-purple-400 transition" />
                     </Link>
                   </div>
                 </div>
@@ -749,6 +765,47 @@ function AdminDashboardContent() {
                         className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs transition flex items-center gap-1"
                       >
                         <span>Open Pet Studio</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Persona 3: Drama Series */}
+                <div className="p-5 rounded-2xl bg-neutral-950 border border-purple-500/20 relative">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">
+                        D
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-white text-sm">3D Drama Series (Master)</h4>
+                        <span className="text-[10px] text-purple-300 font-mono">/drama-series</span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30 flex items-center gap-1">
+                      <Lock className="w-3 h-3" />
+                      Locked To Admin
+                    </span>
+                  </div>
+
+                  <div className="space-y-2.5 text-xs">
+                    <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800">
+                      <span className="text-neutral-400 text-[11px] block font-mono mb-1">Production Pipeline:</span>
+                      <p className="text-neutral-200 text-xs leading-relaxed font-mono">
+                        • 8-Phase Gated Workflow (Season → Bible → Scene → 10s Clips → QA)<br />
+                        • 180° Spatial Axis & Eye Contact Vectors<br />
+                        • Google Flow (Veo) 14-18 Word Budget & Speaker Isolation
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2">
+                      <span className="text-neutral-400 text-xs">Format: 3D Object & Drama Animation</span>
+                      <Link
+                        href="/drama-series"
+                        className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition flex items-center gap-1"
+                      >
+                        <span>Open Drama Studio</span>
                         <ExternalLink className="w-3.5 h-3.5" />
                       </Link>
                     </div>
