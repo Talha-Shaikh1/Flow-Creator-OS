@@ -28,6 +28,7 @@ import {
   Clock,
   History,
   X,
+  Users,
 } from 'lucide-react';
 import {
   DramaSeriesState,
@@ -47,7 +48,10 @@ import { AIProviderConfig } from '@/lib/engine/llm-provider';
 import { AdminAccessGuard } from '@/components/auth/AdminAccessGuard';
 import { DirectorCopilotDrawer } from '@/components/drama-series/DirectorCopilotDrawer';
 import { DramaHistoryModal } from '@/components/drama-series/DramaHistoryModal';
-import { MasterPromptsGuideModal } from '@/components/drama-series/MasterPromptsGuideModal';
+import {
+  MasterPromptsGuideModal,
+  buildCharacterAnchorPrompt,
+} from '@/components/drama-series/MasterPromptsGuideModal';
 import {
   saveDramaFilmToHistory,
   getDramaFilmHistory,
@@ -722,6 +726,36 @@ function DramaSeriesStudioContent() {
           </div>
         </div>
 
+        {/* Unmissable All-In-One Prompts Hub Banner */}
+        {seasonStory && (
+          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-purple-950/70 via-neutral-900/90 to-purple-950/50 border border-purple-500/40 flex flex-wrap items-center justify-between gap-4 shadow-xl shadow-purple-950/30">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-purple-600/30 border border-purple-500/40 flex items-center justify-center text-purple-300 shrink-0 shadow-md shadow-purple-600/20">
+                <Layers className="w-5 h-5 text-purple-300" />
+              </div>
+              <div>
+                <div className="text-sm font-extrabold text-white flex items-center gap-2">
+                  <span>🎬 Master Prompts Hub: Character Persona + Frames + Veo Videos</span>
+                  <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-mono border border-purple-500/30">
+                    All-in-One Dossier
+                  </span>
+                </div>
+                <div className="text-xs text-neutral-300 mt-0.5">
+                  Sab prompts aik jagah: Tamam characters ke photorealistic persona prompts, sequential starting frames, 10s Veo video prompts, aur step-by-step workflow guide.
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowPromptsGuideModal(true)}
+              className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-black flex items-center gap-2 shadow-lg shadow-purple-600/30 transition shrink-0"
+            >
+              <Layers className="w-4 h-4" />
+              <span>📋 Open All Prompts & Guide</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Toast Alert */}
         {toastMsg && (
           <div className="p-3.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 text-xs font-semibold mb-6 flex items-center justify-between shadow-lg shadow-emerald-950/30 animate-in fade-in">
@@ -1233,6 +1267,42 @@ function DramaSeriesStudioContent() {
                           </div>
                         </div>
 
+                        {/* Midjourney / Flux / Google Flow Reference Persona Prompt */}
+                        <div className="p-3 rounded-xl bg-neutral-900/90 border border-purple-500/30 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-purple-400 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
+                              <Camera className="w-3 h-3" />
+                              Persona Reference Anchor Prompt ({aspectRatio})
+                            </span>
+                            <button
+                              onClick={() => {
+                                const { prompt } = buildCharacterAnchorPrompt(
+                                  char,
+                                  aspectRatio,
+                                  seasonStory?.worldEnvironment
+                                );
+                                handleCopy(prompt, `char-gate2-${char.id}`);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-500/30 text-[10px] font-bold flex items-center gap-1 transition"
+                            >
+                              {copiedKey === `char-gate2-${char.id}` ? (
+                                <>
+                                  <Check className="w-3 h-3 text-emerald-400" />
+                                  <span>Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3" />
+                                  <span>Copy Prompt</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <div className="p-2.5 rounded-lg bg-neutral-950 font-mono text-[11px] text-neutral-300 leading-relaxed max-h-24 overflow-y-auto select-all border border-neutral-800/80">
+                            {buildCharacterAnchorPrompt(char, aspectRatio, seasonStory?.worldEnvironment).prompt}
+                          </div>
+                        </div>
+
                         {/* Continuity Rules */}
                         <div className="text-[10px] text-neutral-400 bg-neutral-900/50 p-2 rounded-lg border border-neutral-800/80">
                           <strong className="text-emerald-400">Lock Rule:</strong> {Array.isArray(char.continuityRules) ? char.continuityRules.join(' • ') : safeText(char.continuityRules)}
@@ -1586,6 +1656,101 @@ function DramaSeriesStudioContent() {
                         <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
+                  </div>
+
+                  {/* STEP 1: ALL CHARACTER PERSONA REFERENCE PROMPTS */}
+                  <div className="p-5 rounded-2xl bg-gradient-to-b from-purple-950/40 to-neutral-950 border border-purple-500/40 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-purple-500/20 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-purple-900/50 border border-purple-500/40 flex items-center justify-center text-purple-300">
+                          <Users className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                            Step 1: Character Persona & Anchor Prompts ({characterBible?.characters?.length || seasonStory?.charactersInvolved?.length || 0} Cast Members)
+                          </h3>
+                          <p className="text-[11px] text-neutral-400">
+                            Render these 85mm portraits first in Midjourney / Flux / Google Flow to lock character faces & wardrobe before clips.
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          const chars = characterBible?.characters || [];
+                          const text = chars
+                            .map((c) => `[${c.name} - ${c.id}]:\n${buildCharacterAnchorPrompt(c, aspectRatio, seasonStory?.worldEnvironment).prompt}`)
+                            .join('\n\n');
+                          handleCopy(text, 'copy-all-chars-inline');
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white border border-purple-500/40 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-purple-600/20 transition"
+                      >
+                        {copiedKey === 'copy-all-chars-inline' ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>Copy All Character Persona Prompts</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      {(characterBible?.characters || []).map((char, idx) => {
+                        const { prompt } = buildCharacterAnchorPrompt(
+                          char,
+                          aspectRatio,
+                          seasonStory?.worldEnvironment
+                        );
+                        return (
+                          <div
+                            key={char.id || idx}
+                            className="p-4 rounded-xl bg-neutral-900/90 border border-neutral-800 hover:border-purple-500/40 transition flex flex-col justify-between"
+                          >
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2 py-0.5 rounded bg-purple-950 text-purple-300 font-mono text-[10px] font-bold border border-purple-500/30">
+                                    {char.id}
+                                  </span>
+                                  <span className="font-extrabold text-white text-xs">{char.name}</span>
+                                </div>
+                                <span className="text-[10px] text-neutral-400 font-mono">
+                                  {char.speciesObject}
+                                </span>
+                              </div>
+
+                              <div className="p-2.5 rounded-lg bg-neutral-950 font-mono text-[11px] text-neutral-300 leading-relaxed max-h-24 overflow-y-auto select-all border border-neutral-800/80 mb-2">
+                                {prompt}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-2 border-t border-neutral-800/60">
+                              <span className="text-[10px] text-neutral-500 font-mono">--ar {aspectRatio}</span>
+                              <button
+                                onClick={() => handleCopy(prompt, `char-prompt-gate6-${char.id}`)}
+                                className="px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-200 hover:text-white flex items-center gap-1 font-semibold transition"
+                              >
+                                {copiedKey === `char-prompt-gate6-${char.id}` ? (
+                                  <>
+                                    <Check className="w-3 h-3 text-emerald-400" />
+                                    <span>Copied!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3 h-3 text-purple-400" />
+                                    <span>Copy Persona Prompt</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* STEP 2: SEQUENTIAL 10-SECOND CLIPS HEADER */}
+                  <div className="flex items-center gap-2 pt-2">
+                    <Tv className="w-4 h-4 text-purple-400" />
+                    <h3 className="text-xs font-black uppercase tracking-wider text-neutral-300">
+                      Step 2: Sequential 10-Second Clips (Starting Frames + Veo Motion Prompts)
+                    </h3>
                   </div>
 
                   <div className="space-y-6">

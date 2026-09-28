@@ -120,12 +120,80 @@ export function MasterPromptsGuideModal({
 
   if (!isOpen) return null;
 
-  const characters = characterBible?.characters || [];
   const filmTitle = seasonStory?.seasonTitle || 'Drama Mini-Film';
   const worldSetting = seasonStory?.worldEnvironment || 'Prestige Cinematic Setting';
   const clipsCount =
     clipsBreakdown?.length ||
     (targetRuntime === '120s' ? 12 : targetRuntime === '90s' ? 9 : 6);
+
+  // Extract all characters dynamically from Character Bible + Season Story cast
+  const characters: CharacterBibleItem[] = useMemo(() => {
+    const list: CharacterBibleItem[] = [...(characterBible?.characters || [])];
+    const existingNames = new Set(list.map((c) => c.name.toLowerCase().trim()));
+
+    // Collect all character names from seasonStory
+    const storyChars = new Set<string>();
+    (seasonStory?.charactersInvolved || []).forEach((c) => storyChars.add(c.trim()));
+    (seasonStory?.episodes || []).forEach((ep) => {
+      (ep.charactersInvolved || []).forEach((c) => storyChars.add(c.trim()));
+    });
+
+    Array.from(storyChars).forEach((name, idx) => {
+      if (name && !existingNames.has(name.toLowerCase())) {
+        list.push({
+          id: `CHAR-0${list.length + 1}`,
+          name,
+          speciesObject: `${name} — Drama Series Character`,
+          ageAppearance: '30s',
+          genderPresentation: 'Cinematic Character',
+          personality: 'Intense and calculating drama persona with hidden motives',
+          roleInStory: idx === 0 ? 'Main Character' : 'Recurring Character',
+          morphologySpec: {
+            eyeType: 'Expressive dramatic eyes with piercing emotional intensity',
+            mouthPlacement: 'Composed jawline with subtle micro-expressions',
+            limbPhysics: 'Controlled realistic posture and movements',
+            materialTexture: 'Photorealistic human skin texture with visible natural pores',
+            distinctiveFeatures: 'Distinctive cinematic bone structure and intense gaze',
+          },
+          physicalAppearance: {
+            headShape: 'Sculpted defined jawline',
+            faceStructure: 'Defined cheekbones and striking profile',
+            bodyProportions: 'Athletic, elegant posture',
+            distinctiveFeatures: 'Realistic cinematic appearance',
+          },
+          clothing: {
+            exactOutfit: 'Tailored luxury dark attire with subtle textured fabric',
+            colors: 'Deep neutral palette (charcoal, navy, black)',
+            materials: 'Wool, fine cotton, and leather accents',
+            accessories: 'Minimalist signature accessory',
+            propsNormallyCarried: 'None',
+          },
+          acting: {
+            normalExpression: 'Calculating, watchful gaze',
+            happyExpression: 'Subtle knowing smile',
+            sadExpression: 'Guarded sorrow, restrained emotion',
+            angryExpression: 'Cold controlled intensity',
+            comedicExpression: 'Dry sarcastic smirk',
+            typicalBodyLanguage: 'Poised, observant, maintaining personal space',
+          },
+          voice: {
+            voiceType: 'Resonant, clear tone',
+            ageImpression: '30s',
+            accent: 'Neutral prestige accent',
+            speakingSpeed: 'Measured (1.0x)',
+            emotionalStyle: 'Controlled dramatic intensity',
+          },
+          continuityRules: [
+            'Maintain exact facial features and skin tone',
+            'Preserve signature wardrobe and color palette',
+          ],
+        });
+        existingNames.add(name.toLowerCase());
+      }
+    });
+
+    return list;
+  }, [characterBible, seasonStory]);
 
   // Generate Character DNA Prompts for all characters
   const characterPromptsList = characters.map((c) => ({
