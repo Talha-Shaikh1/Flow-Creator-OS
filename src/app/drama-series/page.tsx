@@ -47,6 +47,7 @@ import { AIProviderConfig } from '@/lib/engine/llm-provider';
 import { AdminAccessGuard } from '@/components/auth/AdminAccessGuard';
 import { DirectorCopilotDrawer } from '@/components/drama-series/DirectorCopilotDrawer';
 import { DramaHistoryModal } from '@/components/drama-series/DramaHistoryModal';
+import { MasterPromptsGuideModal } from '@/components/drama-series/MasterPromptsGuideModal';
 import {
   saveDramaFilmToHistory,
   getDramaFilmHistory,
@@ -140,6 +141,7 @@ function DramaSeriesStudioContent() {
   const [isLoadingIdeas, setIsLoadingIdeas] = useState(false);
   const [showIdeasModal, setShowIdeasModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showPromptsGuideModal, setShowPromptsGuideModal] = useState(false);
   const [historyCount, setHistoryCount] = useState(0);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
@@ -605,6 +607,15 @@ function DramaSeriesStudioContent() {
                 <span>💾 Save</span>
               </button>
             )}
+
+            <button
+              onClick={() => setShowPromptsGuideModal(true)}
+              className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white border border-purple-500/50 text-xs flex items-center gap-1.5 shadow-md shadow-purple-600/25 transition font-bold"
+              title="Open Master Prompts Hub & Production Guide"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Prompts & Guide</span>
+            </button>
 
             <button
               onClick={() => setShowCopilot(true)}
@@ -1133,18 +1144,27 @@ function DramaSeriesStudioContent() {
 
               {characterBible && (
                 <div className="space-y-6 pt-4 border-t border-neutral-800">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <span className="text-xs text-neutral-400">
                       Found {characterBible.characters.length} core characters across the season.
                     </span>
-                    <button
-                      onClick={handleApproveGate2}
-                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition"
-                    >
-                      <Check className="w-4 h-4" />
-                      <span>Lock Bible & Move to Episode Breakdown (Gate 3)</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setShowPromptsGuideModal(true)}
+                        className="px-3.5 py-2 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
+                      >
+                        <Layers className="w-4 h-4 text-purple-400" />
+                        <span>View Character DNA Prompts</span>
+                      </button>
+                      <button
+                        onClick={handleApproveGate2}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>Lock Bible & Move to Episode Breakdown (Gate 3)</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1545,18 +1565,27 @@ function DramaSeriesStudioContent() {
 
               {videoPrompts && framePrompts && (
                 <div className="space-y-6 pt-4 border-t border-neutral-800">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <span className="text-xs text-neutral-400">
                       Prompts compiled for Google Flow / Veo with 1-click copy buttons.
                     </span>
-                    <button
-                      onClick={handleApproveGate6And7}
-                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition"
-                    >
-                      <Check className="w-4 h-4" />
-                      <span>Approve Prompts & Run Director QA (Gate 8)</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setShowPromptsGuideModal(true)}
+                        className="px-3.5 py-2 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
+                      >
+                        <Layers className="w-4 h-4 text-purple-400" />
+                        <span>Open Prompts & Guide Hub</span>
+                      </button>
+                      <button
+                        onClick={handleApproveGate6And7}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>Approve Prompts & Run Director QA (Gate 8)</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-6">
@@ -1689,6 +1718,14 @@ function DramaSeriesStudioContent() {
                   >
                     <ShieldCheck className="w-4 h-4" />
                     <span>{directorQA ? 'Re-Run Director Audit' : 'Run Director QA Audit (Phase 8)'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowPromptsGuideModal(true)}
+                    className="px-4 py-2 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
+                  >
+                    <Layers className="w-4 h-4 text-purple-400" />
+                    <span>Master Prompts & Guide Hub</span>
                   </button>
 
                   {directorQA?.overallStatus === 'PRODUCTION READY' && (
@@ -1971,6 +2008,20 @@ function DramaSeriesStudioContent() {
           setHistoryCount(getDramaFilmHistory().length);
         }}
         onSelectFilm={handleLoadFilmFromHistory}
+      />
+
+      {/* Master Prompts Hub & Production Guide Modal */}
+      <MasterPromptsGuideModal
+        isOpen={showPromptsGuideModal}
+        onClose={() => setShowPromptsGuideModal(false)}
+        seasonStory={seasonStory}
+        characterBible={characterBible}
+        clipsBreakdown={clipsBreakdown}
+        framePrompts={framePrompts}
+        videoPrompts={videoPrompts}
+        directorQA={directorQA}
+        targetRuntime={targetRuntime}
+        aspectRatio={aspectRatio}
       />
     </main>
   );
