@@ -335,7 +335,7 @@ JSON SCHEMA:
 }`;
 
   const res = await callUniversalLLM({
-    config: aiConfig,
+    config: { ...(aiConfig ?? {}), provider: 'mistral', model: 'open-mistral-nemo' },
     prompt,
     systemInstruction:
       `You are a Master Casting and Visual DNA Supervisor for prestige cinema. You MUST produce a complete Character Bible for ALL ${targetCount} characters in strictly valid JSON. Keep each field to 1-2 concise sentences.`,
@@ -1132,8 +1132,13 @@ Return STRICT JSON only matching this schema:
   return {
     overallStatus: res.parsed?.overallStatus || 'PRODUCTION READY',
     summary:
-      res.parsed?.summary ||
-      'Director QA audit passed. 180° spatial axis, single-speaker lip sync, and frame continuity verified.',
+      typeof res.parsed?.summary === 'string'
+        ? res.parsed.summary
+        : typeof res.parsed?.summary === 'object' && res.parsed.summary !== null
+        ? Object.entries(res.parsed.summary)
+            .map(([k, v]) => `${k.replace(/([A-Z])/g, ' $1')}: ${typeof v === 'string' ? v : JSON.stringify(v)}`)
+            .join(' • ')
+        : 'Director QA audit passed. 180° spatial axis, single-speaker lip sync, and frame continuity verified.',
     clipReviews,
   } as DirectorQAPackage;
 }

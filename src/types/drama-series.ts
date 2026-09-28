@@ -200,7 +200,7 @@ export interface ClipQAResult {
 
 export interface DirectorQAPackage {
   overallStatus: 'PRODUCTION READY' | 'REVISION REQUIRED';
-  summary: string;
+  summary: string | Record<string, any>;
   clipReviews: ClipQAResult[];
 }
 

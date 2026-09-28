@@ -294,7 +294,12 @@ export async function callUniversalLLM({
     ? config.apiKey.trim()
     : resolveServerKey(provider);
 
-  const model = config?.model?.trim() || DEFAULT_MODELS[provider];
+  const rawModel = config?.model?.trim();
+  const providerDef = PROVIDER_OPTIONS.find((p) => p.id === provider);
+  const isValidModelForProvider = providerDef
+    ? (providerDef.defaultModel === rawModel || providerDef.popularModels.includes(rawModel || ''))
+    : true;
+  const model = (rawModel && isValidModelForProvider) ? rawModel : DEFAULT_MODELS[provider];
 
   // For OmniRoute, apiKey is optional if running local instance without auth
   if (!apiKey && provider !== 'omniroute') {

@@ -89,7 +89,15 @@ function safeText(val: any, maxLen?: number): string {
   if (typeof val === 'string') {
     str = val;
   } else if (typeof val === 'object') {
-    str = val.text || val.hook || val.description || val.summary || val.cliffhanger || JSON.stringify(val);
+    if (Array.isArray(val)) {
+      str = val.map((item) => safeText(item)).join(' • ');
+    } else if (val.text || val.hook || val.description || val.cliffhanger) {
+      str = String(val.text || val.hook || val.description || val.cliffhanger);
+    } else {
+      str = Object.entries(val)
+        .map(([k, v]) => `${k.replace(/([A-Z])/g, ' $1')}: ${typeof v === 'string' ? v : JSON.stringify(v)}`)
+        .join(' • ');
+    }
   } else {
     str = String(val);
   }
@@ -535,7 +543,7 @@ function DramaSeriesStudioContent() {
     if (directorQA) {
       md += `## 3. DIRECTOR QA AUDIT\n`;
       md += `**Status:** ${directorQA.overallStatus}\n`;
-      md += `**Summary:** ${directorQA.summary}\n`;
+      md += `**Summary:** ${safeText(directorQA.summary)}\n`;
     }
 
     const blob = new Blob([md], { type: 'text/markdown' });
@@ -1717,7 +1725,24 @@ function DramaSeriesStudioContent() {
                         <div className="text-sm font-extrabold uppercase tracking-wide">
                           STATUS: {directorQA.overallStatus}
                         </div>
-                        <div className="text-xs opacity-90 mt-0.5">{directorQA.summary}</div>
+                        <div className="text-xs opacity-90 mt-1">
+                          {typeof directorQA.summary === 'object' && directorQA.summary !== null ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1.5">
+                              {Object.entries(directorQA.summary).map(([k, v]) => (
+                                <div key={k} className="p-2 rounded-lg bg-black/25 border border-white/10 text-[11px]">
+                                  <strong className="text-purple-300 capitalize block mb-0.5">
+                                    {k.replace(/([A-Z])/g, ' $1')}:
+                                  </strong>
+                                  <span className="text-neutral-200">
+                                    {typeof v === 'string' ? v : JSON.stringify(v)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span>{safeText(directorQA.summary)}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1768,7 +1793,7 @@ function DramaSeriesStudioContent() {
                           ))}
                         </div>
 
-                        {rev.issuesIdentified && (
+                        {rev.issuesIdentified && (Array.isArray(rev.issuesIdentified) ? rev.issuesIdentified.length > 0 : Boolean(rev.issuesIdentified)) && (
                           <div className="p-3 rounded-lg bg-red-950/30 border border-red-500/20 text-[11px] text-red-300">
                             <strong>Identified Issue:</strong> {Array.isArray(rev.issuesIdentified) ? rev.issuesIdentified.join(' • ') : safeText(rev.issuesIdentified)}
                           </div>
